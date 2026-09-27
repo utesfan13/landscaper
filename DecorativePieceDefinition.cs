@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using UnityEngine;
 
 namespace Landscaper;
 
@@ -28,6 +29,7 @@ public sealed class DecorativePieceDefinition
     public bool AllowInterior { get; set; } = true;
     public bool RequireWorkbench { get; set; } = false;
     public float PlacementScale { get; set; } = 1f;
+    public Vector3 PlacementRotation { get; set; } = Vector3.zero;
     public bool FreePlacement { get; set; } = true;
     public IList<PieceRequirement> Requirements { get; } = new List<PieceRequirement>();
 }
@@ -47,7 +49,7 @@ public sealed class DecorativeBuildPiece
     public PrefabRecord Prefab { get; set; } = null!;
 }
 
-public sealed class PieceTable
+public sealed class DecorativePieceTable
 {
     public string Name { get; set; } = string.Empty;
     public List<DecorativeBuildPiece> Pieces { get; } = new();

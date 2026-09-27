@@ -29,7 +29,7 @@ public static class PrefabUtilities
     {
         ["RaspberryBush"] = new PrefabRecord { Name = "RaspberryBush", PrefabName = "RaspberryBush" },
         ["BlueberryBush"] = new PrefabRecord { Name = "BlueberryBush", PrefabName = "BlueberryBush" },
-        ["Dandelion"] = new PrefabRecord { Name = "Dandelion", PrefabName = "Dandelion" },
+        ["Pickable_Dandelion"] = new PrefabRecord { Name = "Pickable_Dandelion", PrefabName = "Pickable_Dandelion" },
         ["Thistle"] = new PrefabRecord { Name = "Thistle", PrefabName = "Thistle" },
         ["Mushroom"] = new PrefabRecord { Name = "Mushroom", PrefabName = "Mushroom" },
         ["DecorativeShrub"] = new PrefabRecord { Name = "DecorativeShrub", PrefabName = "DecorativeShrub" },
@@ -74,16 +74,8 @@ public static class PrefabUtilities
             return true;
         }
 
-        prefab = new PrefabRecord
-        {
-            Name = prefabName,
-            PrefabName = prefabName,
-            ActiveSelf = true
-        };
-
-        prefab.EnsureBuildComponents();
-        VanillaCatalog[prefabName] = prefab;
-        return true;
+        prefab = new PrefabRecord { Name = prefabName, PrefabName = prefabName };
+        return false;
     }
 
     public static PrefabRecord ClonePrefabForBuild(string prefabName, string cloneName)
