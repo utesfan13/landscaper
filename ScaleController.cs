@@ -47,9 +47,9 @@ internal static class ScaleController
             new ConfigDescription("How much each key press changes the scale, as a fraction of the current size (0.1 = 10%).", new AcceptableValueRange<float>(0.01f, 1f)));
         _repeatRate = config.Bind("Scaling", "ScaleRepeatRate", 15f,
             new ConfigDescription("Steps per second while a scale key is held down.", new AcceptableValueRange<float>(1f, 60f)));
-        _minScale = config.Bind("Scaling", "MinScale", 0.1f,
+        _minScale = config.Bind("Scaling", "MinScale", 0.01f,
             new ConfigDescription("Smallest scale allowed on any axis.", new AcceptableValueRange<float>(0.01f, 1f)));
-        _maxScale = config.Bind("Scaling", "MaxScale", 10f,
+        _maxScale = config.Bind("Scaling", "MaxScale", 100f,
             new ConfigDescription("Largest scale allowed on any axis.", new AcceptableValueRange<float>(1f, 100f)));
     }
 

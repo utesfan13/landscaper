@@ -19,7 +19,7 @@ In `BepInEx/config/landscaper.zackc.cfg` (restart Valheim after changing any of 
 | `Scaling.ScaleResetKey` | `End` | Reset to normal size. |
 | `Scaling.ScaleStep` | `0.1` | How much each key press changes the scale, as a fraction of the current size (0.1 = 10%). |
 | `Scaling.ScaleRepeatRate` | `15` | Steps per second while a scale key is held down. |
-| `Scaling.MinScale` / `MaxScale` | `0.1` / `10` | Smallest and largest scale allowed on any axis (down to 0.01, up to 100). |
+| `Scaling.MinScale` / `MaxScale` | `0.01` / `100` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 100). |
 
 ## Removing Pieces
 
@@ -42,7 +42,7 @@ While the placement preview of any Landscaper piece is showing:
 
 Each step changes the size by 10% of its current value, so steps are fine near normal size and
 quick at large sizes. Hold a scale key to keep resizing; after a short pause it repeats until you let go. Each axis goes
-from 0.1x to 10x by default; change `MinScale` and `MaxScale` to allow 0.01x to 100x. The current scale is shown mid-screen. It stays set while you place
+from 0.01x to 100x by default; narrow it with `MinScale` and `MaxScale`. The current scale is shown mid-screen. It stays set while you place
 more of the same piece, and resets to normal size whenever you select a different piece (including
 switching back to one you scaled earlier). Each placed piece saves its size with the world.
 X and Z follow the piece's own orientation, so they swap roles as you rotate it.
