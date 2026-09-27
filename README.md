@@ -16,10 +16,16 @@ In `BepInEx/config/landscaper.zackc.cfg` (restart Valheim after changing any of 
 | `CustomEntries.Entries` | empty | Extra pieces; see below. |
 | `Scaling.ScaleUpKey` / `ScaleDownKey` | `]` / `[` | Resize the piece being placed. |
 | `Scaling.XAxisModifier` / `YAxisModifier` / `ZAxisModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold with the scale keys to change one axis. Either side of the keyboard works. |
-| `Scaling.ScaleResetKey` | `End` | Reset to normal size. |
+| `Scaling.ScaleResetKey` | `End` | Reset to normal size and colour. |
 | `Scaling.ScaleStep` | `0.1` | How much each key press changes the scale, as a fraction of the current size (0.1 = 10%). |
 | `Scaling.ScaleRepeatRate` | `15` | Steps per second while a scale key is held down. |
-| `Scaling.MinScale` / `MaxScale` | `0.01` / `100` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 100). |
+| `Scaling.MinScale` / `MaxScale` | `0.01` / `20` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 20). |
+| `Tint.TintBackKey` / `TintForwardKey` | `,` / `.` | Tint the piece being placed. |
+| `Tint.StrengthModifier` / `BrightnessModifier` / `PresetModifier` | `LeftShift` / `LeftControl` / `LeftAlt` | Hold with the tint keys to change strength, brightness, or step through presets. |
+| `Tint.HueStep` | `10` | Degrees round the colour wheel per key press. |
+| `Tint.StrengthBrightnessStep` | `0.1` | How much each key press changes strength or brightness (0.1 = 10%). |
+| `Tint.TintRepeatRate` | `15` | Steps per second while a tint key is held down. |
+| `Tint.Presets` | 10 presets | `Name:hue,strength,brightness` entries separated by semicolons; see below. |
 
 ## Removing Pieces
 
@@ -27,6 +33,10 @@ Aim at a placed Landscaper piece and press the remove button (middle click by de
 removing a building piece with the Hammer. This works with the Hammer, Cultivator and Hoe. The
 Cultivator and Hoe only remove Landscaper pieces; crops, buildings and anything else are left alone.
 The piece that will be removed is highlighted in light blue while you aim at it.
+
+For pieces that are hard to aim at, open the console (F5) and run `landscaper_remove [radius]` to
+remove every Landscaper piece within that many meters of you (default 10, max 100). It never
+removes anything that wasn't placed through this mod.
 
 ## Resizing Pieces While Placing
 
@@ -42,10 +52,39 @@ While the placement preview of any Landscaper piece is showing:
 
 Each step changes the size by 10% of its current value, so steps are fine near normal size and
 quick at large sizes. Hold a scale key to keep resizing; after a short pause it repeats until you let go. Each axis goes
-from 0.01x to 100x by default; narrow it with `MinScale` and `MaxScale`. The current scale is shown mid-screen. It stays set while you place
+from 0.01x to 20x by default; narrow it with `MinScale` and `MaxScale`. The current scale is shown mid-screen. It stays set while you place
 more of the same piece, and resets to normal size whenever you select a different piece (including
 switching back to one you scaled earlier). Each placed piece saves its size with the world.
 X and Z follow the piece's own orientation, so they swap roles as you rotate it.
+
+## Tinting Pieces While Placing
+
+While the placement preview of any Landscaper piece is showing:
+
+| Keys | Effect |
+|---|---|
+| `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
+| Shift + `,` / `.` | Weaker / stronger tint |
+| Ctrl + `,` / `.` | Darker / lighter |
+| Alt + `,` / `.` | Previous / next preset |
+| End | Reset scale and tint |
+
+The preview shows the tint as you change it, and the current values are shown mid-screen. Like
+scaling, the tint stays set while you place more of the same piece, resets when you select a different
+piece, and holding a key repeats it. Each placed piece saves its tint with the world, so it survives
+reloads and other players see it.
+
+The tint is multiplied with the piece's textures, so it can colour and darken a piece but not make it
+brighter than normal. Colours show most on light textures such as stone, bone, ice and birch bark.
+While placement is invalid the preview turns red as usual, hiding the tint.
+
+`,` and `.` are also Valheim's minimap zoom keys, so the minimap doesn't zoom while you're in build
+mode. The large map and the minimap outside build mode zoom as normal.
+
+Presets are set in `Tint.Presets` as `Name:hue,strength,brightness` entries separated by semicolons.
+Hue is 0-360 degrees round the colour wheel (0 red, 120 green, 240 blue); strength and brightness are
+percentages. The defaults are Red, Orange, Gold, Green, Teal, Blue, Purple, Pink, Weathered and
+Charred, for example `Weathered:35,25,75; Charred:0,0,35`.
 
 ## Finding Prefab Names
 

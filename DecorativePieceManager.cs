@@ -97,6 +97,7 @@ public sealed class DecorativePieceManager
         clone.GetComponent<ZNetView>().m_syncInitialScale = true;
         StripComponents(clone);
         EnsureTargetable(clone, definition.Tool);
+        clone.AddComponent<LandscaperTint>();
 
         var piece = clone.GetComponent<Piece>() ?? clone.AddComponent<Piece>();
         var vanillaIcon = piece.m_icon;

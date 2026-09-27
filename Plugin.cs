@@ -37,6 +37,7 @@ public sealed class Plugin : BaseUnityPlugin
             "Find prefab names in game with the landscaper_find console command.");
 
         CommandManager.Instance.AddConsoleCommand(new FindPrefabCommand());
+        CommandManager.Instance.AddConsoleCommand(new RemoveNearbyCommand());
 
         if (!enabled.Value)
         {
@@ -50,6 +51,7 @@ public sealed class Plugin : BaseUnityPlugin
 
         Pieces = new DecorativePieceManager(Log, Info.Metadata, customEntries.Value, _tools, decorativeOnly.Value);
         ScaleController.Bind(Config);
+        TintController.Bind(Config);
         PrefabManager.OnPrefabsRegistered += RegisterPieces;
         new Harmony(ModGuid).PatchAll();
     }

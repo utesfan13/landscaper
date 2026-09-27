@@ -54,6 +54,8 @@ internal static class RemovalController
         {
             MaterialMan.instance.ResetValue(_highlighted, MainColor);
             MaterialMan.instance.ResetValue(_highlighted, EmissionColor);
+            // The highlight replaced the piece's tint; put it back.
+            _highlighted.GetComponent<LandscaperTint>()?.Apply();
         }
 
         _highlighted = target;
