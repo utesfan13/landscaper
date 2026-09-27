@@ -1,86 +1,109 @@
 using BepInEx;
 using BepInEx.Configuration;
-using UnityEngine;
+using BepInEx.Logging;
+using HarmonyLib;
+using Jotunn.Managers;
 
 namespace Landscaper;
 
 [BepInPlugin(ModGuid, ModName, ModVersion)]
+[BepInDependency(Jotunn.Main.ModGuid)]
 public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.zackc";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.1.0";
+    public const string ModVersion = "0.2.0";
 
-    private static Plugin? _instance;
-    private static DecorativePieceManager? _pieceManager;
-    private static bool _registrationAttempted;
+    internal static ManualLogSource Log = null!;
+    internal static DecorativePieceManager? Pieces;
+    private static bool _iconsDone;
+    private static List<BuildTool> _tools = new();
     private static Player? _lastLocalPlayer;
-    internal static ConfigEntry<bool> Enabled = null!;
-    internal static ConfigEntry<bool> FreePlacement = null!;
-    internal static ConfigEntry<bool> CultivatorDecorEnabled = null!;
-    internal static ConfigEntry<bool> HoeDecorEnabled = null!;
-    internal static ConfigEntry<bool> HammerDecorEnabled = null!;
-    internal static ConfigEntry<string> CustomEntries = null!;
 
     private void Awake()
     {
-        _instance = this;
+        Log = Logger;
 
-        Enabled = Config.Bind("General", "Enabled", true, "Master toggle for the decorative landscaping pieces.");
-        FreePlacement = Config.Bind("General", "FreePlacement", true, "Place decorative pieces without a cost requirement.");
-        CultivatorDecorEnabled = Config.Bind("Tools", "CultivatorDecorEnabled", true, "Allow decorative pieces in the Cultivator menu.");
-        HoeDecorEnabled = Config.Bind("Tools", "HoeDecorEnabled", true, "Allow decorative pieces in the Hoe menu.");
-        HammerDecorEnabled = Config.Bind("Tools", "HammerDecorEnabled", true, "Allow decorative pieces in the Hammer menu.");
-        CustomEntries = Config.Bind("CustomEntries", "Entries", string.Empty, "Entries separated by \\n:Display Name|Prefab Name|Tool|Category|Rotation X,Y,Z. Tool is Cultivator, Hoe, or Hammer. Find prefab names in game with the landscaper_find console command.");
+        var enabled = Config.Bind("General", "Enabled", true, "Master toggle for the decorative landscaping pieces.");
+        var decorativeOnly = Config.Bind("General", "DecorativeOnly", false,
+            "When true, placed trees, rocks and plants can't be chopped, mined or picked; remove them with the remove button (middle click) instead. Requires a restart.");
+        var cultivator = Config.Bind("Tools", "CultivatorDecorEnabled", true, "Add decorative pieces to the Cultivator menu. Requires a restart.");
+        var hoe = Config.Bind("Tools", "HoeDecorEnabled", true, "Add decorative pieces to the Hoe menu. Requires a restart.");
+        var hammer = Config.Bind("Tools", "HammerDecorEnabled", true, "Add decorative pieces to the Hammer menu. Requires a restart.");
+        var customEntries = Config.Bind("CustomEntries", "Entries", string.Empty,
+            "Entries separated by \\n: Display Name|Prefab Name|Tool|Category|Rotation X,Y,Z|Item:Amount,Item:Amount|Scale X,Y,Z. " +
+            "Tool is Cultivator, Hoe, or Hammer. Rotation, requirements and scale are optional (leave a field empty to skip it); " +
+            "without requirements the piece is free. Scale is one number or X,Y,Z; a scaled entry is a separate variant. " +
+            "Find prefab names in game with the landscaper_find console command.");
 
-        Logger.LogInfo("Landscaper: initialising decorative piece registration.");
+        CommandManager.Instance.AddConsoleCommand(new FindPrefabCommand());
 
-        if (!Enabled.Value)
+        if (!enabled.Value)
         {
-            Logger.LogInfo("Landscaper is disabled by configuration.");
+            Log.LogInfo("Disabled by configuration.");
             return;
         }
 
-        _pieceManager = new DecorativePieceManager(CustomEntries.Value);
-        Jotunn.Managers.CommandManager.Instance.AddConsoleCommand(new FindPrefabCommand());
-        Logger.LogInfo("Landscaper waiting for Valheim runtime registration tables to become available.");
+        if (cultivator.Value) _tools.Add(BuildTool.Cultivator);
+        if (hoe.Value) _tools.Add(BuildTool.Hoe);
+        if (hammer.Value) _tools.Add(BuildTool.Hammer);
+
+        Pieces = new DecorativePieceManager(Log, Info.Metadata, customEntries.Value, _tools, decorativeOnly.Value);
+        ScaleController.Bind(Config);
+        PrefabManager.OnPrefabsRegistered += RegisterPieces;
+        new Harmony(ModGuid).PatchAll();
     }
 
     private void Update()
     {
-        if (_pieceManager is null)
+        if (Pieces is null)
         {
             return;
-        }
-
-        if (!_registrationAttempted)
-        {
-            if (ObjectDB.instance is null || ObjectDB.instance.m_items.Count == 0 || ZNetScene.instance is null)
-            {
-                return;
-            }
-
-            // Register exactly once. Jotunn keeps the custom pieces and re-adds them to the piece
-            // tables on later world loads. Retrying every frame makes Jotunn refresh the build
-            // categories, which rebuilds the placement ghost every frame and leaves trees invisible.
-            _registrationAttempted = true;
-            var registeredCount = _pieceManager.TryRegisterBuiltInCatalog();
-            Logger.LogInfo($"Landscaper registered {registeredCount} decorative pieces.");
-            _lastLocalPlayer = null;
         }
 
         var localPlayer = Player.m_localPlayer;
         if (localPlayer is not null && !ReferenceEquals(localPlayer, _lastLocalPlayer))
         {
             _lastLocalPlayer = localPlayer;
-            _pieceManager.RefreshKnownPieces();
+            RemovalController.EnableFor(_tools);
         }
+
+        if (!_iconsDone && localPlayer is not null)
+        {
+            _iconsDone = !Pieces.RenderNextIcon();
+        }
+
+        ScaleController.Update();
     }
 
-    public static DecorativePieceManager PieceManager => _pieceManager ?? throw new InvalidOperationException("Landscaper is not initialised yet.");
-
-    public static void DumpPrefabSearch(string keyword = "")
+    /// <summary>
+    /// Runs at the end of the first ZNetScene.Awake, before any saved objects are created, so pieces
+    /// placed in an earlier session find their prefab. Jotunn re-adds the pieces on later world loads.
+    /// </summary>
+    private static void RegisterPieces()
     {
-        _pieceManager?.DumpPrefabs(keyword);
+        PrefabManager.OnPrefabsRegistered -= RegisterPieces;
+        Pieces?.RegisterAll();
+    }
+}
+
+/// <summary>
+/// Marks free Landscaper pieces as known before Valheim checks for new recipes. Valheim would unlock
+/// them anyway, but it would show a "new piece" message for every one of them on a new character.
+/// </summary>
+[HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
+internal static class SilentUnlockPatch
+{
+    private static void Prefix(HashSet<string> ___m_knownRecipes)
+    {
+        if (Plugin.Pieces is null)
+        {
+            return;
+        }
+
+        foreach (var name in Plugin.Pieces.FreePieceNames)
+        {
+            ___m_knownRecipes.Add(name);
+        }
     }
 }
