@@ -57,7 +57,9 @@ internal static class ScaleController
     public static void Update()
     {
         var player = Player.m_localPlayer;
-        if (player is null || !player.InPlaceMode() || !IsLandscaperPiece(_ghost) || IsTyping())
+        var placingLandscaperPiece = player is not null && player.InPlaceMode() && IsLandscaperPiece(_ghost);
+        ScaleKeyHint.SetVisible(placingLandscaperPiece);
+        if (!placingLandscaperPiece || IsTyping())
         {
             return;
         }
@@ -91,7 +93,7 @@ internal static class ScaleController
             return;
         }
 
-        player.Message(MessageHud.MessageType.Center, $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
+        player!.Message(MessageHud.MessageType.Center, $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
     }
 
     /// <summary>
@@ -129,6 +131,31 @@ internal static class ScaleController
     }
 
     /// <summary>Checks a modifier key, accepting its counterpart on the other side of the keyboard.</summary>
+    /// <summary>Scale-up key as shown in the build hints.</summary>
+    public static string UpKeyName => KeyName(_upKey.Value);
+
+    /// <summary>Scale-down key as shown in the build hints.</summary>
+    public static string DownKeyName => KeyName(_downKey.Value);
+
+    /// <summary>The X, Y and Z modifiers in order, e.g. "Alt/Shift/Ctrl".</summary>
+    public static string ModifierNames => $"{KeyName(_xModifier.Value)}/{KeyName(_yModifier.Value)}/{KeyName(_zModifier.Value)}";
+
+    private static string KeyName(KeyCode key) => key switch
+    {
+        KeyCode.LeftBracket => "[",
+        KeyCode.RightBracket => "]",
+        KeyCode.LeftAlt or KeyCode.RightAlt => "Alt",
+        KeyCode.LeftShift or KeyCode.RightShift => "Shift",
+        KeyCode.LeftControl or KeyCode.RightControl => "Ctrl",
+        KeyCode.PageUp => "PgUp",
+        KeyCode.PageDown => "PgDn",
+        KeyCode.Equals => "=",
+        KeyCode.Minus => "-",
+        KeyCode.KeypadPlus => "Num+",
+        KeyCode.KeypadMinus => "Num-",
+        _ => key.ToString()
+    };
+
     private static bool IsHeld(KeyCode key)
     {
         var input = UnityInput.Current;
