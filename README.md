@@ -1,20 +1,41 @@
 # landscaper
 Valheim Mod - Prefab placement
 
-## Choosing Prefabs
+## Finding Prefab Names
 
-Add custom entries in `BepInEx/config/landscaper.zackc.cfg` under `CustomEntries`.
-Use one entry per line:
+Load into a world, open the console (F5) and run:
+
+```text
+landscaper_find <keyword>
+```
+
+For example, `landscaper_find crypt` lists every prefab whose name contains "crypt". Only spawnable
+prefabs (ones with a `ZNetView`) are listed. Pieces built from them are saved with the world. Many
+dungeon and location parts, such as individual walls and floors, are not spawnable on their own and
+won't appear. Results tagged `(item)` or `(creature)` are not good choices for placeable pieces.
+
+## Adding Prefabs
+
+### From the config file (no rebuild)
+
+Add entries in `BepInEx/config/landscaper.zackc.cfg` under `[CustomEntries]`:
 
 ```text
 Display Name|ExactPrefabName|Tool|Category|RotationX,RotationY,RotationZ
 ```
 
-Example:
+BepInEx keeps each setting on a single line, so separate multiple entries with a literal `\n`:
 
-```text
-Birch Tree|Birch1|Hammer|Trees|0,0,0
-Large Rock|Rock_4|Hoe|Rocks|0,0,0
+```ini
+Entries = Rock Thumb|RockThumb|Hoe|Rocks|0,0,0\nDolmen|RockDolmen_1|Hoe|Rocks|0,0,0
 ```
 
-Valid tools are `Cultivator`, `Hoe`, and `Hammer`. The exact prefab name must match a name in Valheim's runtime prefab list. Use the existing prefab dump command from the plugin to search names, then restart Valheim after changing the config.
+Valid tools are `Cultivator`, `Hoe`, and `Hammer`. The rotation part is optional. Restart Valheim
+after changing the config.
+
+### In code
+
+Add a `("Display Name", "PrefabName")` pair to one of the arrays in `OtherCatalog.cs`:
+`ResourceNodes` (trees go on the Cultivator, everything else on the Hoe), `Furniture` or
+`BuildingStructures` (both on the Hammer). Rebuild and copy `Landscaper.dll` into
+`BepInEx/plugins/Landscaper`.

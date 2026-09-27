@@ -31,7 +31,7 @@ public sealed class Plugin : BaseUnityPlugin
         CultivatorDecorEnabled = Config.Bind("Tools", "CultivatorDecorEnabled", true, "Allow decorative pieces in the Cultivator menu.");
         HoeDecorEnabled = Config.Bind("Tools", "HoeDecorEnabled", true, "Allow decorative pieces in the Hoe menu.");
         HammerDecorEnabled = Config.Bind("Tools", "HammerDecorEnabled", true, "Allow decorative pieces in the Hammer menu.");
-        CustomEntries = Config.Bind("CustomEntries", "Entries", string.Empty, "One entry per line: Display Name|Prefab Name|Tool|Category|Rotation X,Y,Z. Tool is Cultivator, Hoe, or Hammer.");
+        CustomEntries = Config.Bind("CustomEntries", "Entries", string.Empty, "Entries separated by \\n:Display Name|Prefab Name|Tool|Category|Rotation X,Y,Z. Tool is Cultivator, Hoe, or Hammer. Find prefab names in game with the landscaper_find console command.");
 
         Logger.LogInfo("Landscaper: initialising decorative piece registration.");
 
@@ -42,6 +42,7 @@ public sealed class Plugin : BaseUnityPlugin
         }
 
         _pieceManager = new DecorativePieceManager(CustomEntries.Value);
+        Jotunn.Managers.CommandManager.Instance.AddConsoleCommand(new FindPrefabCommand());
         Logger.LogInfo("Landscaper waiting for Valheim runtime registration tables to become available.");
     }
 
