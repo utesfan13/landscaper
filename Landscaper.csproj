@@ -28,11 +28,24 @@
     <Reference Include="0Harmony">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\core\0Harmony.dll</HintPath>
     </Reference>
+    <Reference Include="Jotunn">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins\Jotunn\Jotunn.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

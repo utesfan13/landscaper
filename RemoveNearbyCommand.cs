@@ -1,0 +1,72 @@
+using Jotunn.Entities;
+
+namespace Landscaper;
+
+/// <summary>
+/// Console command that removes Landscaper pieces near the player without aiming at them, for
+/// pieces that are too large or awkward to target with the remove button. It only touches pieces
+/// placed through this mod.
+/// </summary>
+public sealed class RemoveNearbyCommand : ConsoleCommand
+{
+    private const float DefaultRadius = 10f;
+    private const float MaxRadius = 100f;
+
+    public override string Name => "landscaper_remove";
+
+    public override string Help => $"[radius] - Remove Landscaper pieces within this many meters of you (default {DefaultRadius:0}, max {MaxRadius:0})";
+
+    public override void Run(string[] args, Terminal context)
+    {
+        var player = Player.m_localPlayer;
+        if (player is null || ZNetScene.instance is null)
+        {
+            context.AddString("Load into a world first.");
+            return;
+        }
+
+        var radius = DefaultRadius;
+        if (args.Length > 0 && (!float.TryParse(args[0], out radius) || radius <= 0f))
+        {
+            context.AddString("Usage: landscaper_remove [radius]");
+            return;
+        }
+
+        radius = Math.Min(radius, MaxRadius);
+        var pieces = new List<Piece>();
+        Piece.GetAllPiecesInRadius(player.transform.position, radius, pieces);
+
+        var removed = 0;
+        foreach (var piece in pieces)
+        {
+            if (piece == null || !piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var view = piece.GetComponent<ZNetView>();
+            if (view == null || !view.IsValid())
+            {
+                continue;
+            }
+
+            // Same as the hammer: building pieces break normally, everything else is destroyed.
+            var wearNTear = piece.GetComponent<WearNTear>();
+            if (wearNTear != null)
+            {
+                wearNTear.Remove();
+            }
+            else
+            {
+                view.ClaimOwnership();
+                ZNetScene.instance.Destroy(piece.gameObject);
+            }
+
+            removed++;
+        }
+
+        context.AddString(removed == 0
+            ? $"No Landscaper pieces within {radius:0.#} m."
+            : $"Removed {removed} Landscaper piece(s) within {radius:0.#} m.");
+    }
+}
