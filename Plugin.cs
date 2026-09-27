@@ -13,9 +13,9 @@ namespace Landscaper;
 [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
 public sealed class Plugin : BaseUnityPlugin
 {
-    public const string ModGuid = "landscaper.zackc";
+    public const string ModGuid = "landscaper.valheim";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.8.6";
+    public const string ModVersion = "0.9.0";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -26,6 +26,7 @@ public sealed class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Log = Logger;
+        MigrateOldConfig();
 
         // Settings that must match between players are admin-only: Jotunn syncs them from the server
         // when joining, and only admins can change them in game.
@@ -130,6 +131,40 @@ public sealed class Plugin : BaseUnityPlugin
         if (Pieces is not null)
         {
             ScaleController.LateUpdate();
+        }
+    }
+
+    /// <summary>
+    /// BepInEx names the config file after the mod's GUID, so changing the GUID would start from a
+    /// fresh config. On the first launch with a new GUID, copy the settings from the previous
+    /// Landscaper config file (any other landscaper.*.cfg) and rename that file to *.migrated.
+    /// </summary>
+    private void MigrateOldConfig()
+    {
+        var newPath = Config.ConfigFilePath;
+        var folder = Path.GetDirectoryName(newPath);
+        if (File.Exists(newPath) || folder is null || !Directory.Exists(folder))
+        {
+            return;
+        }
+
+        var oldPath = Directory.GetFiles(folder, "landscaper.*.cfg")
+            .FirstOrDefault(path => !string.Equals(Path.GetFullPath(path), Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase));
+        if (oldPath is null)
+        {
+            return;
+        }
+
+        try
+        {
+            File.Copy(oldPath, newPath);
+            File.Move(oldPath, oldPath + ".migrated");
+            Config.Reload();
+            Log.LogInfo($"Moved settings from {Path.GetFileName(oldPath)} to {Path.GetFileName(newPath)}.");
+        }
+        catch (Exception exception)
+        {
+            Log.LogWarning($"Could not move settings from {Path.GetFileName(oldPath)}: {exception.Message}");
         }
     }
 

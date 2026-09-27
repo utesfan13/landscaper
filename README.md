@@ -8,7 +8,7 @@ Pieces cost a little wood or stone (see [Build Costs](#build-costs)) and need no
 
 ## Settings
 
-In `BepInEx/config/landscaper.zackc.cfg`. Settings marked **synced** come from the server in
+In `BepInEx/config/landscaper.valheim.cfg`. Settings marked **synced** come from the server in
 multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 | Setting | Default | Effect |
@@ -73,7 +73,7 @@ least 1). Chopping, mining or picking a placed piece can give back more than it 
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.8.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.9.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
@@ -222,7 +222,7 @@ won't appear. Results tagged `(item)` or `(creature)` are not good choices for p
 
 ### From the config file (no rebuild)
 
-Add entries in `BepInEx/config/landscaper.zackc.cfg` under `[CustomEntries]`:
+Add entries in `BepInEx/config/landscaper.valheim.cfg` under `[CustomEntries]`:
 
 ```text
 Display Name|ExactPrefabName|Tool|Category|RotationX,RotationY,RotationZ|Item:Amount,Item:Amount|ScaleX,ScaleY,ScaleZ
