@@ -5,9 +5,9 @@ using UnityEngine;
 namespace Landscaper;
 
 /// <summary>
-/// Adds "Scale" and "Tint" rows to the keyboard build hints (place, remove, rotate, ...) that show
-/// while a Landscaper piece is selected. The rows are copies of Valheim's two-key "Snap" row, so they
-/// match the other hints.
+/// Adds "Scale", "Tint" and "Raise/lower" rows to the keyboard build hints (place, remove, rotate, ...) that show
+/// while a Landscaper piece is selected. The rows are copies of Valheim's two-key "Snap" row and
+/// mouse-wheel "rotate" row, so they match the other hints.
 /// </summary>
 internal static class BuildKeyHints
 {
@@ -44,9 +44,17 @@ internal static class BuildKeyHints
             var after = keyboard.Find("rotate") ?? snap;
             var scale = CreateRow(keyboard, snap.gameObject, "LandscaperScale", after.GetSiblingIndex() + 1,
                 $"Scale (hold {ScaleController.ModifierNames} for X/Y/Z)", ScaleController.DownKeyName, ScaleController.UpKeyName);
-            CreateRow(keyboard, snap.gameObject, "LandscaperTint", scale.transform.GetSiblingIndex() + 1,
+            var tint = CreateRow(keyboard, snap.gameObject, "LandscaperTint", scale.transform.GetSiblingIndex() + 1,
                 $"Tint ({TintController.ModifierNames}: strength/brightness/presets)",
                 TintController.BackKeyName, TintController.ForwardKeyName);
+
+            // The rotate row shows the mouse wheel, which is what raising and lowering uses.
+            var rotate = keyboard.Find("rotate");
+            if (rotate is not null)
+            {
+                CreateRow(keyboard, rotate.gameObject, "LandscaperHeight", tint.transform.GetSiblingIndex() + 1,
+                    $"Raise/lower (hold {HeightController.ModifierName})", string.Empty, string.Empty);
+            }
         }
 
         private static GameObject CreateRow(Transform parent, GameObject template, string name, int siblingIndex,

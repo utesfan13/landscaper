@@ -1,6 +1,7 @@
 using System.Globalization;
 using BepInEx;
 using BepInEx.Logging;
+using HarmonyLib;
 using Jotunn.Entities;
 using Jotunn.Managers;
 using UnityEngine;
@@ -11,58 +12,141 @@ public sealed class DecorativePieceManager
 {
     private readonly ManualLogSource _log;
     private readonly BepInPlugin _plugin;
-    private readonly IReadOnlyCollection<BuildTool> _enabledTools;
-    private readonly bool _decorativeOnly;
-    private readonly List<DecorativePieceDefinition> _customDefinitions;
-    private readonly HashSet<string> _registeredCloneNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Func<string> _customEntries;
+    private readonly Func<BuildTool, bool> _toolEnabled;
+    private readonly Dictionary<string, RegisteredPiece> _registered = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _freePieceNames = new(StringComparer.Ordinal);
     private readonly List<(Piece Piece, GameObject Source)> _pendingIcons = new();
 
-    public DecorativePieceManager(
-        ManualLogSource log,
-        BepInPlugin plugin,
-        string customEntries,
-        IReadOnlyCollection<BuildTool> enabledTools,
-        bool decorativeOnly)
+    private sealed class RegisteredPiece
+    {
+        public RegisteredPiece(GameObject clone, BuildTool tool, string category)
+        {
+            Clone = clone;
+            Tool = tool;
+            Category = category;
+        }
+
+        public GameObject Clone { get; }
+        public BuildTool Tool { get; }
+        public string Category { get; }
+    }
+
+    /// <param name="customEntries">Reads the current custom entries; synced from the server.</param>
+    /// <param name="toolEnabled">Reads whether a tool's menu should list pieces; synced from the server.</param>
+    public DecorativePieceManager(ManualLogSource log, BepInPlugin plugin, Func<string> customEntries, Func<BuildTool, bool> toolEnabled)
     {
         _log = log;
         _plugin = plugin;
-        _enabledTools = enabledTools;
-        _decorativeOnly = decorativeOnly;
-        _customDefinitions = ParseCustomEntries(customEntries);
+        _customEntries = customEntries;
+        _toolEnabled = toolEnabled;
     }
+
+    public bool HasRegistered { get; private set; }
 
     /// <summary>Display names of registered pieces that cost nothing, for silent unlocking.</summary>
     public IReadOnlyCollection<string> FreePieceNames => _freePieceNames;
 
     /// <summary>
     /// Registers every catalog and custom entry. Call once, from ZNetScene.Awake, so the clones exist
-    /// before ZNetScene starts creating saved objects.
+    /// before ZNetScene starts creating saved objects. Every catalog piece is registered whatever
+    /// the tool toggles say: when hosting, Valheim deletes saved objects whose prefab is missing, so
+    /// turning a tool off must only hide its pieces from the menu.
     /// </summary>
     public void RegisterAll()
     {
-        var registered = 0;
-        foreach (var definition in PieceCatalog.Entries().Concat(_customDefinitions))
+        HasRegistered = true;
+        var registered = PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries())).Count(Register);
+        _log.LogInfo($"Registered {registered} decorative pieces.");
+        UpdateMenus();
+    }
+
+    /// <summary>
+    /// Applies changed settings, such as those synced from a server when joining: registers custom
+    /// entries that aren't registered yet and updates which pieces the tool menus list. Entries that
+    /// were removed or changed keep their registered piece until restart, so placed copies still load.
+    /// </summary>
+    public void Refresh()
+    {
+        if (!HasRegistered)
         {
-            if (!_enabledTools.Contains(definition.Tool))
+            return;
+        }
+
+        var added = ParseCustomEntries(_customEntries())
+            .Where(definition => !IsRegistered(definition))
+            .Count(Register);
+        if (added > 0)
+        {
+            _log.LogInfo($"Registered {added} custom pieces from updated settings.");
+        }
+
+        UpdateMenus();
+        RefreshPlayerPieces();
+    }
+
+    /// <summary>
+    /// Lists each registered piece in its tool's menu if the tool is enabled and the piece is still
+    /// in the catalog or the custom entries, and removes it otherwise. Jotunn re-adds every piece
+    /// whenever ObjectDB loads, so this runs again after that.
+    /// </summary>
+    public void UpdateMenus()
+    {
+        if (!HasRegistered)
+        {
+            return;
+        }
+
+        var wanted = new HashSet<string>(
+            PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries(), logErrors: false))
+                .Select(definition => FindSpawnablePrefab(definition.PrefabName) is { } source ? GetCloneName(source, definition) : null)
+                .OfType<string>(),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pair in _registered)
+        {
+            var piece = pair.Value;
+            var table = PieceManager.Instance.GetPieceTable(piece.Tool.ToString());
+            if (table is null || piece.Clone == null)
             {
                 continue;
             }
 
-            try
+            var listed = table.m_pieces.Contains(piece.Clone);
+            var visible = _toolEnabled(piece.Tool) && wanted.Contains(pair.Key);
+            if (visible && !listed)
             {
-                if (TryRegister(definition))
-                {
-                    registered++;
-                }
+                PieceManager.Instance.RegisterPieceInPieceTable(piece.Clone, piece.Tool.ToString(), piece.Category);
             }
-            catch (Exception exception)
+            else if (!visible && listed)
             {
-                _log.LogError($"Failed to register '{definition.DisplayName}' ({definition.PrefabName}): {exception}");
+                table.m_pieces.Remove(piece.Clone);
             }
         }
+    }
 
-        _log.LogInfo($"Registered {registered} decorative pieces.");
+    private static void RefreshPlayerPieces()
+    {
+        if (Player.m_localPlayer != null)
+        {
+            AccessTools.Method(typeof(Player), "UpdateAvailablePiecesList")?.Invoke(Player.m_localPlayer, null);
+        }
+    }
+
+    private bool IsRegistered(DecorativePieceDefinition definition) =>
+        FindSpawnablePrefab(definition.PrefabName) is { } source && _registered.ContainsKey(GetCloneName(source, definition));
+
+    private bool Register(DecorativePieceDefinition definition)
+    {
+        try
+        {
+            return TryRegister(definition);
+        }
+        catch (Exception exception)
+        {
+            _log.LogError($"Failed to register '{definition.DisplayName}' ({definition.PrefabName}): {exception}");
+            return false;
+        }
     }
 
     private bool TryRegister(DecorativePieceDefinition definition)
@@ -76,7 +160,7 @@ public sealed class DecorativePieceManager
 
         var tableName = definition.Tool.ToString();
         var cloneName = GetCloneName(source, definition);
-        if (!_registeredCloneNames.Add(cloneName))
+        if (_registered.ContainsKey(cloneName))
         {
             _log.LogWarning($"Skipping '{definition.DisplayName}': '{source.name}' is already on the {tableName}. Give it a scale to add it as a separate variant.");
             return false;
@@ -95,7 +179,10 @@ public sealed class DecorativePieceManager
         // Save each placed piece's own size with the world, so pieces resized while placing keep
         // their size. Copies placed before this was enabled have no saved size and keep the default.
         clone.GetComponent<ZNetView>().m_syncInitialScale = true;
-        StripComponents(clone);
+        // LodFadeInOut hides the LODGroup in Awake when spawned more than 20m from the camera and
+        // restores it 0.1-0.3s later. Placement ghosts spawn at the prefab origin, so a ghost that
+        // is recreated before the fade-in runs stays invisible.
+        DestroyAll<LodFadeInOut>(clone);
         EnsureTargetable(clone, definition.Tool);
         clone.AddComponent<LandscaperTint>();
 
@@ -121,14 +208,11 @@ public sealed class DecorativePieceManager
             return false;
         }
 
+        _registered[cloneName] = new RegisteredPiece(clone, definition.Tool, definition.Category);
+
         // Jotunn adds custom prefabs to ZNetScene when it wakes, which has already happened by the
-        // time this runs, so add this one directly. The tool menus are usually not loaded yet; if
-        // so, Jotunn adds the piece to them when ObjectDB wakes.
+        // time this runs, so add this one directly. UpdateMenus decides whether it is listed.
         PrefabManager.Instance.RegisterToZNetScene(clone);
-        if (PieceManager.Instance.GetPieceTable(tableName) is not null)
-        {
-            PieceManager.Instance.RegisterPieceInPieceTable(clone, tableName, definition.Category);
-        }
 
         if (vanillaIcon is null)
         {
@@ -179,27 +263,6 @@ public sealed class DecorativePieceManager
                 candidate is not null && string.Equals(candidate.name, prefabName, StringComparison.OrdinalIgnoreCase));
 
         return prefab is not null && prefab.GetComponent<ZNetView>() is not null ? prefab : null;
-    }
-
-    private void StripComponents(GameObject clone)
-    {
-        // LodFadeInOut hides the LODGroup in Awake when spawned more than 20m from the camera and
-        // restores it 0.1-0.3s later. Placement ghosts spawn at the prefab origin, so a ghost that
-        // is recreated before the fade-in runs stays invisible.
-        DestroyAll<LodFadeInOut>(clone);
-
-        if (_decorativeOnly)
-        {
-            // Without these, placed trees, rocks and plants can't be chopped, mined or picked.
-            // The remove button still removes them.
-            DestroyAll<TreeBase>(clone);
-            DestroyAll<TreeLog>(clone);
-            DestroyAll<Destructible>(clone);
-            DestroyAll<MineRock>(clone);
-            DestroyAll<MineRock5>(clone);
-            DestroyAll<Pickable>(clone);
-            DestroyAll<DropOnDestroyed>(clone);
-        }
     }
 
     /// <summary>
@@ -368,15 +431,23 @@ public sealed class DecorativePieceManager
     /// Parses entries of the form
     /// Display Name|Prefab|Tool|Category[|Rotation X,Y,Z[|Item:Amount,...[|Scale X,Y,Z or Scale]]].
     /// </summary>
-    private List<DecorativePieceDefinition> ParseCustomEntries(string customEntries)
+    private List<DecorativePieceDefinition> ParseCustomEntries(string customEntries, bool logErrors = true)
     {
+        void Warn(string message)
+        {
+            if (logErrors)
+            {
+                _log.LogWarning(message);
+            }
+        }
+
         var definitions = new List<DecorativePieceDefinition>();
         foreach (var line in customEntries.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
         {
             var fields = line.Split('|').Select(field => field.Trim()).ToArray();
             if (fields.Length < 4 || !Enum.TryParse(fields[2], true, out BuildTool tool))
             {
-                _log.LogWarning($"Ignoring invalid custom entry: {line}");
+                Warn($"Ignoring invalid custom entry: {line}");
                 continue;
             }
 
@@ -400,7 +471,7 @@ public sealed class DecorativePieceManager
                 }
                 else
                 {
-                    _log.LogWarning($"Ignoring invalid rotation in custom entry: {line}");
+                    Warn($"Ignoring invalid rotation in custom entry: {line}");
                 }
             }
 
@@ -415,7 +486,7 @@ public sealed class DecorativePieceManager
                     }
                     else
                     {
-                        _log.LogWarning($"Ignoring invalid requirement '{requirement}' in custom entry: {line}");
+                        Warn($"Ignoring invalid requirement '{requirement}' in custom entry: {line}");
                     }
                 }
             }
@@ -428,7 +499,7 @@ public sealed class DecorativePieceManager
                 }
                 else
                 {
-                    _log.LogWarning($"Ignoring invalid scale in custom entry (use one number or X,Y,Z, all above 0): {line}");
+                    Warn($"Ignoring invalid scale in custom entry (use one number or X,Y,Z, all above 0): {line}");
                 }
             }
 

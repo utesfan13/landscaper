@@ -36,7 +36,7 @@ internal static class ScaleController
             "Make the piece being placed bigger. Alone it scales all axes; hold an axis modifier to scale one axis.");
         _downKey = config.Bind("Scaling", "ScaleDownKey", KeyCode.LeftBracket,
             "Make the piece being placed smaller. Alone it scales all axes; hold an axis modifier to scale one axis.");
-        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale and tint of the piece being placed.");
+        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint and height of the piece being placed.");
         _xModifier = config.Bind("Scaling", "XAxisModifier", KeyCode.LeftAlt, "Hold with the scale keys to change only X (width). Either side of the keyboard works.");
         _yModifier = config.Bind("Scaling", "YAxisModifier", KeyCode.LeftShift, "Hold with the scale keys to change only Y (height). Either side of the keyboard works.");
         _zModifier = config.Bind("Scaling", "ZAxisModifier", KeyCode.LeftControl, "Hold with the scale keys to change only Z (depth). Either side of the keyboard works.");
@@ -60,11 +60,21 @@ internal static class ScaleController
     public static string ModifierNames =>
         $"{PlacementInput.KeyName(_xModifier.Value)}/{PlacementInput.KeyName(_yModifier.Value)}/{PlacementInput.KeyName(_zModifier.Value)}";
 
-    /// <summary>Handles the scale, tint and reset keys. Call every frame.</summary>
+    /// <summary>Whether the local player is placing a Landscaper piece right now.</summary>
+    public static bool PlacingLandscaperPiece
+    {
+        get
+        {
+            var player = Player.m_localPlayer;
+            return player is not null && player.InPlaceMode() && PlacementInput.IsLandscaperPiece(_ghost);
+        }
+    }
+
+    /// <summary>Handles the scale, tint, height and reset keys. Call every frame.</summary>
     public static void Update()
     {
         var player = Player.m_localPlayer;
-        var placingLandscaperPiece = player is not null && player.InPlaceMode() && PlacementInput.IsLandscaperPiece(_ghost);
+        var placingLandscaperPiece = PlacingLandscaperPiece;
         BuildKeyHints.SetVisible(placingLandscaperPiece);
         if (!placingLandscaperPiece || PlacementInput.IsTyping())
         {
@@ -75,11 +85,13 @@ internal static class ScaleController
         {
             _scale = Vector3.one;
             TintController.Reset();
-            player!.Message(MessageHud.MessageType.Center, "Scale and tint reset");
+            HeightController.Reset();
+            player!.Message(MessageHud.MessageType.Center, "Scale, tint and height reset");
             return;
         }
 
         TintController.HandleInput(player!);
+        HeightController.HandleInput(player!);
 
         var direction = Repeater.Poll(_downKey.Value, _upKey.Value, _repeatRate.Value);
         if (direction != 0)
@@ -142,6 +154,7 @@ internal static class ScaleController
                 _selectedPiece = _ghost.name;
                 _scale = Vector3.one;
                 TintController.Reset();
+                HeightController.Reset();
             }
 
             if (!PlacementInput.IsLandscaperPiece(_ghost))
@@ -155,6 +168,10 @@ internal static class ScaleController
             {
                 ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
             }
+
+            // Valheim recalculates the ghost's position every update and places the piece where the
+            // ghost is, so raising the ghost here raises the placed piece too.
+            ghost.transform.position += Vector3.up * HeightController.Offset;
 
             // Valheim clears the ghost's colour every frame and turns it red when placement is invalid;
             // only tint a valid ghost so that warning stays visible.

@@ -6,17 +6,18 @@ Pieces are free by default and need no workbench.
 
 ## Settings
 
-In `BepInEx/config/landscaper.zackc.cfg` (restart Valheim after changing any of them):
+In `BepInEx/config/landscaper.zackc.cfg`. Settings marked **synced** come from the server in
+multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 | Setting | Default | Effect |
 |---|---|---|
-| `General.Enabled` | `true` | Master toggle. |
-| `General.DecorativeOnly` | `false` | When `true`, placed trees, rocks and plants can't be chopped, mined or picked. Remove them with the remove button (middle click). |
-| `Tools.CultivatorDecorEnabled` / `HoeDecorEnabled` / `HammerDecorEnabled` | `true` | Add pieces to that tool's menu. |
-| `CustomEntries.Entries` | empty | Extra pieces; see below. |
+| `General.Enabled` | `true` | Master toggle. Requires a restart. |
+| `General.DecorativeOnly` | `false` | **Synced.** When `true`, placed trees, rocks and plants can't be chopped, mined or picked. Remove them with the remove button (middle click). |
+| `Tools.CultivatorDecorEnabled` / `HoeDecorEnabled` / `HammerDecorEnabled` | `true` | **Synced.** List pieces in that tool's menu. Turning one off only hides its pieces; ones already placed stay in the world. |
+| `CustomEntries.Entries` | empty | **Synced.** Extra pieces; see below. |
 | `Scaling.ScaleUpKey` / `ScaleDownKey` | `]` / `[` | Resize the piece being placed. |
 | `Scaling.XAxisModifier` / `YAxisModifier` / `ZAxisModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold with the scale keys to change one axis. Either side of the keyboard works. |
-| `Scaling.ScaleResetKey` | `End` | Reset to normal size and colour. |
+| `Scaling.ScaleResetKey` | `End` | Reset the size, colour and height of the piece being placed. |
 | `Scaling.ScaleStep` | `0.1` | How much each key press changes the scale, as a fraction of the current size (0.1 = 10%). |
 | `Scaling.ScaleRepeatRate` | `15` | Steps per second while a scale key is held down. |
 | `Scaling.MinScale` / `MaxScale` | `0.01` / `20` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 20). |
@@ -26,6 +27,25 @@ In `BepInEx/config/landscaper.zackc.cfg` (restart Valheim after changing any of 
 | `Tint.StrengthBrightnessStep` | `0.1` | How much each key press changes strength or brightness (0.1 = 10%). |
 | `Tint.TintRepeatRate` | `15` | Steps per second while a tint key is held down. |
 | `Tint.Presets` | 10 presets | `Name:hue,strength,brightness` entries separated by semicolons; see below. |
+| `Height.HeightModifier` | `LeftAlt` | Hold and scroll to raise or lower the piece being placed. |
+| `Height.HeightStep` | `0.1` | Meters per scroll step. |
+
+## Multiplayer
+
+Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
+version, e.g. any 0.3.x. Jotunn checks this when joining and refuses the connection with a message if
+a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
+
+Scale and tint are saved on each placed piece, so every player sees them.
+
+When joining a server, the synced settings (`DecorativeOnly`, the three tool toggles and custom
+entries) are taken from the server, and only admins can change them in game. Keybinds, tint presets
+and scale limits stay personal.
+
+When you host a world, or play alone, Valheim permanently deletes saved objects whose prefab it can't
+find. Removing a custom entry hides it from the menu but keeps it loading until you restart; after a
+restart, copies of it already placed in the world are deleted when the world loads. Keep an entry
+until you have removed its placed copies, e.g. with `landscaper_remove`.
 
 ## Removing Pieces
 
@@ -48,7 +68,7 @@ While the placement preview of any Landscaper piece is showing:
 | Alt + `]` / `[` | Wider / narrower (X) |
 | Shift + `]` / `[` | Taller / shorter (Y) |
 | Ctrl + `]` / `[` | Deeper / shallower (Z) |
-| End | Reset to normal size |
+| End | Reset size, tint and height |
 
 Each step changes the size by 10% of its current value, so steps are fine near normal size and
 quick at large sizes. Hold a scale key to keep resizing; after a short pause it repeats until you let go. Each axis goes
@@ -56,6 +76,16 @@ from 0.01x to 20x by default; narrow it with `MinScale` and `MaxScale`. The curr
 more of the same piece, and resets to normal size whenever you select a different piece (including
 switching back to one you scaled earlier). Each placed piece saves its size with the world.
 X and Z follow the piece's own orientation, so they swap roles as you rotate it.
+
+## Raising and Lowering Pieces While Placing
+
+Hold Alt and scroll to raise or lower the piece being placed, 0.1 m per scroll step. This is useful
+for lining pieces up, such as stacking one staircase on another without a gap. The piece doesn't
+rotate while Alt is held. The offset is shown mid-screen, stays set while you place more of the same
+piece, and resets when you select a different piece or press End.
+
+Building pieces that need support (for example the Ashlands ruin walls) can still break if raised
+off the ground with nothing under them.
 
 ## Tinting Pieces While Placing
 
@@ -67,7 +97,7 @@ While the placement preview of any Landscaper piece is showing:
 | Shift + `,` / `.` | Weaker / stronger tint |
 | Ctrl + `,` / `.` | Darker / lighter |
 | Alt + `,` / `.` | Previous / next preset |
-| End | Reset scale and tint |
+| End | Reset size, tint and height |
 
 The preview shows the tint as you change it, and the current values are shown mid-screen. Like
 scaling, the tint stays set while you place more of the same piece, resets when you select a different
