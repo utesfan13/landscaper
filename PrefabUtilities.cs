@@ -29,17 +29,7 @@ public static class PrefabUtilities
     {
         ["RaspberryBush"] = new PrefabRecord { Name = "RaspberryBush", PrefabName = "RaspberryBush" },
         ["BlueberryBush"] = new PrefabRecord { Name = "BlueberryBush", PrefabName = "BlueberryBush" },
-        ["Pickable_Dandelion"] = new PrefabRecord { Name = "Pickable_Dandelion", PrefabName = "Pickable_Dandelion" },
-        ["Thistle"] = new PrefabRecord { Name = "Thistle", PrefabName = "Thistle" },
-        ["Mushroom"] = new PrefabRecord { Name = "Mushroom", PrefabName = "Mushroom" },
-        ["DecorativeShrub"] = new PrefabRecord { Name = "DecorativeShrub", PrefabName = "DecorativeShrub" },
-        ["Rock_1"] = new PrefabRecord { Name = "Rock_1", PrefabName = "Rock_1" },
-        ["Rock_2"] = new PrefabRecord { Name = "Rock_2", PrefabName = "Rock_2" },
-        ["Boulder"] = new PrefabRecord { Name = "Boulder", PrefabName = "Boulder" },
-        ["TreeStump"] = new PrefabRecord { Name = "TreeStump", PrefabName = "TreeStump" },
-        ["FallenLog"] = new PrefabRecord { Name = "FallenLog", PrefabName = "FallenLog" },
-        ["Statue01"] = new PrefabRecord { Name = "Statue01", PrefabName = "Statue01" },
-        ["StoneArch"] = new PrefabRecord { Name = "StoneArch", PrefabName = "StoneArch" }
+        ["Pickable_Dandelion"] = new PrefabRecord { Name = "Pickable_Dandelion", PrefabName = "Pickable_Dandelion" }
     };
 
     public static bool TryResolvePrefab(string prefabName, out PrefabRecord prefab)

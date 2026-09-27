@@ -206,26 +206,14 @@ public sealed class DecorativePieceManager
             },
             new()
             {
-                PrefabName = "Rock_1",
-                DisplayName = "Small Rock",
-                Description = "A small natural rock used for landscaping accents.",
+                PrefabName = "Rock_7_meadows",
+                DisplayName = "Meadows Rock",
+                Description = "A natural rock used for landscaping accents.",
                 Tool = BuildTool.Hoe,
                 Category = "Rocks",
                 Enabled = true,
                 AllowGround = true,
                 AllowWater = false,
-                AllowInterior = true,
-                PlacementScale = 1f
-            },
-            new()
-            {
-                PrefabName = "Rock_2",
-                DisplayName = "Rock 2",
-                Description = "A natural rock for landscaping.",
-                Tool = BuildTool.Hoe,
-                Category = "Rocks",
-                Enabled = true,
-                AllowGround = true,
                 AllowInterior = true,
                 PlacementScale = 1f
             },
@@ -255,44 +243,8 @@ public sealed class DecorativePieceManager
             },
             new()
             {
-                PrefabName = "Rock_5",
-                DisplayName = "Rock 5",
-                Description = "A natural rock for landscaping.",
-                Tool = BuildTool.Hoe,
-                Category = "Rocks",
-                Enabled = true,
-                AllowGround = true,
-                AllowInterior = true,
-                PlacementScale = 1f
-            },
-            new()
-            {
-                PrefabName = "Rock_6",
-                DisplayName = "Rock 6",
-                Description = "A natural rock for landscaping.",
-                Tool = BuildTool.Hoe,
-                Category = "Rocks",
-                Enabled = true,
-                AllowGround = true,
-                AllowInterior = true,
-                PlacementScale = 1f
-            },
-            new()
-            {
                 PrefabName = "Rock_7",
                 DisplayName = "Rock 7",
-                Description = "A natural rock for landscaping.",
-                Tool = BuildTool.Hoe,
-                Category = "Rocks",
-                Enabled = true,
-                AllowGround = true,
-                AllowInterior = true,
-                PlacementScale = 1f
-            },
-            new()
-            {
-                PrefabName = "Rock_8",
-                DisplayName = "Rock 8",
                 Description = "A natural rock for landscaping.",
                 Tool = BuildTool.Hoe,
                 Category = "Rocks",
@@ -363,7 +315,7 @@ public sealed class DecorativePieceManager
             },
             new()
             {
-                PrefabName = "Boulder",
+                PrefabName = "Rock_destructible",
                 DisplayName = "Boulder",
                 Description = "A large stone centerpiece for rocky landscaping.",
                 Tool = BuildTool.Hoe,
@@ -376,7 +328,7 @@ public sealed class DecorativePieceManager
             },
             new()
             {
-                PrefabName = "TreeStump",
+                PrefabName = "stubbe",
                 DisplayName = "Tree Stump",
                 Description = "A stump that feels right in a woodland or garden border.",
                 Tool = BuildTool.Hoe,
@@ -389,24 +341,11 @@ public sealed class DecorativePieceManager
             },
             new()
             {
-                PrefabName = "Statue01",
-                DisplayName = "Stone Statue",
+                PrefabName = "StatueDeer",
+                DisplayName = "Deer Statue",
                 Description = "A decorative statue that fits shrines and courtyards.",
                 Tool = BuildTool.Hammer,
                 Category = "Statues",
-                Enabled = true,
-                AllowGround = true,
-                AllowWater = false,
-                AllowInterior = true,
-                PlacementScale = 1f
-            },
-            new()
-            {
-                PrefabName = "StoneArch",
-                DisplayName = "Stone Arch",
-                Description = "A decorative arch piece for entrances and ornamental gardens.",
-                Tool = BuildTool.Hammer,
-                Category = "Garden Decor",
                 Enabled = true,
                 AllowGround = true,
                 AllowWater = false,

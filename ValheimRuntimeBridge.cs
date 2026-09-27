@@ -222,7 +222,6 @@ public static class ValheimRuntimeBridge
         }
 
         buildPrefab.transform.localRotation = Quaternion.Euler(placementRotation);
-        PreparePlacementPreview(buildPrefab);
         DisableWorldOnlyBehaviours(buildPrefab);
 
         if (!TryEnsurePieceComponent(buildPrefab, out var pieceComponent) || pieceComponent is not global::Piece runtimePiece)
@@ -275,21 +274,6 @@ public static class ValheimRuntimeBridge
         }
 
         return registered;
-    }
-
-    private static void PreparePlacementPreview(GameObject prefab)
-    {
-        prefab.SetActive(true);
-
-        foreach (var child in prefab.GetComponentsInChildren<Transform>(includeInactive: true))
-        {
-            child.gameObject.SetActive(true);
-        }
-
-        foreach (var renderer in prefab.GetComponentsInChildren<Renderer>(includeInactive: true))
-        {
-            renderer.enabled = true;
-        }
     }
 
     private static void DisableWorldOnlyBehaviours(GameObject prefab)
