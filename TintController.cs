@@ -99,6 +99,28 @@ internal static class TintController
     public static string ModifierNames =>
         $"{PlacementInput.KeyName(_strengthModifier.Value)}/{PlacementInput.KeyName(_brightnessModifier.Value)}/{PlacementInput.KeyName(_presetModifier.Value)}";
 
+    /// <summary>
+    /// Sets the controls to reproduce a saved tint, for copying a tinted piece. Undoes <see cref="Current"/>:
+    /// brightness scales every channel, so it is the largest one; after dividing it out, the colour is
+    /// white blended with a full-strength hue, so strength is how far the smallest channel is below 1.
+    /// </summary>
+    public static void SetFromColor(Color tint)
+    {
+        var brightness = Mathf.Max(tint.r, Mathf.Max(tint.g, tint.b));
+        if (brightness <= 0f)
+        {
+            Reset();
+            return;
+        }
+
+        var normalized = new Color(tint.r / brightness, tint.g / brightness, tint.b / brightness);
+        Color.RGBToHSV(normalized, out var hue, out _, out _);
+        _hue = Round(hue * 360f) % 360f;
+        _strength = Mathf.Clamp01(Round(1f - Mathf.Min(normalized.r, Mathf.Min(normalized.g, normalized.b))));
+        _brightness = Mathf.Clamp(Round(brightness), MinBrightness, 1f);
+        _presetIndex = -1;
+    }
+
     public static void Reset()
     {
         _hue = 0f;

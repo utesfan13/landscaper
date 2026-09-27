@@ -33,7 +33,7 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.3.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.4.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
@@ -76,6 +76,21 @@ from 0.01x to 20x by default; narrow it with `MinScale` and `MaxScale`. The curr
 more of the same piece, and resets to normal size whenever you select a different piece (including
 switching back to one you scaled earlier). Each placed piece saves its size with the world.
 X and Z follow the piece's own orientation, so they swap roles as you rotate it.
+
+## Copying World Objects
+
+With the Hammer, Cultivator or Hoe out, aim at a rock, tree, bush, statue or other object and use
+Valheim's copy shortcut (Shift + middle click by default). Landscaper selects the matching piece, facing
+the same way and at the same size as the object, ready to place. Copying a tinted Landscaper piece
+copies its tint too.
+
+- If the object is in the catalog for another tool, you're told which tool to switch to.
+- If it isn't in the catalog at all, it's added to the current tool's **Copied** tab and saved as a
+  custom entry, so it's still there after a restart. Only the host (or a single player) can do this: a
+  host deletes saved objects it doesn't have a piece for, so other players can only copy objects that
+  are already in the catalog. As the host, new entries are sent to connected players straight away.
+- Creatures, items, ships, carts and gravestones can't be copied. Some small wild plants such as
+  mushrooms can't be aimed at to copy; once placed through Landscaper they can.
 
 ## Raising and Lowering Pieces While Placing
 

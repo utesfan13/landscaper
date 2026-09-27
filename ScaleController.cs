@@ -29,6 +29,12 @@ internal static class ScaleController
     private static Vector3 _scale = Vector3.one;
     private static GameObject? _ghost;
     private static string? _selectedPiece;
+    private static bool _ghostValid;
+    private static Vector3? _copiedScale;
+    private static Color? _copiedTint;
+    private static GameObject? _ghostRenderersOwner;
+    private static Renderer[] _ghostRenderers = Array.Empty<Renderer>();
+    private static readonly MaterialPropertyBlock GhostBlock = new();
 
     public static void Bind(ConfigFile config)
     {
@@ -48,6 +54,32 @@ internal static class ScaleController
             new ConfigDescription("Smallest scale allowed on any axis.", new AcceptableValueRange<float>(0.01f, 1f)));
         _maxScale = config.Bind("Scaling", "MaxScale", 20f,
             new ConfigDescription("Largest scale allowed on any axis. Capped at 20: much larger pieces can reach beyond the remove button's range.", new AcceptableValueRange<float>(1f, 20f)));
+    }
+
+    /// <summary>
+    /// Uses a copied object's size and tint for the piece being placed. Copying usually selects a
+    /// different piece, and selecting a piece resets these, so they are also kept until the ghost's
+    /// next update and used in place of that reset.
+    /// </summary>
+    public static void ApplyCopied(Vector3 scale, Color? tint)
+    {
+        _scale = new Vector3(ClampScale(scale.x), ClampScale(scale.y), ClampScale(scale.z));
+        TintController.Reset();
+        if (tint is { } color)
+        {
+            TintController.SetFromColor(color);
+        }
+
+        HeightController.Reset();
+        _copiedScale = _scale;
+        _copiedTint = tint;
+    }
+
+    private static float ClampScale(float value)
+    {
+        var clamped = Mathf.Clamp(value, _minScale.Value, _maxScale.Value);
+        // Snap float drift back to exactly normal size.
+        return Mathf.Abs(clamped - 1f) < 0.001f ? 1f : clamped;
     }
 
     /// <summary>Scale-up key as shown in the build hints.</summary>
@@ -110,12 +142,7 @@ internal static class ScaleController
     {
         var factor = direction > 0 ? 1f + _step.Value : 1f / (1f + _step.Value);
 
-        float Clamp(float value)
-        {
-            var scaled = Mathf.Clamp(value * factor, _minScale.Value, _maxScale.Value);
-            // Snap float drift back to exactly normal size.
-            return Mathf.Abs(scaled - 1f) < 0.001f ? 1f : scaled;
-        }
+        float Clamp(float value) => ClampScale(value * factor);
 
         if (PlacementInput.IsHeld(_xModifier.Value))
         {
@@ -149,13 +176,22 @@ internal static class ScaleController
 
             // Each newly selected piece starts at normal size and colour, including when switching
             // back to a piece that was changed earlier. The ghost is named after the selected prefab.
+            // A copied object's size and tint replace the reset; see ApplyCopied.
             if (_ghost != null && _ghost.name != _selectedPiece)
             {
                 _selectedPiece = _ghost.name;
-                _scale = Vector3.one;
+                _scale = _copiedScale ?? Vector3.one;
                 TintController.Reset();
+                if (_copiedTint is { } copiedTint)
+                {
+                    TintController.SetFromColor(copiedTint);
+                }
+
                 HeightController.Reset();
             }
+
+            _copiedScale = null;
+            _copiedTint = null;
 
             if (!PlacementInput.IsLandscaperPiece(_ghost))
             {
@@ -175,11 +211,47 @@ internal static class ScaleController
 
             // Valheim clears the ghost's colour every frame and turns it red when placement is invalid;
             // only tint a valid ghost so that warning stays visible.
+            _ghostValid = ___m_placementStatus == Player.PlacementStatus.Valid;
             var tint = TintController.Current;
-            if (tint is not null && ___m_placementStatus == Player.PlacementStatus.Valid && MaterialMan.instance is not null)
+            if (tint is not null && _ghostValid && MaterialMan.instance is not null)
             {
                 MaterialMan.instance.SetValue(ghost, ColorId, tint.Value);
             }
+        }
+    }
+
+    /// <summary>
+    /// Tints the placement ghost again just before it renders. Setting it through MaterialMan in the
+    /// ghost update is enough on its own in a plain game, but other mods can overwrite the ghost's
+    /// material values later in the same frame. LateUpdate runs after every Update, so writing the
+    /// colour straight into the renderers' property blocks here wins. Their other values are kept.
+    /// Call every frame from LateUpdate.
+    /// </summary>
+    public static void LateUpdate()
+    {
+        var tint = TintController.Current;
+        if (tint is null || !_ghostValid || !PlacingLandscaperPiece)
+        {
+            return;
+        }
+
+        var ghost = _ghost!;
+        if (!ReferenceEquals(ghost, _ghostRenderersOwner))
+        {
+            _ghostRenderersOwner = ghost;
+            _ghostRenderers = ghost.GetComponentsInChildren<Renderer>(includeInactive: true);
+        }
+
+        foreach (var renderer in _ghostRenderers)
+        {
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            renderer.GetPropertyBlock(GhostBlock);
+            GhostBlock.SetColor(ColorId, tint.Value);
+            renderer.SetPropertyBlock(GhostBlock);
         }
     }
 

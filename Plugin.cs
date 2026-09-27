@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.zackc";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.3.0";
+    public const string ModVersion = "0.4.0";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -76,6 +76,7 @@ public sealed class Plugin : BaseUnityPlugin
         ScaleController.Bind(Config);
         TintController.Bind(Config);
         HeightController.Bind(Config);
+        CopyController.Bind(customEntries);
         PrefabManager.OnPrefabsRegistered += OnPrefabsRegistered;
         PieceManager.OnPiecesRegistered += () => Pieces?.UpdateMenus();
         new Harmony(ModGuid).PatchAll();
@@ -107,6 +108,14 @@ public sealed class Plugin : BaseUnityPlugin
         }
 
         ScaleController.Update();
+    }
+
+    private void LateUpdate()
+    {
+        if (Pieces is not null)
+        {
+            ScaleController.LateUpdate();
+        }
     }
 
     /// <summary>

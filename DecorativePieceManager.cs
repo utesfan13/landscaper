@@ -20,16 +20,24 @@ public sealed class DecorativePieceManager
 
     private sealed class RegisteredPiece
     {
-        public RegisteredPiece(GameObject clone, BuildTool tool, string category)
+        public RegisteredPiece(GameObject clone, BuildTool tool, string category, string sourcePrefab, bool isVariant)
         {
             Clone = clone;
             Tool = tool;
             Category = category;
+            SourcePrefab = sourcePrefab;
+            IsVariant = isVariant;
         }
 
         public GameObject Clone { get; }
         public BuildTool Tool { get; }
         public string Category { get; }
+
+        /// <summary>The vanilla prefab this piece was cloned from.</summary>
+        public string SourcePrefab { get; }
+
+        /// <summary>Whether this is a scaled variant rather than the plain piece for its prefab.</summary>
+        public bool IsVariant { get; }
     }
 
     /// <param name="customEntries">Reads the current custom entries; synced from the server.</param>
@@ -133,6 +141,48 @@ public sealed class DecorativePieceManager
         }
     }
 
+    /// <summary>
+    /// The piece for a vanilla prefab on a tool, preferring the plain piece over scaled variants, or
+    /// null if the prefab isn't registered for that tool.
+    /// </summary>
+    public Piece? FindPiece(string sourcePrefab, BuildTool tool) =>
+        _registered.Values
+            .Where(piece => piece.Tool == tool && piece.Clone != null &&
+                string.Equals(piece.SourcePrefab, sourcePrefab, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(piece => piece.IsVariant)
+            .Select(piece => piece.Clone.GetComponent<Piece>())
+            .FirstOrDefault();
+
+    /// <summary>A tool that has a piece for this vanilla prefab, if any.</summary>
+    public BuildTool? FindToolFor(string sourcePrefab) =>
+        _registered.Values
+            .Where(piece => string.Equals(piece.SourcePrefab, sourcePrefab, StringComparison.OrdinalIgnoreCase))
+            .Select(piece => (BuildTool?)piece.Tool)
+            .FirstOrDefault();
+
+    /// <summary>The vanilla prefab a Landscaper clone was made from, or null for other prefabs.</summary>
+    public string? SourcePrefabOf(string cloneName) =>
+        _registered.TryGetValue(cloneName, out var piece) ? piece.SourcePrefab : null;
+
+    /// <summary>Whether any registered piece already uses this display name.</summary>
+    public bool IsNameUsed(string displayName) =>
+        _registered.Values.Any(piece => piece.Clone != null && piece.Clone.GetComponent<Piece>()?.m_name == displayName);
+
+    /// <summary>
+    /// Registers a piece for a copied world object and lists it in its tool's menu. The caller also
+    /// saves it as a custom entry so it is registered again after a restart.
+    /// </summary>
+    public Piece? RegisterCopied(DecorativePieceDefinition definition)
+    {
+        if (!Register(definition))
+        {
+            return null;
+        }
+
+        UpdateMenus();
+        return FindPiece(FindSpawnablePrefab(definition.PrefabName)?.name ?? definition.PrefabName, definition.Tool);
+    }
+
     private bool IsRegistered(DecorativePieceDefinition definition) =>
         FindSpawnablePrefab(definition.PrefabName) is { } source && _registered.ContainsKey(GetCloneName(source, definition));
 
@@ -208,7 +258,7 @@ public sealed class DecorativePieceManager
             return false;
         }
 
-        _registered[cloneName] = new RegisteredPiece(clone, definition.Tool, definition.Category);
+        _registered[cloneName] = new RegisteredPiece(clone, definition.Tool, definition.Category, source.name, definition.Scale != Vector3.one);
 
         // Jotunn adds custom prefabs to ZNetScene when it wakes, which has already happened by the
         // time this runs, so add this one directly. UpdateMenus decides whether it is listed.

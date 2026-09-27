@@ -52,10 +52,9 @@ internal static class RemovalController
         // Unity's == treats destroyed objects as null, so a removed piece isn't touched again.
         if (_highlighted != null && MaterialMan.instance is not null)
         {
+            // Resetting the colour also puts back the piece's tint, see LandscaperTint.
             MaterialMan.instance.ResetValue(_highlighted, MainColor);
             MaterialMan.instance.ResetValue(_highlighted, EmissionColor);
-            // The highlight replaced the piece's tint; put it back.
-            _highlighted.GetComponent<LandscaperTint>()?.Apply();
         }
 
         _highlighted = target;
