@@ -96,6 +96,7 @@ public sealed class DecorativePieceManager
         // their size. Copies placed before this was enabled have no saved size and keep the default.
         clone.GetComponent<ZNetView>().m_syncInitialScale = true;
         StripComponents(clone);
+        EnsureTargetable(clone, definition.Tool);
 
         var piece = clone.GetComponent<Piece>() ?? clone.AddComponent<Piece>();
         var vanillaIcon = piece.m_icon;
@@ -198,6 +199,95 @@ public sealed class DecorativePieceManager
             DestroyAll<Pickable>(clone);
             DestroyAll<DropOnDestroyed>(clone);
         }
+    }
+
+    /// <summary>
+    /// Adds an extra box around the model on "piece_nonsolid" when a prefab's own colliders fall
+    /// short. The remove and interact raycasts hit that layer but nothing collides with it, so the
+    /// box never blocks movement, and the original colliders are left as they are. Two cases need it:
+    /// <list type="bullet">
+    /// <item>Removing needs a collider the remove raycast can hit. Some prefabs have none (the Jotun
+    /// stair rug, cave webs) or only have them on layers it skips (pickable mushrooms use "item").</item>
+    /// <item>Valheim positions Hammer placement ghosts using their solid colliders, ignoring triggers
+    /// and non-convex mesh colliders. With none left the ghost is pushed far from the crosshair and
+    /// can't be placed; the Jotun statue pieces and training dummies only have non-convex meshes.
+    /// Cultivator and Hoe pieces are positioned differently, and a box around a large cliff would
+    /// block placing plants on the terrain under it, so this only applies to the Hammer.</item>
+    /// </list>
+    /// The box is solid rather than a trigger so the ghost positioning can use it.
+    /// </summary>
+    private static void EnsureTargetable(GameObject clone, BuildTool tool)
+    {
+        var removeMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", "vehicle");
+        var root = clone.transform;
+
+        // The clone sits under Jotunn's inactive prefab container, so check activity up to the clone
+        // itself rather than using activeInHierarchy.
+        bool IsActive(Transform transform)
+        {
+            for (var current = transform; current is not null && current != root.parent; current = current.parent)
+            {
+                if (!current.gameObject.activeSelf)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        var colliders = clone.GetComponentsInChildren<Collider>(includeInactive: true)
+            .Where(collider => collider.enabled && IsActive(collider.transform))
+            .ToList();
+        var removable = colliders.Any(collider => (removeMask & (1 << collider.gameObject.layer)) != 0);
+        var placeable = tool != BuildTool.Hammer || colliders.Any(collider =>
+            !collider.isTrigger && (collider is not MeshCollider mesh || mesh.convex));
+        if (removable && placeable)
+        {
+            return;
+        }
+
+        var meshes = clone.GetComponentsInChildren<MeshFilter>(includeInactive: true)
+            .Where(filter => filter.sharedMesh is not null && IsActive(filter.transform))
+            .Select(filter => (filter.transform, filter.sharedMesh.bounds))
+            .Concat(clone.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
+                .Where(renderer => renderer.sharedMesh is not null && IsActive(renderer.transform))
+                .Select(renderer => (renderer.transform, renderer.localBounds)))
+            .ToList();
+        if (meshes.Count == 0)
+        {
+            return;
+        }
+
+        // Combine every mesh's bounds in the clone's local space.
+        var toRoot = root.worldToLocalMatrix;
+        Bounds? combined = null;
+        foreach (var (transform, bounds) in meshes)
+        {
+            var toRootFromMesh = toRoot * transform.localToWorldMatrix;
+            for (var corner = 0; corner < 8; corner++)
+            {
+                var local = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                    (corner & 1) == 0 ? -1 : 1, (corner & 2) == 0 ? -1 : 1, (corner & 4) == 0 ? -1 : 1));
+                var point = toRootFromMesh.MultiplyPoint3x4(local);
+                if (combined is { } existing)
+                {
+                    existing.Encapsulate(point);
+                    combined = existing;
+                }
+                else
+                {
+                    combined = new Bounds(point, Vector3.zero);
+                }
+            }
+        }
+
+        var target = new GameObject("LandscaperRemoveTarget") { layer = LayerMask.NameToLayer("piece_nonsolid") };
+        target.transform.SetParent(root, worldPositionStays: false);
+        var box = target.AddComponent<BoxCollider>();
+        box.center = combined!.Value.center;
+        // Keep flat pieces such as rugs hittable.
+        box.size = Vector3.Max(combined.Value.size, new Vector3(0.1f, 0.1f, 0.1f));
     }
 
     private static void DestroyAll<T>(GameObject root) where T : Component

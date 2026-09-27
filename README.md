@@ -26,6 +26,7 @@ In `BepInEx/config/landscaper.zackc.cfg` (restart Valheim after changing any of 
 Aim at a placed Landscaper piece and press the remove button (middle click by default), the same as
 removing a building piece with the Hammer. This works with the Hammer, Cultivator and Hoe. The
 Cultivator and Hoe only remove Landscaper pieces; crops, buildings and anything else are left alone.
+The piece that will be removed is highlighted in light blue while you aim at it.
 
 ## Resizing Pieces While Placing
 
