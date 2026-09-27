@@ -68,6 +68,7 @@ public sealed class DecorativePieceManager
     public void RegisterAll()
     {
         HasRegistered = true;
+        ClutterPrefabs.Build(_log);
         var registered = PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries())).Count(Register);
         _log.LogInfo($"Registered {registered} decorative pieces.");
         UpdateMenus();
@@ -294,7 +295,17 @@ public sealed class DecorativePieceManager
         piece.m_name = definition.DisplayName;
         piece.m_description = definition.Description;
         piece.m_enabled = true;
-        piece.m_groundPiece = definition.Tool != BuildTool.Hammer;
+        // Water pieces are placed where the crosshair meets the water surface instead of the ground.
+        // Valheim lifts water pieces 3 m when it positions them by their colliders (for docks, which
+        // hang down); clipEverything places them exactly at the crosshair instead.
+        if (definition.OnWater)
+        {
+            piece.m_waterPiece = true;
+            piece.m_noInWater = false;
+            piece.m_clipEverything = true;
+        }
+
+        piece.m_groundPiece = definition.Tool != BuildTool.Hammer && !definition.OnWater;
         piece.m_groundOnly = false;
         piece.m_canBeRemoved = true;
         piece.m_craftingStation = null;

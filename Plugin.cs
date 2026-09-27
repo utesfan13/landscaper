@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.zackc";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.7.0";
+    public const string ModVersion = "0.8.1";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -87,7 +87,7 @@ public sealed class Plugin : BaseUnityPlugin
 
         ScaleController.Bind(Config);
         TintController.Bind(Config);
-        HeightController.Bind(Config);
+        OffsetController.Bind(Config);
         CopyController.Bind(customEntries);
         IndestructibleController.Bind(Config, () => allowIndestructible.Value);
         PrefabManager.OnPrefabsRegistered += OnPrefabsRegistered;
@@ -120,6 +120,7 @@ public sealed class Plugin : BaseUnityPlugin
             _iconsDone = !Pieces.RenderNextIcon();
         }
 
+        PlacementInput.Update();
         ScaleController.Update();
     }
 

@@ -22,7 +22,8 @@ public static class PieceCatalog
                     Description = entry.Description,
                     Tool = group.Tool,
                     Category = group.Category,
-                    Scale = entry.Scale
+                    Scale = entry.Scale,
+                    OnWater = entry.OnWater
                 };
             }
         }
@@ -30,8 +31,9 @@ public static class PieceCatalog
 
     private sealed class Entry
     {
-        public Entry(string name, string prefab, string description, Vector3 scale)
+        public Entry(string name, string prefab, string description, Vector3 scale, bool onWater)
         {
+            OnWater = onWater;
             Name = name;
             Prefab = prefab;
             Description = description;
@@ -42,6 +44,7 @@ public static class PieceCatalog
         public string Prefab { get; }
         public string Description { get; }
         public Vector3 Scale { get; }
+        public bool OnWater { get; }
     }
 
     private sealed class Group
@@ -58,8 +61,8 @@ public static class PieceCatalog
         public Entry[] Entries { get; }
     }
 
-    private static Entry E(string name, string prefab, string description = "", Vector3? scale = null) =>
-        new(name, prefab, description, scale ?? Vector3.one);
+    private static Entry E(string name, string prefab, string description = "", Vector3? scale = null, bool onWater = false) =>
+        new(name, prefab, description, scale ?? Vector3.one, onWater);
 
     private static readonly Group[] Groups =
     {
@@ -105,6 +108,9 @@ public static class PieceCatalog
             E("Ashlands Fern", "FernAshlands"), E("Ashlands Fiddlehead Fern", "FernFiddleHeadAshlands"),
             E("Ashlands Bush 1", "AshlandsBush1"), E("Ashlands Bush 2", "AshlandsBush2"),
             E("Green Vines", "VineGreen"), E("Ash Vines", "VineAsh"), E("Vines", "vines"),
+            // Built from Valheim's clutter by ClutterPrefabs.
+            E("Cattails", ClutterPrefabs.Prefix + "vass", "Reeds for pond and swamp edges."),
+            E("Lily Pads", ClutterPrefabs.Prefix + "waterlilies", "Floats on the water surface.", onWater: true),
             E("Loose Stone", "Pickable_Stone"), E("Loose Rock", "Pickable_StoneRock"),
             E("Sulfur Rock", "Pickable_SulfurRock"), E("Flint", "Pickable_Flint"), E("Fallen Branch", "Pickable_Branch")),
 

@@ -63,13 +63,13 @@ internal static class BuildKeyHints
                 $"Tint presets ({TintController.ModifierNames}: hue/strength/brightness)",
                 TintController.BackKeyName, TintController.ForwardKeyName);
 
-            // The rotate row shows the mouse wheel, which is what raising and lowering uses.
+            // The rotate row shows the mouse wheel, which is what moving the piece uses.
             var last = tint;
             var rotate = keyboard.Find("rotate");
             if (rotate is not null)
             {
-                last = CreateRow(keyboard, rotate.gameObject, "LandscaperHeight", tint.transform.GetSiblingIndex() + 1,
-                    $"Raise/lower (hold {HeightController.ModifierName})", string.Empty, string.Empty);
+                last = CreateRow(keyboard, rotate.gameObject, "LandscaperOffset", tint.transform.GetSiblingIndex() + 1,
+                    $"Move ({OffsetController.ModifierNames}: up/sideways/forward)", string.Empty, string.Empty);
             }
 
             // The place row has a single key box, like the toggle.

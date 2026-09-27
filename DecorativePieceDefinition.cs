@@ -27,6 +27,9 @@ public sealed class DecorativePieceDefinition
     /// <summary>Multiplies the prefab's own scale on each axis.</summary>
     public Vector3 Scale { get; set; } = Vector3.one;
 
+    /// <summary>Placed on the water surface, like docks, rather than on the ground.</summary>
+    public bool OnWater { get; set; }
+
     /// <summary>Items consumed when placing. Empty means the piece is free.</summary>
     public List<PieceRequirement> Requirements { get; } = new();
 }

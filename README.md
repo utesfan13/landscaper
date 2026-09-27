@@ -2,6 +2,8 @@
 Valheim Mod - Prefab placement
 
 Adds trees, rocks, plants, furniture and building pieces to the Cultivator, Hoe and Hammer menus.
+Cattails and lily pads, which Valheim only scatters as ground clutter, are available as placeable
+pieces too; lily pads are placed on the water surface.
 Pieces cost a little wood or stone (see [Build Costs](#build-costs)) and need no workbench.
 
 ## Settings
@@ -31,8 +33,8 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Tint.StrengthBrightnessStep` | `0.1` | How much each key press changes strength or brightness (0.1 = 10%). |
 | `Tint.TintRepeatRate` | `15` | Steps per second while a tint key is held down. |
 | `Tint.Presets` | 10 presets | `Name:hue,strength,brightness` entries separated by semicolons; see below. |
-| `Height.HeightModifier` | `LeftAlt` | Hold and scroll to raise or lower the piece being placed. |
-| `Height.HeightStep` | `0.1` | Meters per scroll step. |
+| `Offset.UpDownModifier` / `SideModifier` / `ForwardBackModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold and scroll to move the piece being placed up/down, sideways, or toward/away from you. |
+| `Offset.Step` | `0.1` | Meters per scroll step. |
 
 ## Build Costs
 
@@ -56,7 +58,7 @@ placed tree or rock gives back more than it cost; turn on `DecorativeOnly` to pr
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.7.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.8.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
@@ -91,7 +93,7 @@ While the placement preview of any Landscaper piece is showing:
 | Alt + `]` / `[` | Wider / narrower (X) |
 | Shift + `]` / `[` | Taller / shorter (Y) |
 | Ctrl + `]` / `[` | Deeper / shallower (Z) |
-| End | Reset size, tint and height |
+| End | Reset size, tint and position |
 
 Each step changes the size by 10% of its current value, so steps are fine near normal size and
 quick at large sizes. Hold a scale key to keep resizing; after a short pause it repeats until you let go. Each axis goes
@@ -118,15 +120,26 @@ copies its tint too.
 - Creatures, items, ships, carts and gravestones can't be copied. Some small wild plants such as
   mushrooms can't be aimed at to copy; once placed through Landscaper they can.
 
-## Raising and Lowering Pieces While Placing
+## Moving Pieces While Placing
 
-Hold Alt and scroll to raise or lower the piece being placed, 0.1 m per scroll step. This is useful
-for lining pieces up, such as stacking one staircase on another without a gap. The piece doesn't
-rotate while Alt is held. The offset is shown mid-screen, stays set while you place more of the same
-piece, and resets when you select a different piece or press End.
+While the placement preview of any Landscaper piece is showing, hold a modifier and scroll to nudge
+the piece 0.1 m per scroll step:
 
-Building pieces that need support (for example the Ashlands ruin walls) can still break if raised
-off the ground with nothing under them.
+| Keys | Effect |
+|---|---|
+| Alt + scroll | Up / down |
+| Shift + scroll | Left / right |
+| Ctrl + scroll | Away from / toward you |
+
+Left/right and away/toward follow the direction you're facing, so they match the screen. This is
+useful for lining pieces up exactly, such as stacking one staircase on another without a gap. The
+piece doesn't rotate while one of these modifiers is held. Shift is also Valheim's "place without
+snapping" key and Ctrl is crouch, so snapping is off while you nudge sideways and your character
+crouches while you nudge forward or back. The offset is shown mid-screen, stays set while you place
+more of the same piece, and resets when you select a different piece or press End.
+
+Building pieces that need support (for example the Ashlands ruin walls) can still break if moved off
+the ground with nothing under them, unless they're placed as indestructible.
 
 ## Indestructible Pieces
 
@@ -151,7 +164,7 @@ While the placement preview of any Landscaper piece is showing:
 | Alt + `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
 | Shift + `,` / `.` | Weaker / stronger tint |
 | Ctrl + `,` / `.` | Darker / lighter |
-| End | Reset size, tint and height |
+| End | Reset size, tint and position |
 
 The preview shows the tint as you change it, and the current values are shown mid-screen. Like
 scaling, the tint stays set while you place more of the same piece, resets when you select a different

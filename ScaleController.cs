@@ -43,7 +43,7 @@ internal static class ScaleController
             "Make the piece being placed bigger. Alone it scales all axes; hold an axis modifier to scale one axis.");
         _downKey = config.Bind("Scaling", "ScaleDownKey", KeyCode.LeftBracket,
             "Make the piece being placed smaller. Alone it scales all axes; hold an axis modifier to scale one axis.");
-        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint and height of the piece being placed.");
+        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint and position offset of the piece being placed.");
         _xModifier = config.Bind("Scaling", "XAxisModifier", KeyCode.LeftAlt, "Hold with the scale keys to change only X (width). Either side of the keyboard works.");
         _yModifier = config.Bind("Scaling", "YAxisModifier", KeyCode.LeftShift, "Hold with the scale keys to change only Y (height). Either side of the keyboard works.");
         _zModifier = config.Bind("Scaling", "ZAxisModifier", KeyCode.LeftControl, "Hold with the scale keys to change only Z (depth). Either side of the keyboard works.");
@@ -71,7 +71,7 @@ internal static class ScaleController
             TintController.SetFromColor(color);
         }
 
-        HeightController.Reset();
+        OffsetController.Reset();
         _copiedScale = _scale;
         _copiedTint = tint;
     }
@@ -125,13 +125,13 @@ internal static class ScaleController
         {
             _scale = Vector3.one;
             TintController.Reset();
-            HeightController.Reset();
-            player!.Message(MessageHud.MessageType.Center, "Scale, tint and height reset");
+            OffsetController.Reset();
+            player!.Message(MessageHud.MessageType.Center, "Scale, tint and position reset");
             return;
         }
 
         TintController.HandleInput(player!);
-        HeightController.HandleInput(player!);
+        OffsetController.HandleInput(player!);
 
         var direction = Repeater.Poll(_downKey.Value, _upKey.Value, _repeatRate.Value);
         if (direction != 0)
@@ -195,7 +195,7 @@ internal static class ScaleController
                     TintController.SetFromColor(copiedTint);
                 }
 
-                HeightController.Reset();
+                OffsetController.Reset();
             }
 
             _copiedScale = null;
@@ -214,8 +214,8 @@ internal static class ScaleController
             }
 
             // Valheim recalculates the ghost's position every update and places the piece where the
-            // ghost is, so raising the ghost here raises the placed piece too.
-            ghost.transform.position += Vector3.up * HeightController.Offset;
+            // ghost is, so moving the ghost here moves the placed piece too.
+            ghost.transform.position += OffsetController.WorldOffset;
 
             // Valheim clears the ghost's colour every frame and turns it red when placement is invalid;
             // only tint a valid ghost so that warning stays visible.

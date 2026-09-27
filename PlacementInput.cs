@@ -7,11 +7,47 @@ namespace Landscaper;
 internal static class PlacementInput
 {
     /// <summary>Checks a modifier key, accepting its counterpart on the other side of the keyboard.</summary>
-    public static bool IsHeld(KeyCode key)
+    public static bool IsHeld(KeyCode key) =>
+        IsDown(key) || (TryGetCounterpart(key, out var other) && IsDown(other));
+
+    private static readonly KeyCode[] Modifiers =
     {
+        KeyCode.LeftAlt, KeyCode.RightAlt, KeyCode.LeftShift, KeyCode.RightShift, KeyCode.LeftControl, KeyCode.RightControl
+    };
+
+    /// <summary>Modifiers seen being pressed while the game had focus and not released since.</summary>
+    private static readonly HashSet<KeyCode> PressedModifiers = new();
+
+    /// <summary>
+    /// Tracks the modifier keys. Call every frame. If the window loses focus while a key is down, as
+    /// with Alt+Tab, Windows never reports its release and Unity keeps treating it as held until it is
+    /// pressed again. So a modifier only counts as held once it has been pressed while the game had
+    /// focus, and all of them are forgotten when focus is lost.
+    /// </summary>
+    public static void Update()
+    {
+        if (!Application.isFocused)
+        {
+            PressedModifiers.Clear();
+            return;
+        }
+
         var input = UnityInput.Current;
-        return input.GetKey(key) || (TryGetCounterpart(key, out var other) && input.GetKey(other));
+        foreach (var key in Modifiers)
+        {
+            if (input.GetKeyDown(key))
+            {
+                PressedModifiers.Add(key);
+            }
+            else if (!input.GetKey(key))
+            {
+                PressedModifiers.Remove(key);
+            }
+        }
     }
+
+    private static bool IsDown(KeyCode key) =>
+        UnityInput.Current.GetKey(key) && (Array.IndexOf(Modifiers, key) < 0 || PressedModifiers.Contains(key));
 
     public static bool IsTyping() =>
         global::Console.IsVisible() || TextInput.IsVisible() || Menu.IsVisible() || InventoryGui.IsVisible() ||
