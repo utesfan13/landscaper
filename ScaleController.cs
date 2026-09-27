@@ -209,6 +209,8 @@ internal static class ScaleController
                 ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
             }
 
+            ExtendPlacementRange(__instance, ghost);
+
             // Valheim recalculates the ghost's position every update and places the piece where the
             // ghost is, so moving the ghost here moves the placed piece too.
             ghost.transform.position += OffsetController.WorldOffset;
@@ -221,6 +223,59 @@ internal static class ScaleController
             {
                 MaterialMan.instance.SetValue(ghost, ColorId, tint.Value);
             }
+        }
+    }
+
+    /// <summary>
+    /// Valheim only lets pieces be placed within a few meters, so a large or scaled-up piece can't be
+    /// placed far enough away to fit. Piece.m_extraPlacementDistance adds to that range for the piece
+    /// being placed; set it on the ghost so the reach is at least half the piece's scaled size plus a
+    /// little, up to Valheim's 50 m placement ray.
+    /// </summary>
+    private static void ExtendPlacementRange(Player player, GameObject ghost)
+    {
+        var piece = ghost.GetComponent<Piece>();
+        var size = Plugin.Pieces?.SizeOf(ghost.name);
+        if (piece is null || size is null)
+        {
+            return;
+        }
+
+        var scaledSize = size.Value * Mathf.Max(_scale.x, _scale.y, _scale.z);
+        var needed = scaledSize * 0.5f + 2f - player.m_maxPlaceDistance;
+        piece.m_extraPlacementDistance = Mathf.Clamp(Mathf.CeilToInt(needed), 0, 45);
+    }
+
+    /// <summary>
+    /// Valheim refuses a placement when any solid collider of the ghost overlaps a character, so that
+    /// nobody gets trapped. The extra box EnsureTargetable adds to some pieces collides with nothing,
+    /// so it can't trap anyone, but around a large or hollow piece (such as the sunken crypt tower
+    /// wall) it would block placing it near yourself. Run the same check without those boxes.
+    /// </summary>
+    [HarmonyPatch(typeof(Player), "CheckPlacementGhostVSPlayers")]
+    private static class IgnoreTargetBoxWhenBlockedPatch
+    {
+        private static bool Prefix(GameObject ___m_placementGhost, Player __instance, ref bool __result)
+        {
+            if (!PlacementInput.IsLandscaperPiece(___m_placementGhost))
+            {
+                return true;
+            }
+
+            var characters = new List<Character>();
+            Character.GetCharactersInRange(__instance.transform.position, 30f, characters);
+            __result = ___m_placementGhost.GetComponentsInChildren<Collider>().Any(collider =>
+                !collider.isTrigger && collider.enabled && collider.gameObject != ___m_placementGhost &&
+                collider.gameObject.name != DecorativePieceManager.TargetBoxName &&
+                (collider is not MeshCollider mesh || mesh.convex) &&
+                characters.Any(character =>
+                {
+                    var capsule = character.GetCollider();
+                    return capsule != null && Physics.ComputePenetration(
+                        collider, collider.transform.position, collider.transform.rotation,
+                        capsule, capsule.transform.position, capsule.transform.rotation, out _, out _);
+                }));
+            return false;
         }
     }
 

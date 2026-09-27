@@ -20,18 +20,18 @@ public sealed class DecorativePieceManager
 
     private sealed class RegisteredPiece
     {
-        public RegisteredPiece(GameObject clone, DecorativePieceDefinition definition, string sourcePrefab, float size)
+        public RegisteredPiece(GameObject clone, DecorativePieceDefinition definition, string sourcePrefab, PieceTraits traits)
         {
             Clone = clone;
             Definition = definition;
             SourcePrefab = sourcePrefab;
-            Size = size;
+            Traits = traits;
         }
 
         public DecorativePieceDefinition Definition { get; }
 
-        /// <summary>The largest dimension of the model in meters, used for its automatic cost.</summary>
-        public float Size { get; }
+        /// <summary>What the automatic cost is based on.</summary>
+        public PieceTraits Traits { get; }
 
         public GameObject Clone { get; }
         public BuildTool Tool => Definition.Tool;
@@ -94,12 +94,22 @@ public sealed class DecorativePieceManager
             var component = piece.Clone != null ? piece.Clone.GetComponent<Piece>() : null;
             if (component != null)
             {
-                component.m_resources = CostFor(piece.Definition, piece.Size);
+                component.m_resources = CostFor(piece.Definition, piece.Traits);
+                component.m_craftingStation = StationFor(piece.Definition, piece.Traits);
             }
         }
     }
 
-    private Piece.Requirement[] CostFor(DecorativePieceDefinition definition, float size)
+    /// <summary>
+    /// The crafting station needed nearby to place a piece: the vanilla piece's station when the piece
+    /// uses the vanilla cost, otherwise none.
+    /// </summary>
+    private static CraftingStation? StationFor(DecorativePieceDefinition definition, PieceTraits traits) =>
+        definition.Requirements.Count == 0 && BuildCosts.Enabled() && traits.VanillaResources is not null
+            ? traits.VanillaStation
+            : null;
+
+    private Piece.Requirement[] CostFor(DecorativePieceDefinition definition, PieceTraits traits)
     {
         if (definition.Requirements.Count > 0)
         {
@@ -111,10 +121,22 @@ public sealed class DecorativePieceManager
             return Array.Empty<Piece.Requirement>();
         }
 
-        var item = PrefabManager.Instance.GetPrefab(BuildCosts.MaterialFor(definition))?.GetComponent<ItemDrop>();
-        return item is null
-            ? Array.Empty<Piece.Requirement>()
-            : new[] { new Piece.Requirement { m_resItem = item, m_amount = BuildCosts.AmountFor(size), m_recover = true } };
+        // Pieces that are vanilla build pieces cost the same as the vanilla piece.
+        if (traits.VanillaResources is { } vanilla)
+        {
+            return vanilla;
+        }
+
+        var requirements = new List<Piece.Requirement>();
+        foreach (var (item, amount) in BuildCosts.CostFor(definition, traits))
+        {
+            if (item != null)
+            {
+                requirements.Add(new Piece.Requirement { m_resItem = item, m_amount = amount, m_recover = true });
+            }
+        }
+
+        return requirements.ToArray();
     }
 
     /// <summary>
@@ -210,6 +232,13 @@ public sealed class DecorativePieceManager
             .FirstOrDefault();
 
     /// <summary>The vanilla prefab a Landscaper clone was made from, or null for other prefabs.</summary>
+    /// <summary>Name of the extra box added by EnsureTargetable, which collides with nothing.</summary>
+    public const string TargetBoxName = "LandscaperRemoveTarget";
+
+    /// <summary>The largest dimension of a registered piece's model in meters, or null if unknown.</summary>
+    public float? SizeOf(string cloneName) =>
+        _registered.TryGetValue(cloneName, out var piece) ? piece.Traits.Size : null;
+
     public string? SourcePrefabOf(string cloneName) =>
         _registered.TryGetValue(cloneName, out var piece) ? piece.SourcePrefab : null;
 
@@ -283,11 +312,19 @@ public sealed class DecorativePieceManager
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
         MakeStaticDecoration(clone);
+        RemoveEmptyMeshColliders(clone);
         // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
         var modelSize = TryGetModelBounds(clone, out var modelBounds)
             ? Vector3.Scale(modelBounds.size, clone.transform.localScale)
             : Vector3.one;
-        var size = Mathf.Max(modelSize.x, modelSize.y, modelSize.z);
+        var pickable = clone.GetComponentInChildren<Pickable>(includeInactive: true);
+        var vanillaPiece = clone.GetComponent<Piece>();
+        var traits = new PieceTraits(
+            Mathf.Max(modelSize.x, modelSize.y, modelSize.z),
+            pickable != null && pickable.m_itemPrefab != null ? pickable.m_itemPrefab.GetComponent<ItemDrop>() : null,
+            clone.GetComponentsInChildren<Light>(includeInactive: true).Length > 0,
+            vanillaPiece != null && vanillaPiece.m_resources is { Length: > 0 } ? vanillaPiece.m_resources.ToArray() : null,
+            vanillaPiece != null ? vanillaPiece.m_craftingStation : null);
         EnsureTargetable(clone, definition.Tool);
         clone.AddComponent<LandscaperTint>();
 
@@ -309,8 +346,8 @@ public sealed class DecorativePieceManager
         piece.m_groundPiece = definition.Tool != BuildTool.Hammer && !definition.OnWater;
         piece.m_groundOnly = false;
         piece.m_canBeRemoved = true;
-        piece.m_craftingStation = null;
-        piece.m_resources = CostFor(definition, size);
+        piece.m_craftingStation = StationFor(definition, traits);
+        piece.m_resources = CostFor(definition, traits);
         piece.m_icon = vanillaIcon ?? GetToolIcon(definition.Tool);
         if (piece.m_icon is null)
         {
@@ -323,7 +360,7 @@ public sealed class DecorativePieceManager
             return false;
         }
 
-        _registered[cloneName] = new RegisteredPiece(clone, definition, source.name, size);
+        _registered[cloneName] = new RegisteredPiece(clone, definition, source.name, traits);
 
         // Jotunn adds custom prefabs to ZNetScene when it wakes, which has already happened by the
         // time this runs, so add this one directly. UpdateMenus decides whether it is listed.
@@ -413,7 +450,7 @@ public sealed class DecorativePieceManager
             return;
         }
 
-        var target = new GameObject("LandscaperRemoveTarget") { layer = LayerMask.NameToLayer("piece_nonsolid") };
+        var target = new GameObject(TargetBoxName) { layer = LayerMask.NameToLayer("piece_nonsolid") };
         target.transform.SetParent(root, worldPositionStays: false);
         var box = target.AddComponent<BoxCollider>();
         box.center = combined.center;
@@ -504,6 +541,22 @@ public sealed class DecorativePieceManager
         DestroyAll<Floating>(clone);
         DestroyAll<ZSyncTransform>(clone);
         DestroyAll<Rigidbody>(clone);
+    }
+
+    /// <summary>
+    /// A few prefabs, such as the giant Jotun stairs, have a mesh collider with no mesh. Valheim still
+    /// measures from it when positioning a Hammer ghost, gets the aim point back, and pushes the ghost
+    /// 50 m up, so the piece can't be placed. Such colliders do nothing else, so remove them.
+    /// </summary>
+    private static void RemoveEmptyMeshColliders(GameObject clone)
+    {
+        foreach (var collider in clone.GetComponentsInChildren<MeshCollider>(includeInactive: true))
+        {
+            if (collider.sharedMesh == null)
+            {
+                UnityEngine.Object.DestroyImmediate(collider);
+            }
+        }
     }
 
     private static void DestroyAll<T>(GameObject root) where T : Component

@@ -14,7 +14,7 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | Setting | Default | Effect |
 |---|---|---|
 | `General.Enabled` | `true` | Master toggle. Requires a restart. |
-| `Costs.Enabled` | `true` | **Synced.** Charge wood or stone to place pieces; see [Build Costs](#build-costs). |
+| `Costs.Enabled` | `true` | **Synced.** Charge a small cost to place pieces; see [Build Costs](#build-costs). |
 | `Costs.Multiplier` | `1` | **Synced.** Multiplies the automatic costs (0.25 to 4). |
 | `Indestructible.Allowed` | `true` | **Synced.** Allow placing indestructible pieces; see [Indestructible Pieces](#indestructible-pieces). |
 | `Indestructible.ToggleKey` | `Backslash` | Turn indestructible placement on or off while building. |
@@ -38,22 +38,37 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 ## Build Costs
 
-Placing a piece costs wood or stone, and removing it refunds the cost:
+Placing a piece has a small cost, and removing it refunds the cost:
+
+- **Vanilla build pieces** (chests, beds, banners, walls, floors, torches, ...) cost exactly what the
+  vanilla piece costs and need the same crafting station nearby (workbench, forge, stonecutter, ...),
+  so the scalable, tintable copy matches the original. `Costs.Multiplier` doesn't change these.
+- **Pickables** (berry bushes, mushrooms, thistle, loose stones, branches, ...) cost only 5 of the
+  item they give, e.g. a blueberry bush costs 5 blueberries.
+- **Metal pieces** (lanterns, braziers, iron torches, sconces, chains, the iron gate, iron floors and
+  walls, ...) cost 1 iron.
+- **Everything else** costs wood or stone depending on its size:
 
 | Largest dimension of the piece | Cost |
 |---|---|
-| under 2 m (mushrooms, stools, small rocks) | 2 |
-| 2 to 6 m (bushes, benches, boulders) | 4 |
+| under 2 m (stools, small rocks) | 2 |
+| 2 to 6 m (benches, boulders) | 4 |
 | 6 to 15 m (trees, large statues) | 6 |
 | 15 m and over (cliffs, great pillars, frozen ships) | 8 |
 
-Trees, plants, stumps, furniture and wooden props cost wood; rocks, cliffs, ice, bones, statues and
-ruins cost stone. Building structures and copied objects go by their name (stone, iron, crystal and
-so on cost stone). Custom entries with their own requirements keep them. Resizing a piece while
-placing doesn't change its cost.
+  Trees, plants, stumps, furniture and wooden props cost wood; rocks, cliffs, statues and ruins
+  cost stone; ice and snow pieces cost ice; bones, skulls and carcasses cost bone fragments. The
+  stump hut and hole and the frozen ships cost wood and ice, split evenly. Building structures and
+  copied objects go by their name (stone, crystal and so on cost stone).
+- **Crafted light sources** (torches, lanterns, braziers, ...) cost 1 resin on top. Pickables and other
+  natural pieces never do, even ones that glow.
 
-Turn costs off with `Costs.Enabled`, or scale them with `Costs.Multiplier`. Chopping or mining a
-placed tree or rock gives back more than it cost; turn on `DecorativeOnly` to prevent that.
+Custom entries with their own requirements keep them. Resizing a piece while placing doesn't change
+its cost.
+
+Turn costs off with `Costs.Enabled`, or scale them with `Costs.Multiplier` (every cost stays at
+least 1). Chopping, mining or picking a placed piece can give back more than it cost; turn on
+`DecorativeOnly` to prevent that.
 
 ## Multiplayer
 
