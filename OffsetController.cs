@@ -16,7 +16,6 @@ internal static class OffsetController
 {
     private static ConfigEntry<KeyCode> _upModifier = null!;
     private static ConfigEntry<KeyCode> _sideModifier = null!;
-    private static ConfigEntry<KeyCode> _depthModifier = null!;
     private static ConfigEntry<float> _step = null!;
 
     /// <summary>Meters right (x), up (y) and away from the camera (z).</summary>
@@ -28,15 +27,12 @@ internal static class OffsetController
             "Hold and scroll to raise or lower the piece being placed. Either side of the keyboard works.");
         _sideModifier = config.Bind("Offset", "SideModifier", KeyCode.LeftShift,
             "Hold and scroll to move the piece being placed left or right. Either side of the keyboard works.");
-        _depthModifier = config.Bind("Offset", "ForwardBackModifier", KeyCode.LeftControl,
-            "Hold and scroll to move the piece being placed toward or away from you. Either side of the keyboard works.");
         _step = config.Bind("Offset", "Step", 0.1f,
             new ConfigDescription("Meters per scroll step.", new AcceptableValueRange<float>(0.01f, 1f)));
     }
 
-    /// <summary>The up/down, side and forward/back modifiers in order, e.g. "Alt/Shift/Ctrl".</summary>
-    public static string ModifierNames =>
-        $"{PlacementInput.KeyName(_upModifier.Value)}/{PlacementInput.KeyName(_sideModifier.Value)}/{PlacementInput.KeyName(_depthModifier.Value)}";
+    /// <summary>The up/down, side and forward/back modifiers, e.g. "Alt/Shift/Alt+Shift"; forward/back is both held.</summary>
+    public static string ModifierNames => PlacementInput.ChordNames(_upModifier.Value, _sideModifier.Value);
 
     /// <summary>Whether scrolling should move the piece instead of rotating it right now.</summary>
     public static bool Active => ScaleController.PlacingLandscaperPiece && AxisHeld() is not null;
@@ -82,20 +78,13 @@ internal static class OffsetController
     }
 
     /// <summary>The axis whose modifier is held (0 side, 1 up, 2 forward), or null.</summary>
-    private static int? AxisHeld()
+    private static int? AxisHeld() => PlacementInput.Chord(_upModifier.Value, _sideModifier.Value) switch
     {
-        if (PlacementInput.IsHeld(_upModifier.Value))
-        {
-            return 1;
-        }
-
-        if (PlacementInput.IsHeld(_sideModifier.Value))
-        {
-            return 0;
-        }
-
-        return PlacementInput.IsHeld(_depthModifier.Value) ? 2 : null;
-    }
+        PlacementInput.ChordState.First => 1,
+        PlacementInput.ChordState.Second => 0,
+        PlacementInput.ChordState.Both => 2,
+        _ => null
+    };
 
     /// <summary>
     /// Valheim rotates the piece on any scroll, whatever modifiers are held. While scrolling moves the

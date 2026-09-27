@@ -19,7 +19,6 @@ internal static class ScaleController
     private static ConfigEntry<KeyCode> _resetKey = null!;
     private static ConfigEntry<KeyCode> _xModifier = null!;
     private static ConfigEntry<KeyCode> _yModifier = null!;
-    private static ConfigEntry<KeyCode> _zModifier = null!;
     private static ConfigEntry<float> _step = null!;
     private static ConfigEntry<float> _repeatRate = null!;
     private static ConfigEntry<float> _minScale = null!;
@@ -46,7 +45,6 @@ internal static class ScaleController
         _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint and position offset of the piece being placed.");
         _xModifier = config.Bind("Scaling", "XAxisModifier", KeyCode.LeftAlt, "Hold with the scale keys to change only X (width). Either side of the keyboard works.");
         _yModifier = config.Bind("Scaling", "YAxisModifier", KeyCode.LeftShift, "Hold with the scale keys to change only Y (height). Either side of the keyboard works.");
-        _zModifier = config.Bind("Scaling", "ZAxisModifier", KeyCode.LeftControl, "Hold with the scale keys to change only Z (depth). Either side of the keyboard works.");
         _step = config.Bind("Scaling", "ScaleStep", 0.1f,
             new ConfigDescription("How much each key press changes the scale, as a fraction of the current size (0.1 = 10%).", new AcceptableValueRange<float>(0.01f, 1f)));
         _repeatRate = config.Bind("Scaling", "ScaleRepeatRate", 15f,
@@ -89,9 +87,9 @@ internal static class ScaleController
     /// <summary>Scale-down key as shown in the build hints.</summary>
     public static string DownKeyName => PlacementInput.KeyName(_downKey.Value);
 
-    /// <summary>The X, Y and Z modifiers in order, e.g. "Alt/Shift/Ctrl".</summary>
+    /// <summary>The X, Y and Z modifiers in order, e.g. "Alt/Shift/Alt+Shift"; Z is both held.</summary>
     public static string ModifierNames =>
-        $"{PlacementInput.KeyName(_xModifier.Value)}/{PlacementInput.KeyName(_yModifier.Value)}/{PlacementInput.KeyName(_zModifier.Value)}";
+        PlacementInput.ChordNames(_xModifier.Value, _yModifier.Value);
 
     /// <summary>Whether the local player is placing a Landscaper piece right now.</summary>
     public static bool PlacingLandscaperPiece
@@ -152,22 +150,20 @@ internal static class ScaleController
 
         float Clamp(float value) => ClampScale(value * factor);
 
-        if (PlacementInput.IsHeld(_xModifier.Value))
+        switch (PlacementInput.Chord(_xModifier.Value, _yModifier.Value))
         {
-            _scale.x = Clamp(_scale.x);
+            case PlacementInput.ChordState.First:
+                _scale.x = Clamp(_scale.x);
+                return;
+            case PlacementInput.ChordState.Second:
+                _scale.y = Clamp(_scale.y);
+                return;
+            case PlacementInput.ChordState.Both:
+                _scale.z = Clamp(_scale.z);
+                return;
         }
-        else if (PlacementInput.IsHeld(_yModifier.Value))
-        {
-            _scale.y = Clamp(_scale.y);
-        }
-        else if (PlacementInput.IsHeld(_zModifier.Value))
-        {
-            _scale.z = Clamp(_scale.z);
-        }
-        else
-        {
-            _scale = new Vector3(Clamp(_scale.x), Clamp(_scale.y), Clamp(_scale.z));
-        }
+
+        _scale = new Vector3(Clamp(_scale.x), Clamp(_scale.y), Clamp(_scale.z));
     }
 
     [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]

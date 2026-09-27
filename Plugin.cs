@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.zackc";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.8.1";
+    public const string ModVersion = "0.8.3";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;

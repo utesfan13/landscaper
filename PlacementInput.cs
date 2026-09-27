@@ -10,6 +10,32 @@ internal static class PlacementInput
     public static bool IsHeld(KeyCode key) =>
         IsDown(key) || (TryGetCounterpart(key, out var other) && IsDown(other));
 
+    public enum ChordState
+    {
+        None,
+        First,
+        Second,
+        Both
+    }
+
+    /// <summary>
+    /// Which of two modifiers are held. The scale, tint and move controls each use two modifiers,
+    /// with both held together for their third action, which keeps Ctrl (crouch) free.
+    /// </summary>
+    public static ChordState Chord(KeyCode first, KeyCode second)
+    {
+        var firstHeld = IsHeld(first);
+        var secondHeld = IsHeld(second);
+        return firstHeld && secondHeld ? ChordState.Both
+            : firstHeld ? ChordState.First
+            : secondHeld ? ChordState.Second
+            : ChordState.None;
+    }
+
+    /// <summary>Names for a chord's three actions, e.g. "Alt/Shift/Alt+Shift".</summary>
+    public static string ChordNames(KeyCode first, KeyCode second) =>
+        $"{KeyName(first)}/{KeyName(second)}/{KeyName(first)}+{KeyName(second)}";
+
     private static readonly KeyCode[] Modifiers =
     {
         KeyCode.LeftAlt, KeyCode.RightAlt, KeyCode.LeftShift, KeyCode.RightShift, KeyCode.LeftControl, KeyCode.RightControl

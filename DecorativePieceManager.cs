@@ -282,6 +282,7 @@ public sealed class DecorativePieceManager
         // restores it 0.1-0.3s later. Placement ghosts spawn at the prefab origin, so a ghost that
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
+        MakeStaticDecoration(clone);
         // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
         var modelSize = TryGetModelBounds(clone, out var modelBounds)
             ? Vector3.Scale(modelBounds.size, clone.transform.localScale)
@@ -479,6 +480,30 @@ public sealed class DecorativePieceManager
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Some prefabs are world loot or physics objects rather than scenery, such as the cargo crates
+    /// that float at sea. Placed as pieces they should stay put and not hand out free loot:
+    /// <list type="bullet">
+    /// <item>Containers keep working as storage but get no default loot, and don't destroy themselves
+    /// when empty (a new cargo crate is empty for a moment and would delete itself straight away).</item>
+    /// <item>Floating, network movement sync and rigidbodies are removed so pieces don't roll, fall
+    /// or bob. The placement ghost already has its rigidbodies removed, so this matches the preview.</item>
+    /// </list>
+    /// </summary>
+    private static void MakeStaticDecoration(GameObject clone)
+    {
+        foreach (var container in clone.GetComponentsInChildren<Container>(includeInactive: true))
+        {
+            container.m_autoDestroyEmpty = false;
+            container.m_defaultItems = new DropTable();
+        }
+
+        // Components that use the rigidbody go first, or Unity refuses to remove it.
+        DestroyAll<Floating>(clone);
+        DestroyAll<ZSyncTransform>(clone);
+        DestroyAll<Rigidbody>(clone);
     }
 
     private static void DestroyAll<T>(GameObject root) where T : Component

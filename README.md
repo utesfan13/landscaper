@@ -22,18 +22,18 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Tools.CultivatorDecorEnabled` / `HoeDecorEnabled` / `HammerDecorEnabled` | `true` | **Synced.** List pieces in that tool's menu. Turning one off only hides its pieces; ones already placed stay in the world. |
 | `CustomEntries.Entries` | empty | **Synced.** Extra pieces; see below. |
 | `Scaling.ScaleUpKey` / `ScaleDownKey` | `]` / `[` | Resize the piece being placed. |
-| `Scaling.XAxisModifier` / `YAxisModifier` / `ZAxisModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold with the scale keys to change one axis. Either side of the keyboard works. |
+| `Scaling.XAxisModifier` / `YAxisModifier` | `LeftAlt` / `LeftShift` | Hold with the scale keys to change X or Y; hold both for Z. Either side of the keyboard works. |
 | `Scaling.ScaleResetKey` | `End` | Reset the size, colour and height of the piece being placed. |
 | `Scaling.ScaleStep` | `0.1` | How much each key press changes the scale, as a fraction of the current size (0.1 = 10%). |
 | `Scaling.ScaleRepeatRate` | `15` | Steps per second while a scale key is held down. |
 | `Scaling.MinScale` / `MaxScale` | `0.01` / `20` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 20). |
 | `Tint.TintBackKey` / `TintForwardKey` | `,` / `.` | Step through the tint presets for the piece being placed. |
-| `Tint.HueModifier` / `StrengthModifier` / `BrightnessModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold with the tint keys to fine-tune hue, strength or brightness. |
+| `Tint.HueModifier` / `StrengthModifier` | `LeftAlt` / `LeftShift` | Hold with the tint keys to fine-tune hue or strength; hold both for brightness. |
 | `Tint.HueStep` | `10` | Degrees round the colour wheel per key press. |
 | `Tint.StrengthBrightnessStep` | `0.1` | How much each key press changes strength or brightness (0.1 = 10%). |
 | `Tint.TintRepeatRate` | `15` | Steps per second while a tint key is held down. |
 | `Tint.Presets` | 10 presets | `Name:hue,strength,brightness` entries separated by semicolons; see below. |
-| `Offset.UpDownModifier` / `SideModifier` / `ForwardBackModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold and scroll to move the piece being placed up/down, sideways, or toward/away from you. |
+| `Offset.UpDownModifier` / `SideModifier` | `LeftAlt` / `LeftShift` | Hold and scroll to move the piece being placed up/down or sideways; hold both for toward/away from you. |
 | `Offset.Step` | `0.1` | Meters per scroll step. |
 
 ## Build Costs
@@ -83,6 +83,14 @@ For pieces that are hard to aim at, open the console (F5) and run `landscaper_re
 remove every Landscaper piece within that many meters of you (default 10, max 100). It never
 removes anything that wasn't placed through this mod.
 
+## Modifier Keys
+
+Resizing, tinting and moving each use Alt and Shift as modifiers, with both held together for the
+third option; Ctrl isn't used, because it makes your character crouch. On Windows with more than one
+keyboard layout installed, Left Alt + Shift also switches the input language; that shortcut can be
+turned off in Windows under *Settings > Time & language > Typing > Advanced keyboard settings >
+Input language hot keys*, or use Right Alt instead.
+
 ## Resizing Pieces While Placing
 
 While the placement preview of any Landscaper piece is showing:
@@ -92,7 +100,7 @@ While the placement preview of any Landscaper piece is showing:
 | `]` / `[` | Bigger / smaller on all axes |
 | Alt + `]` / `[` | Wider / narrower (X) |
 | Shift + `]` / `[` | Taller / shorter (Y) |
-| Ctrl + `]` / `[` | Deeper / shallower (Z) |
+| Alt + Shift + `]` / `[` | Deeper / shallower (Z) |
 | End | Reset size, tint and position |
 
 Each step changes the size by 10% of its current value, so steps are fine near normal size and
@@ -129,13 +137,12 @@ the piece 0.1 m per scroll step:
 |---|---|
 | Alt + scroll | Up / down |
 | Shift + scroll | Left / right |
-| Ctrl + scroll | Away from / toward you |
+| Alt + Shift + scroll | Away from / toward you |
 
 Left/right and away/toward follow the direction you're facing, so they match the screen. This is
 useful for lining pieces up exactly, such as stacking one staircase on another without a gap. The
 piece doesn't rotate while one of these modifiers is held. Shift is also Valheim's "place without
-snapping" key and Ctrl is crouch, so snapping is off while you nudge sideways and your character
-crouches while you nudge forward or back. The offset is shown mid-screen, stays set while you place
+snapping" key, so snapping is off while you nudge sideways or forward and back. The offset is shown mid-screen, stays set while you place
 more of the same piece, and resets when you select a different piece or press End.
 
 Building pieces that need support (for example the Ashlands ruin walls) can still break if moved off
@@ -163,7 +170,7 @@ While the placement preview of any Landscaper piece is showing:
 | `,` / `.` | Previous / next preset |
 | Alt + `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
 | Shift + `,` / `.` | Weaker / stronger tint |
-| Ctrl + `,` / `.` | Darker / lighter |
+| Alt + Shift + `,` / `.` | Darker / lighter |
 | End | Reset size, tint and position |
 
 The preview shows the tint as you change it, and the current values are shown mid-screen. Like
