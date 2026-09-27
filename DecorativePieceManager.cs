@@ -15,29 +15,33 @@ public sealed class DecorativePieceManager
     private readonly Func<string> _customEntries;
     private readonly Func<BuildTool, bool> _toolEnabled;
     private readonly Dictionary<string, RegisteredPiece> _registered = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _freePieceNames = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _pieceNames = new(StringComparer.Ordinal);
     private readonly List<(Piece Piece, GameObject Source)> _pendingIcons = new();
 
     private sealed class RegisteredPiece
     {
-        public RegisteredPiece(GameObject clone, BuildTool tool, string category, string sourcePrefab, bool isVariant)
+        public RegisteredPiece(GameObject clone, DecorativePieceDefinition definition, string sourcePrefab, float size)
         {
             Clone = clone;
-            Tool = tool;
-            Category = category;
+            Definition = definition;
             SourcePrefab = sourcePrefab;
-            IsVariant = isVariant;
+            Size = size;
         }
 
+        public DecorativePieceDefinition Definition { get; }
+
+        /// <summary>The largest dimension of the model in meters, used for its automatic cost.</summary>
+        public float Size { get; }
+
         public GameObject Clone { get; }
-        public BuildTool Tool { get; }
-        public string Category { get; }
+        public BuildTool Tool => Definition.Tool;
+        public string Category => Definition.Category;
 
         /// <summary>The vanilla prefab this piece was cloned from.</summary>
         public string SourcePrefab { get; }
 
         /// <summary>Whether this is a scaled variant rather than the plain piece for its prefab.</summary>
-        public bool IsVariant { get; }
+        public bool IsVariant => Definition.Scale != Vector3.one;
     }
 
     /// <param name="customEntries">Reads the current custom entries; synced from the server.</param>
@@ -52,8 +56,8 @@ public sealed class DecorativePieceManager
 
     public bool HasRegistered { get; private set; }
 
-    /// <summary>Display names of registered pieces that cost nothing, for silent unlocking.</summary>
-    public IReadOnlyCollection<string> FreePieceNames => _freePieceNames;
+    /// <summary>Display names of every registered piece, for silent unlocking.</summary>
+    public IReadOnlyCollection<string> PieceNames => _pieceNames;
 
     /// <summary>
     /// Registers every catalog and custom entry. Call once, from ZNetScene.Awake, so the clones exist
@@ -67,6 +71,49 @@ public sealed class DecorativePieceManager
         var registered = PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries())).Count(Register);
         _log.LogInfo($"Registered {registered} decorative pieces.");
         UpdateMenus();
+
+        var costs = _registered.Values
+            .Select(piece => piece.Clone != null ? piece.Clone.GetComponent<Piece>()?.m_resources : null)
+            .Where(resources => resources is { Length: > 0 })
+            .GroupBy(resources => $"{resources![0].m_amount} {resources[0].m_resItem.m_itemData.m_shared.m_name}")
+            .OrderBy(group => group.Key)
+            .Select(group => $"{group.Key}: {group.Count()}");
+        _log.LogInfo($"Build costs: {string.Join(", ", costs)}");
+    }
+
+    /// <summary>
+    /// Recomputes every piece's cost from the current settings: custom entries with their own
+    /// requirements keep them, everything else gets the automatic cost from <see cref="BuildCosts"/>
+    /// (or none when costs are off).
+    /// </summary>
+    public void ApplyCosts()
+    {
+        foreach (var piece in _registered.Values)
+        {
+            var component = piece.Clone != null ? piece.Clone.GetComponent<Piece>() : null;
+            if (component != null)
+            {
+                component.m_resources = CostFor(piece.Definition, piece.Size);
+            }
+        }
+    }
+
+    private Piece.Requirement[] CostFor(DecorativePieceDefinition definition, float size)
+    {
+        if (definition.Requirements.Count > 0)
+        {
+            return BuildRequirements(definition);
+        }
+
+        if (!BuildCosts.Enabled())
+        {
+            return Array.Empty<Piece.Requirement>();
+        }
+
+        var item = PrefabManager.Instance.GetPrefab(BuildCosts.MaterialFor(definition))?.GetComponent<ItemDrop>();
+        return item is null
+            ? Array.Empty<Piece.Requirement>()
+            : new[] { new Piece.Requirement { m_resItem = item, m_amount = BuildCosts.AmountFor(size), m_recover = true } };
     }
 
     /// <summary>
@@ -89,6 +136,7 @@ public sealed class DecorativePieceManager
             _log.LogInfo($"Registered {added} custom pieces from updated settings.");
         }
 
+        ApplyCosts();
         UpdateMenus();
         RefreshPlayerPieces();
     }
@@ -233,6 +281,11 @@ public sealed class DecorativePieceManager
         // restores it 0.1-0.3s later. Placement ghosts spawn at the prefab origin, so a ghost that
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
+        // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
+        var modelSize = TryGetModelBounds(clone, out var modelBounds)
+            ? Vector3.Scale(modelBounds.size, clone.transform.localScale)
+            : Vector3.one;
+        var size = Mathf.Max(modelSize.x, modelSize.y, modelSize.z);
         EnsureTargetable(clone, definition.Tool);
         clone.AddComponent<LandscaperTint>();
 
@@ -245,7 +298,7 @@ public sealed class DecorativePieceManager
         piece.m_groundOnly = false;
         piece.m_canBeRemoved = true;
         piece.m_craftingStation = null;
-        piece.m_resources = BuildRequirements(definition);
+        piece.m_resources = CostFor(definition, size);
         piece.m_icon = vanillaIcon ?? GetToolIcon(definition.Tool);
         if (piece.m_icon is null)
         {
@@ -258,7 +311,7 @@ public sealed class DecorativePieceManager
             return false;
         }
 
-        _registered[cloneName] = new RegisteredPiece(clone, definition.Tool, definition.Category, source.name, definition.Scale != Vector3.one);
+        _registered[cloneName] = new RegisteredPiece(clone, definition, source.name, size);
 
         // Jotunn adds custom prefabs to ZNetScene when it wakes, which has already happened by the
         // time this runs, so add this one directly. UpdateMenus decides whether it is listed.
@@ -269,10 +322,7 @@ public sealed class DecorativePieceManager
             _pendingIcons.Add((piece, source));
         }
 
-        if (piece.m_resources.Length == 0)
-        {
-            _freePieceNames.Add(piece.m_name);
-        }
+        _pieceNames.Add(piece.m_name);
 
         return true;
     }
@@ -335,23 +385,8 @@ public sealed class DecorativePieceManager
         var removeMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", "vehicle");
         var root = clone.transform;
 
-        // The clone sits under Jotunn's inactive prefab container, so check activity up to the clone
-        // itself rather than using activeInHierarchy.
-        bool IsActive(Transform transform)
-        {
-            for (var current = transform; current is not null && current != root.parent; current = current.parent)
-            {
-                if (!current.gameObject.activeSelf)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         var colliders = clone.GetComponentsInChildren<Collider>(includeInactive: true)
-            .Where(collider => collider.enabled && IsActive(collider.transform))
+            .Where(collider => collider.enabled && IsActiveWithin(collider.transform, root))
             .ToList();
         var removable = colliders.Any(collider => (removeMask & (1 << collider.gameObject.layer)) != 0);
         var placeable = tool != BuildTool.Hammer || colliders.Any(collider =>
@@ -361,27 +396,45 @@ public sealed class DecorativePieceManager
             return;
         }
 
-        var meshes = clone.GetComponentsInChildren<MeshFilter>(includeInactive: true)
-            .Where(filter => filter.sharedMesh is not null && IsActive(filter.transform))
-            .Select(filter => (filter.transform, filter.sharedMesh.bounds))
-            .Concat(clone.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
-                .Where(renderer => renderer.sharedMesh is not null && IsActive(renderer.transform))
-                .Select(renderer => (renderer.transform, renderer.localBounds)))
-            .ToList();
-        if (meshes.Count == 0)
+        if (!TryGetModelBounds(clone, out var combined))
         {
             return;
         }
 
-        // Combine every mesh's bounds in the clone's local space.
+        var target = new GameObject("LandscaperRemoveTarget") { layer = LayerMask.NameToLayer("piece_nonsolid") };
+        target.transform.SetParent(root, worldPositionStays: false);
+        var box = target.AddComponent<BoxCollider>();
+        box.center = combined.center;
+        // Keep flat pieces such as rugs hittable.
+        box.size = Vector3.Max(combined.size, new Vector3(0.1f, 0.1f, 0.1f));
+    }
+
+    /// <summary>The combined bounds of a clone's visible meshes, in the clone's local space.</summary>
+    private static bool TryGetModelBounds(GameObject clone, out Bounds bounds)
+    {
+        var root = clone.transform;
+        bounds = default;
+
+        var meshes = clone.GetComponentsInChildren<MeshFilter>(includeInactive: true)
+            .Where(filter => filter.sharedMesh is not null && IsActiveWithin(filter.transform, root))
+            .Select(filter => (filter.transform, filter.sharedMesh.bounds))
+            .Concat(clone.GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true)
+                .Where(renderer => renderer.sharedMesh is not null && IsActiveWithin(renderer.transform, root))
+                .Select(renderer => (renderer.transform, renderer.localBounds)))
+            .ToList();
+        if (meshes.Count == 0)
+        {
+            return false;
+        }
+
         var toRoot = root.worldToLocalMatrix;
         Bounds? combined = null;
-        foreach (var (transform, bounds) in meshes)
+        foreach (var (transform, meshBounds) in meshes)
         {
             var toRootFromMesh = toRoot * transform.localToWorldMatrix;
             for (var corner = 0; corner < 8; corner++)
             {
-                var local = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                var local = meshBounds.center + Vector3.Scale(meshBounds.extents, new Vector3(
                     (corner & 1) == 0 ? -1 : 1, (corner & 2) == 0 ? -1 : 1, (corner & 4) == 0 ? -1 : 1));
                 var point = toRootFromMesh.MultiplyPoint3x4(local);
                 if (combined is { } existing)
@@ -396,12 +449,25 @@ public sealed class DecorativePieceManager
             }
         }
 
-        var target = new GameObject("LandscaperRemoveTarget") { layer = LayerMask.NameToLayer("piece_nonsolid") };
-        target.transform.SetParent(root, worldPositionStays: false);
-        var box = target.AddComponent<BoxCollider>();
-        box.center = combined!.Value.center;
-        // Keep flat pieces such as rugs hittable.
-        box.size = Vector3.Max(combined.Value.size, new Vector3(0.1f, 0.1f, 0.1f));
+        bounds = combined!.Value;
+        return true;
+    }
+
+    /// <summary>
+    /// Whether a transform is active up to <paramref name="root"/>. Clones sit under Jotunn's inactive
+    /// prefab container, so activeInHierarchy is always false for them.
+    /// </summary>
+    private static bool IsActiveWithin(Transform transform, Transform root)
+    {
+        for (var current = transform; current is not null && current != root.parent; current = current.parent)
+        {
+            if (!current.gameObject.activeSelf)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void DestroyAll<T>(GameObject root) where T : Component

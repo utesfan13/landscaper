@@ -5,9 +5,11 @@ namespace Landscaper;
 
 /// <summary>
 /// Implements the DecorativeOnly setting: while it is on, placed Landscaper trees, logs, rocks and
-/// plants ignore damage and picking, so they can't be chopped, mined or harvested. The remove button
-/// still removes them. Checked when it happens rather than baked into the prefabs, so a value synced
-/// from the server, or changed in game, applies straight away.
+/// plants ignore damage and picking, so they can't be chopped, mined or harvested. Any piece placed
+/// as indestructible, vanilla ones included, also ignores damage but can still be picked. The remove
+/// button still removes them.
+/// Checked when it happens rather than baked into the prefabs, so a value synced from the server, or
+/// changed in game, applies straight away.
 /// </summary>
 internal static class DecorativeGuard
 {
@@ -15,6 +17,10 @@ internal static class DecorativeGuard
     public static Func<bool> Enabled { get; set; } = () => false;
 
     private static bool Blocks(Component component) =>
+        (Enabled() && PlacementInput.IsLandscaperPiece(component.gameObject)) ||
+        IndestructibleController.IsIndestructible(component);
+
+    private static bool BlocksPicking(Component component) =>
         Enabled() && PlacementInput.IsLandscaperPiece(component.gameObject);
 
     [HarmonyPatch(typeof(TreeBase), nameof(TreeBase.Damage))]
@@ -52,7 +58,7 @@ internal static class DecorativeGuard
     {
         private static bool Prefix(Pickable __instance, ref bool __result)
         {
-            if (!Blocks(__instance))
+            if (!BlocksPicking(__instance))
             {
                 return true;
             }

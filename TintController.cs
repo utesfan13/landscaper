@@ -9,7 +9,7 @@ namespace Landscaper;
 /// Tints Landscaper pieces while placing them. The tint is a hue (a position on the colour wheel),
 /// a strength (how much of that colour to blend in) and a brightness. It is multiplied with the
 /// piece's textures through the _Color shader value, so it can colour and darken but not brighten.
-/// Hold a modifier with the tint keys to change strength or brightness, or to step through presets.
+/// The tint keys step through presets; hold a modifier with them to fine-tune hue, strength or brightness.
 /// </summary>
 internal static class TintController
 {
@@ -35,7 +35,7 @@ internal static class TintController
     private static ConfigEntry<KeyCode> _forwardKey = null!;
     private static ConfigEntry<KeyCode> _strengthModifier = null!;
     private static ConfigEntry<KeyCode> _brightnessModifier = null!;
-    private static ConfigEntry<KeyCode> _presetModifier = null!;
+    private static ConfigEntry<KeyCode> _hueModifier = null!;
     private static ConfigEntry<float> _hueStep = null!;
     private static ConfigEntry<float> _amountStep = null!;
     private static ConfigEntry<float> _repeatRate = null!;
@@ -52,15 +52,15 @@ internal static class TintController
     public static void Bind(ConfigFile config)
     {
         _backKey = config.Bind("Tint", "TintBackKey", KeyCode.Comma,
-            "Tint the piece being placed. Alone it moves the hue backward round the colour wheel.");
+            "Tint the piece being placed. Alone it steps back through the presets; hold a modifier to fine-tune.");
         _forwardKey = config.Bind("Tint", "TintForwardKey", KeyCode.Period,
-            "Tint the piece being placed. Alone it moves the hue forward round the colour wheel.");
+            "Tint the piece being placed. Alone it steps forward through the presets; hold a modifier to fine-tune.");
         _strengthModifier = config.Bind("Tint", "StrengthModifier", KeyCode.LeftShift,
             "Hold with the tint keys to change how strong the tint is. Either side of the keyboard works.");
         _brightnessModifier = config.Bind("Tint", "BrightnessModifier", KeyCode.LeftControl,
             "Hold with the tint keys to make the piece darker or lighter. Either side of the keyboard works.");
-        _presetModifier = config.Bind("Tint", "PresetModifier", KeyCode.LeftAlt,
-            "Hold with the tint keys to step through the presets. Either side of the keyboard works.");
+        _hueModifier = config.Bind("Tint", "HueModifier", KeyCode.LeftAlt,
+            "Hold with the tint keys to move the hue round the colour wheel. Either side of the keyboard works.");
         _hueStep = config.Bind("Tint", "HueStep", 10f,
             new ConfigDescription("Degrees round the colour wheel per key press.", new AcceptableValueRange<float>(1f, 90f)));
         _amountStep = config.Bind("Tint", "StrengthBrightnessStep", 0.1f,
@@ -95,9 +95,9 @@ internal static class TintController
     public static string BackKeyName => PlacementInput.KeyName(_backKey.Value);
     public static string ForwardKeyName => PlacementInput.KeyName(_forwardKey.Value);
 
-    /// <summary>The strength, brightness and preset modifiers in order, e.g. "Shift/Ctrl/Alt".</summary>
+    /// <summary>The hue, strength and brightness modifiers in order, e.g. "Alt/Shift/Ctrl".</summary>
     public static string ModifierNames =>
-        $"{PlacementInput.KeyName(_strengthModifier.Value)}/{PlacementInput.KeyName(_brightnessModifier.Value)}/{PlacementInput.KeyName(_presetModifier.Value)}";
+        $"{PlacementInput.KeyName(_hueModifier.Value)}/{PlacementInput.KeyName(_strengthModifier.Value)}/{PlacementInput.KeyName(_brightnessModifier.Value)}";
 
     /// <summary>
     /// Sets the controls to reproduce a saved tint, for copying a tinted piece. Undoes <see cref="Current"/>:
@@ -139,7 +139,24 @@ internal static class TintController
         }
 
         string? presetName = null;
-        if (PlacementInput.IsHeld(_presetModifier.Value))
+        if (PlacementInput.IsHeld(_hueModifier.Value))
+        {
+            _hue = ((_hue + direction * _hueStep.Value) % 360f + 360f) % 360f;
+            // Turning the hue with no strength would show nothing, so start at a visible strength.
+            if (_strength <= 0f)
+            {
+                _strength = 0.5f;
+            }
+        }
+        else if (PlacementInput.IsHeld(_strengthModifier.Value))
+        {
+            _strength = Mathf.Clamp01(Round(_strength + direction * _amountStep.Value));
+        }
+        else if (PlacementInput.IsHeld(_brightnessModifier.Value))
+        {
+            _brightness = Mathf.Clamp(Round(_brightness + direction * _amountStep.Value), MinBrightness, 1f);
+        }
+        else
         {
             if (_presets.Count == 0)
             {
@@ -155,23 +172,6 @@ internal static class TintController
             _strength = preset.Strength;
             _brightness = preset.Brightness;
             presetName = preset.Name;
-        }
-        else if (PlacementInput.IsHeld(_strengthModifier.Value))
-        {
-            _strength = Mathf.Clamp01(Round(_strength + direction * _amountStep.Value));
-        }
-        else if (PlacementInput.IsHeld(_brightnessModifier.Value))
-        {
-            _brightness = Mathf.Clamp(Round(_brightness + direction * _amountStep.Value), MinBrightness, 1f);
-        }
-        else
-        {
-            _hue = ((_hue + direction * _hueStep.Value) % 360f + 360f) % 360f;
-            // Turning the hue with no strength would show nothing, so start at a visible strength.
-            if (_strength <= 0f)
-            {
-                _strength = 0.5f;
-            }
         }
 
         player.Message(MessageHud.MessageType.Center, Describe(presetName));

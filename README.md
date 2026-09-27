@@ -2,7 +2,7 @@
 Valheim Mod - Prefab placement
 
 Adds trees, rocks, plants, furniture and building pieces to the Cultivator, Hoe and Hammer menus.
-Pieces are free by default and need no workbench.
+Pieces cost a little wood or stone (see [Build Costs](#build-costs)) and need no workbench.
 
 ## Settings
 
@@ -12,6 +12,10 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | Setting | Default | Effect |
 |---|---|---|
 | `General.Enabled` | `true` | Master toggle. Requires a restart. |
+| `Costs.Enabled` | `true` | **Synced.** Charge wood or stone to place pieces; see [Build Costs](#build-costs). |
+| `Costs.Multiplier` | `1` | **Synced.** Multiplies the automatic costs (0.25 to 4). |
+| `Indestructible.Allowed` | `true` | **Synced.** Allow placing indestructible pieces; see [Indestructible Pieces](#indestructible-pieces). |
+| `Indestructible.ToggleKey` | `Backslash` | Turn indestructible placement on or off while building. |
 | `General.DecorativeOnly` | `false` | **Synced.** When `true`, placed trees, rocks and plants can't be chopped, mined or picked. Remove them with the remove button (middle click). |
 | `Tools.CultivatorDecorEnabled` / `HoeDecorEnabled` / `HammerDecorEnabled` | `true` | **Synced.** List pieces in that tool's menu. Turning one off only hides its pieces; ones already placed stay in the world. |
 | `CustomEntries.Entries` | empty | **Synced.** Extra pieces; see below. |
@@ -21,8 +25,8 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Scaling.ScaleStep` | `0.1` | How much each key press changes the scale, as a fraction of the current size (0.1 = 10%). |
 | `Scaling.ScaleRepeatRate` | `15` | Steps per second while a scale key is held down. |
 | `Scaling.MinScale` / `MaxScale` | `0.01` / `20` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 20). |
-| `Tint.TintBackKey` / `TintForwardKey` | `,` / `.` | Tint the piece being placed. |
-| `Tint.StrengthModifier` / `BrightnessModifier` / `PresetModifier` | `LeftShift` / `LeftControl` / `LeftAlt` | Hold with the tint keys to change strength, brightness, or step through presets. |
+| `Tint.TintBackKey` / `TintForwardKey` | `,` / `.` | Step through the tint presets for the piece being placed. |
+| `Tint.HueModifier` / `StrengthModifier` / `BrightnessModifier` | `LeftAlt` / `LeftShift` / `LeftControl` | Hold with the tint keys to fine-tune hue, strength or brightness. |
 | `Tint.HueStep` | `10` | Degrees round the colour wheel per key press. |
 | `Tint.StrengthBrightnessStep` | `0.1` | How much each key press changes strength or brightness (0.1 = 10%). |
 | `Tint.TintRepeatRate` | `15` | Steps per second while a tint key is held down. |
@@ -30,10 +34,29 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Height.HeightModifier` | `LeftAlt` | Hold and scroll to raise or lower the piece being placed. |
 | `Height.HeightStep` | `0.1` | Meters per scroll step. |
 
+## Build Costs
+
+Placing a piece costs wood or stone, and removing it refunds the cost:
+
+| Largest dimension of the piece | Cost |
+|---|---|
+| under 2 m (mushrooms, stools, small rocks) | 2 |
+| 2 to 6 m (bushes, benches, boulders) | 4 |
+| 6 to 15 m (trees, large statues) | 6 |
+| 15 m and over (cliffs, great pillars, frozen ships) | 8 |
+
+Trees, plants, stumps, furniture and wooden props cost wood; rocks, cliffs, ice, bones, statues and
+ruins cost stone. Building structures and copied objects go by their name (stone, iron, crystal and
+so on cost stone). Custom entries with their own requirements keep them. Resizing a piece while
+placing doesn't change its cost.
+
+Turn costs off with `Costs.Enabled`, or scale them with `Costs.Multiplier`. Chopping or mining a
+placed tree or rock gives back more than it cost; turn on `DecorativeOnly` to prevent that.
+
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.4.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.7.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
@@ -84,7 +107,10 @@ Valheim's copy shortcut (Shift + middle click by default). Landscaper selects th
 the same way and at the same size as the object, ready to place. Copying a tinted Landscaper piece
 copies its tint too.
 
-- If the object is in the catalog for another tool, you're told which tool to switch to.
+- It works whichever of the three tools you have out. If the object belongs to another tool, that
+  tool is equipped from your inventory and the piece selected. Without that tool, the host (or a
+  single player) gets the object added to the current tool's **Copied** tab instead; other players
+  are told which tool they need.
 - If it isn't in the catalog at all, it's added to the current tool's **Copied** tab and saved as a
   custom entry, so it's still there after a restart. Only the host (or a single player) can do this: a
   host deletes saved objects it doesn't have a piece for, so other players can only copy objects that
@@ -102,16 +128,29 @@ piece, and resets when you select a different piece or press End.
 Building pieces that need support (for example the Ashlands ruin walls) can still break if raised
 off the ground with nothing under them.
 
+## Indestructible Pieces
+
+Press `\` while building, with any tool and any piece selected, to turn indestructible placement on
+or off; the key hints show whether it's on. It stays on until you turn it off. Every piece placed
+while it's on never breaks, vanilla building pieces included: they ignore lack of support, weather,
+raids and attacks, so they can hang in the air or stand on nothing. Trees, rocks and saplings placed
+this way can't be chopped, mined or broken. Pieces can still be removed with the remove button (or
+`landscaper_remove` for Landscaper pieces), and berries and crops can still be picked.
+
+Each piece remembers whether it was placed as indestructible, so it survives reloads and applies for
+every player. A host can turn the feature off for everyone with `Indestructible.Allowed`; pieces
+already placed as indestructible stay that way.
+
 ## Tinting Pieces While Placing
 
 While the placement preview of any Landscaper piece is showing:
 
 | Keys | Effect |
 |---|---|
-| `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
+| `,` / `.` | Previous / next preset |
+| Alt + `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
 | Shift + `,` / `.` | Weaker / stronger tint |
 | Ctrl + `,` / `.` | Darker / lighter |
-| Alt + `,` / `.` | Previous / next preset |
 | End | Reset size, tint and height |
 
 The preview shows the tint as you change it, and the current values are shown mid-screen. Like
@@ -162,7 +201,8 @@ Entries = Giant Oak|Oak1|Cultivator|Trees|||2\nFlat Boulder|Rock_destructible|Ho
 
 Valid tools are `Cultivator`, `Hoe`, and `Hammer`. Rotation, requirements and scale are optional;
 leave a field empty to skip it, as in the example above. Requirements use item prefab names
-(`Wood`, `Stone`, `Resin`, ...), e.g. `Stone:10`; entries without requirements are free. Scale is
+(`Wood`, `Stone`, `Resin`, ...), e.g. `Stone:10`; entries without requirements get the automatic
+cost. Scale is
 either one number for all axes (`2`) or separate X,Y,Z values (`1.5,0.5,1.5`). Restart Valheim after
 changing the config.
 

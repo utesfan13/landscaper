@@ -12,12 +12,27 @@ namespace Landscaper;
 internal static class BuildKeyHints
 {
     private static readonly List<GameObject> Rows = new();
+    private static TMP_Text? _indestructibleLabel;
+    private static GameObject? _indestructibleRow;
 
-    /// <summary>Shows the rows only while scaling and tinting apply. Call every frame.</summary>
-    public static void SetVisible(bool visible)
+    /// <summary>Updates the indestructible row after the mode is toggled.</summary>
+    public static void RefreshIndestructibleLabel()
+    {
+        if (_indestructibleLabel != null)
+        {
+            _indestructibleLabel.text = IndestructibleController.HintLabel;
+        }
+    }
+
+    /// <summary>
+    /// Shows the scale, tint and height rows while a Landscaper piece is selected, and the
+    /// indestructible row whenever building, since that mode applies to every piece. Call every frame.
+    /// </summary>
+    public static void SetVisible(bool landscaperPiece, bool building)
     {
         foreach (var row in Rows)
         {
+            var visible = row == _indestructibleRow ? building : landscaperPiece;
             if (row != null && row.activeSelf != visible)
             {
                 row.SetActive(visible);
@@ -45,15 +60,26 @@ internal static class BuildKeyHints
             var scale = CreateRow(keyboard, snap.gameObject, "LandscaperScale", after.GetSiblingIndex() + 1,
                 $"Scale (hold {ScaleController.ModifierNames} for X/Y/Z)", ScaleController.DownKeyName, ScaleController.UpKeyName);
             var tint = CreateRow(keyboard, snap.gameObject, "LandscaperTint", scale.transform.GetSiblingIndex() + 1,
-                $"Tint ({TintController.ModifierNames}: strength/brightness/presets)",
+                $"Tint presets ({TintController.ModifierNames}: hue/strength/brightness)",
                 TintController.BackKeyName, TintController.ForwardKeyName);
 
             // The rotate row shows the mouse wheel, which is what raising and lowering uses.
+            var last = tint;
             var rotate = keyboard.Find("rotate");
             if (rotate is not null)
             {
-                CreateRow(keyboard, rotate.gameObject, "LandscaperHeight", tint.transform.GetSiblingIndex() + 1,
+                last = CreateRow(keyboard, rotate.gameObject, "LandscaperHeight", tint.transform.GetSiblingIndex() + 1,
                     $"Raise/lower (hold {HeightController.ModifierName})", string.Empty, string.Empty);
+            }
+
+            // The place row has a single key box, like the toggle.
+            var place = keyboard.Find("Place");
+            if (place is not null)
+            {
+                var indestructible = CreateRow(keyboard, place.gameObject, "LandscaperIndestructible", last.transform.GetSiblingIndex() + 1,
+                    IndestructibleController.HintLabel, IndestructibleController.ToggleKeyName, string.Empty);
+                _indestructibleRow = indestructible;
+                _indestructibleLabel = indestructible.transform.Find("Text")?.GetComponent<TMP_Text>();
             }
         }
 

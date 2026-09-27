@@ -32,6 +32,7 @@ internal static class ScaleController
     private static bool _ghostValid;
     private static Vector3? _copiedScale;
     private static Color? _copiedTint;
+    private static (ZNetView View, Vector3 Scale)? _justPlaced;
     private static GameObject? _ghostRenderersOwner;
     private static Renderer[] _ghostRenderers = Array.Empty<Renderer>();
     private static readonly MaterialPropertyBlock GhostBlock = new();
@@ -107,7 +108,14 @@ internal static class ScaleController
     {
         var player = Player.m_localPlayer;
         var placingLandscaperPiece = PlacingLandscaperPiece;
-        BuildKeyHints.SetVisible(placingLandscaperPiece);
+        BuildKeyHints.SetVisible(placingLandscaperPiece, player is not null && player.InPlaceMode());
+
+        // The indestructible mode stays on across pieces, so it can be toggled with any piece selected.
+        if (player is not null && player.InPlaceMode() && !PlacementInput.IsTyping())
+        {
+            IndestructibleController.HandleInput(player);
+        }
+
         if (!placingLandscaperPiece || PlacementInput.IsTyping())
         {
             return;
@@ -221,21 +229,31 @@ internal static class ScaleController
     }
 
     /// <summary>
-    /// Tints the placement ghost again just before it renders. Setting it through MaterialMan in the
-    /// ghost update is enough on its own in a plain game, but other mods can overwrite the ghost's
-    /// material values later in the same frame. LateUpdate runs after every Update, so writing the
-    /// colour straight into the renderers' property blocks here wins. Their other values are kept.
+    /// Sizes and tints the placement ghost again just before it renders. Doing it in the ghost update
+    /// is enough on its own in a plain game, but other building mods can change the ghost's size or
+    /// material values later in the same frame. LateUpdate runs after every Update, so this wins. The
+    /// tint is written straight into the renderers' property blocks, keeping their other values.
     /// Call every frame from LateUpdate.
     /// </summary>
     public static void LateUpdate()
     {
-        var tint = TintController.Current;
-        if (tint is null || !_ghostValid || !PlacingLandscaperPiece)
+        if (!PlacingLandscaperPiece)
         {
             return;
         }
 
         var ghost = _ghost!;
+        if (ZNetScene.instance?.GetPrefab(ghost.name) is { } prefab)
+        {
+            ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
+        }
+
+        var tint = TintController.Current;
+        if (tint is null || !_ghostValid)
+        {
+            return;
+        }
+
         if (!ReferenceEquals(ghost, _ghostRenderersOwner))
         {
             _ghostRenderersOwner = ghost;
@@ -272,14 +290,46 @@ internal static class ScaleController
                 return;
             }
 
-            if (_scale != Vector3.one)
+            // Set the size from the prefab, the same way the ghost is sized, rather than multiplying the
+            // placed object's current size: some mods create the placed object from the already scaled
+            // ghost or copy its size, and multiplying again would square the scale.
+            var prefab = ZNetScene.instance.GetPrefab(view.GetZDO().GetPrefab());
+            var baseScale = prefab != null ? prefab.transform.localScale : __instance.transform.localScale;
+            var scale = Vector3.Scale(baseScale, _scale);
+            if (__instance.transform.localScale != scale)
             {
-                view.SetLocalScale(Vector3.Scale(__instance.transform.localScale, _scale));
+                view.SetLocalScale(scale);
             }
+
+            _justPlaced = (view, scale);
 
             if (TintController.Current is { } tint)
             {
                 LandscaperTint.Save(__instance.gameObject, tint);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Runs after every other mod's patches on placing a piece and re-applies the size chosen above,
+    /// in case one of them resized the placed object afterwards.
+    /// </summary>
+    [HarmonyPatch(typeof(Player), nameof(Player.PlacePiece))]
+    private static class EnforcePlacedScalePatch
+    {
+        [HarmonyPriority(Priority.Last)]
+        private static void Postfix()
+        {
+            if (_justPlaced is not { } placed)
+            {
+                return;
+            }
+
+            _justPlaced = null;
+            var (view, scale) = placed;
+            if (view != null && view.IsValid() && view.transform.localScale != scale)
+            {
+                view.SetLocalScale(scale);
             }
         }
     }

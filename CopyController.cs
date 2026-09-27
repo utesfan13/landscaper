@@ -77,15 +77,27 @@ internal static class CopyController
         var source = pieces.SourcePrefabOf(prefab.name) ?? prefab.name;
         var piece = pieces.FindPiece(source, tool);
         var added = false;
+        BuildTool? switchedTo = null;
+
+        // Pieces belong to one tool. If another tool has this one, switch to it when it's in the
+        // inventory, so copying works whichever tool is out.
+        if (piece is null && pieces.FindToolFor(source) is { } otherTool && TryEquipTool(player, otherTool))
+        {
+            tool = otherTool;
+            switchedTo = otherTool;
+            piece = pieces.FindPiece(source, otherTool);
+        }
+
         if (piece is null)
         {
-            if (pieces.FindToolFor(source) is { } otherTool)
+            var isHost = ZNet.instance is not null && ZNet.instance.IsServer();
+            if (!isHost && pieces.FindToolFor(source) is { } neededTool)
             {
-                player.Message(MessageHud.MessageType.Center, $"{DisplayNameFor(target, source)} is on the {otherTool}; switch to it to copy this.");
+                player.Message(MessageHud.MessageType.Center, $"{DisplayNameFor(target, source)} is placed with the {neededTool}; you need one in your inventory.");
                 return false;
             }
 
-            if (ZNet.instance is null || !ZNet.instance.IsServer())
+            if (!isHost)
             {
                 player.Message(MessageHud.MessageType.Center, "Only the host can copy objects that aren't in the Landscaper catalog.");
                 return false;
@@ -109,8 +121,20 @@ internal static class CopyController
 
         ScaleController.ApplyCopied(ScaleRatio(target.transform, piece.transform), isLandscaper ? LandscaperTint.Read(target.gameObject) : null);
         player.Message(MessageHud.MessageType.Center,
-            added ? $"Copied {piece.m_name}; added to the {tool}'s {CopiedCategory} tab" : $"Copied {piece.m_name}");
+            added ? $"Copied {piece.m_name}; added to the {tool}'s {CopiedCategory} tab"
+            : switchedTo is { } switched ? $"Copied {piece.m_name}; switched to the {switched}"
+            : $"Copied {piece.m_name}");
         return true;
+    }
+
+    /// <summary>Equips the tool from the inventory, if the player has a usable one.</summary>
+    private static bool TryEquipTool(Player player, BuildTool tool)
+    {
+        var table = PieceManager.Instance.GetPieceTable(tool.ToString());
+        var item = table is null
+            ? null
+            : player.GetInventory().GetAllItems().FirstOrDefault(candidate => candidate.m_shared.m_buildPieces == table);
+        return item is not null && player.EquipItem(item);
     }
 
     /// <summary>The world object under the crosshair, found the same way Valheim's copy does.</summary>

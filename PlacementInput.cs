@@ -32,6 +32,7 @@ internal static class PlacementInput
         KeyCode.Semicolon => ";",
         KeyCode.Quote => "'",
         KeyCode.Slash => "/",
+        KeyCode.Backslash => "\\",
         KeyCode.LeftAlt or KeyCode.RightAlt => "Alt",
         KeyCode.LeftShift or KeyCode.RightShift => "Shift",
         KeyCode.LeftControl or KeyCode.RightControl => "Ctrl",

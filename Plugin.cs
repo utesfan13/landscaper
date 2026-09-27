@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.zackc";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.4.0";
+    public const string ModVersion = "0.7.0";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -33,6 +33,14 @@ public sealed class Plugin : BaseUnityPlugin
         ConfigDescription Synced(string description) => new($"{description} Synced from the server in multiplayer.", null, synced);
 
         var enabled = Config.Bind("General", "Enabled", true, "Master toggle for the decorative landscaping pieces. Requires a restart.");
+        var costsEnabled = Config.Bind("Costs", "Enabled", true,
+            Synced("Charge wood or stone to place pieces: 2 for small pieces up to 8 for very large ones. Removing a piece refunds it. " +
+                   "Custom entries with their own requirements keep them."));
+        var costMultiplier = Config.Bind("Costs", "Multiplier", 1f, new ConfigDescription(
+            "Multiplies the automatic costs, e.g. 0.5 for cheaper or 2 for more expensive. Synced from the server in multiplayer.",
+            new AcceptableValueRange<float>(0.25f, 4f), synced));
+        var allowIndestructible = Config.Bind("Indestructible", "Allowed", true,
+            Synced("Allow placing indestructible pieces, which never break from lack of support, weather or attacks."));
         var decorativeOnly = Config.Bind("General", "DecorativeOnly", false,
             Synced("When true, placed trees, rocks and plants can't be chopped, mined or picked; remove them with the remove button (middle click) instead."));
         var cultivator = Config.Bind("Tools", "CultivatorDecorEnabled", true, Synced("List decorative pieces in the Cultivator menu."));
@@ -64,6 +72,8 @@ public sealed class Plugin : BaseUnityPlugin
 
         Pieces = new DecorativePieceManager(Log, Info.Metadata, () => customEntries.Value, ToolEnabled);
         DecorativeGuard.Enabled = () => decorativeOnly.Value;
+        BuildCosts.Enabled = () => costsEnabled.Value;
+        BuildCosts.Multiplier = () => costMultiplier.Value;
 
         // Synced values arrive after the world has started loading, and admins can change them in
         // game, so apply changes as they come instead of only at startup.
@@ -72,11 +82,14 @@ public sealed class Plugin : BaseUnityPlugin
         hoe.SettingChanged += RequestRefresh;
         hammer.SettingChanged += RequestRefresh;
         customEntries.SettingChanged += RequestRefresh;
+        costsEnabled.SettingChanged += RequestRefresh;
+        costMultiplier.SettingChanged += RequestRefresh;
 
         ScaleController.Bind(Config);
         TintController.Bind(Config);
         HeightController.Bind(Config);
         CopyController.Bind(customEntries);
+        IndestructibleController.Bind(Config, () => allowIndestructible.Value);
         PrefabManager.OnPrefabsRegistered += OnPrefabsRegistered;
         PieceManager.OnPiecesRegistered += () => Pieces?.UpdateMenus();
         new Harmony(ModGuid).PatchAll();
@@ -144,8 +157,9 @@ public sealed class Plugin : BaseUnityPlugin
 }
 
 /// <summary>
-/// Marks free Landscaper pieces as known before Valheim checks for new recipes. Valheim would unlock
-/// them anyway, but it would show a "new piece" message for every one of them on a new character.
+/// Marks Landscaper pieces as known before Valheim checks for new recipes. Valheim would unlock them
+/// anyway once the player knows wood and stone, but it would show a "new piece" message for every
+/// one of them on a new character.
 /// </summary>
 [HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
 internal static class SilentUnlockPatch
@@ -157,7 +171,7 @@ internal static class SilentUnlockPatch
             return;
         }
 
-        foreach (var name in Plugin.Pieces.FreePieceNames)
+        foreach (var name in Plugin.Pieces.PieceNames)
         {
             ___m_knownRecipes.Add(name);
         }
