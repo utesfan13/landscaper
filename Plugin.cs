@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.zackc";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.8.3";
+    public const string ModVersion = "0.8.6";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -34,7 +34,8 @@ public sealed class Plugin : BaseUnityPlugin
 
         var enabled = Config.Bind("General", "Enabled", true, "Master toggle for the decorative landscaping pieces. Requires a restart.");
         var costsEnabled = Config.Bind("Costs", "Enabled", true,
-            Synced("Charge wood or stone to place pieces: 2 for small pieces up to 8 for very large ones. Removing a piece refunds it. " +
+            Synced("Charge a small cost to place pieces: 5 of the item for pickables, 1 iron for metal pieces, otherwise 2 to 8 " +
+                   "wood or stone by size, plus 1 resin for crafted light sources. Removing a piece refunds it. " +
                    "Custom entries with their own requirements keep them."));
         var costMultiplier = Config.Bind("Costs", "Multiplier", 1f, new ConfigDescription(
             "Multiplies the automatic costs, e.g. 0.5 for cheaper or 2 for more expensive. Synced from the server in multiplayer.",

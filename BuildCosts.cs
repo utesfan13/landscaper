@@ -1,15 +1,60 @@
+using Jotunn.Managers;
 using UnityEngine;
 
 namespace Landscaper;
 
+/// <summary>What a piece's automatic cost is based on, measured from its prefab when registered.</summary>
+internal sealed class PieceTraits
+{
+    public PieceTraits(float size, ItemDrop? pickableItem, bool hasLight, Piece.Requirement[]? vanillaResources, CraftingStation? vanillaStation)
+    {
+        Size = size;
+        PickableItem = pickableItem;
+        HasLight = hasLight;
+        VanillaResources = vanillaResources;
+        VanillaStation = vanillaStation;
+    }
+
+    /// <summary>The cost of the vanilla build piece this piece is cloned from, if it is one.</summary>
+    public Piece.Requirement[]? VanillaResources { get; }
+
+    /// <summary>The crafting station the vanilla build piece needs nearby, if any.</summary>
+    public CraftingStation? VanillaStation { get; }
+
+    /// <summary>The largest dimension of the model in meters.</summary>
+    public float Size { get; }
+
+    /// <summary>The item picking it gives, for bushes, mushrooms and other pickables.</summary>
+    public ItemDrop? PickableItem { get; }
+
+    /// <summary>Whether it gives off light, like torches, lanterns and braziers.</summary>
+    public bool HasLight { get; }
+}
+
 /// <summary>
-/// Automatic build costs for pieces that don't set their own: wood or stone depending on what the
-/// piece is, and 2 to 8 of it depending on how big its model is. Removing a piece refunds its cost.
+/// Automatic build costs for pieces that don't set their own. Removing a piece refunds its cost.
+/// Pieces cloned from vanilla build pieces use the vanilla cost and crafting station instead (see
+/// DecorativePieceManager.CostFor); for the rest:
+/// <list type="bullet">
+/// <item>Pickables (bushes, mushrooms, thistle, ...) cost 5 of the item they give.</item>
+/// <item>Metal pieces (lanterns, braziers, iron torches, chains, ...) cost 1 iron.</item>
+/// <item>Everything else costs 2 to 8 depending on the size of its model, of wood or stone depending
+/// on what it is, ice for ice and snow, bone fragments for bones, or wood and ice split evenly for
+/// the stump shelters and frozen ships.</item>
+/// <item>Crafted light sources (torches, lanterns, braziers) cost 1 resin on top; pickables and other
+/// natural pieces never do, even if they glow.</item>
+/// </list>
+/// The multiplier applies to all of them, with at least 1 of anything.
 /// </summary>
 internal static class BuildCosts
 {
     private const string Wood = "Wood";
     private const string Stone = "Stone";
+    private const string Iron = "Iron";
+    private const string Resin = "Resin";
+    private const string Ice = "Ice";
+    private const string Bone = "BoneFragments";
+    private const int PickableAmount = 5;
 
     private static readonly HashSet<string> StoneCategories = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -25,7 +70,14 @@ internal static class BuildCosts
 
     private static readonly string[] StoneNameHints =
     {
-        "stone", "rock", "iron", "crystal", "marble", "cliff", "ice", "bone", "skull", "statue", "boulder"
+        "stone", "rock", "crystal", "marble", "cliff", "ice", "bone", "skull", "statue", "boulder"
+    };
+
+    /// <summary>Prefab name parts of metal pieces. Checked before the categories.</summary>
+    private static readonly string[] MetalNameHints =
+    {
+        "iron", "metal", "lantern", "brazier", "chain", "groundtorch", "walltorch", "sconce", "grate", "pickaxe",
+        "giant_sword", "giant_helmet"
     };
 
     /// <summary>Reads whether automatic costs are on.</summary>
@@ -34,9 +86,108 @@ internal static class BuildCosts
     /// <summary>Reads the multiplier applied to automatic costs.</summary>
     public static Func<float> Multiplier { get; set; } = () => 1f;
 
-    /// <summary>The item a piece costs: by its category, or for other categories (such as Building
-    /// Structures, Copied and custom ones) by its prefab name, falling back to the tool.</summary>
-    public static string MaterialFor(DecorativePieceDefinition definition)
+    /// <summary>The items and amounts a piece costs. An item is null if it can't be found.</summary>
+    public static IEnumerable<(ItemDrop? Item, int Amount)> CostFor(DecorativePieceDefinition definition, PieceTraits traits)
+    {
+        // Pickables cost only 5 of what they give, even the ones that glow.
+        if (traits.PickableItem is { } picked)
+        {
+            yield return (picked, Scaled(PickableAmount));
+            yield break;
+        }
+
+        if (IsMetal(definition))
+        {
+            yield return (ItemNamed(Iron), Scaled(1));
+        }
+        else
+        {
+            // Pieces made of two materials split the amount, so they cost the same in total.
+            var materials = MaterialsFor(definition);
+            var amount = AmountFor(traits.Size);
+            foreach (var material in materials)
+            {
+                yield return (ItemNamed(material), Mathf.Max(1, Mathf.CeilToInt(amount / (float)materials.Length)));
+            }
+        }
+
+        if (traits.HasLight && !NaturalCategories.Contains(definition.Category))
+        {
+            yield return (ItemNamed(Resin), Scaled(1));
+        }
+    }
+
+    /// <summary>
+    /// Plants, trees, rocks and the like. Some of them glow (glowing mushrooms), but only crafted
+    /// light sources such as torches and lanterns cost resin.
+    /// </summary>
+    private static readonly HashSet<string> NaturalCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Trees", "Stumps & Logs", "Plants", "Roots & Branches", "Rocks", "Cliffs", "Ice", "Ore & Mining",
+        "Natural Props", "Bones & Remains"
+    };
+
+    /// <summary>Categories whose pieces are rock even when named after a metal, e.g. the iron mine rock.</summary>
+    private static readonly HashSet<string> NeverMetalCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Rocks", "Cliffs", "Ore & Mining"
+    };
+
+    private static bool IsMetal(DecorativePieceDefinition definition)
+    {
+        if (NeverMetalCategories.Contains(definition.Category))
+        {
+            return false;
+        }
+
+        var name = definition.PrefabName.ToLowerInvariant();
+        return MetalNameHints.Any(name.Contains);
+    }
+
+    /// <summary>Wood or stone: by category, or for other categories (such as Building Structures,
+    /// Copied and custom ones) by prefab name, falling back to the tool.</summary>
+    /// <summary>Wood and ice: stump shelters and ships frozen in ice.</summary>
+    private static readonly HashSet<string> WoodAndIcePrefabs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "StumpHut", "StumpHole", "frozenship", "frozenship02", "frozenship03",
+        "Ice_ship_1", "Ice_ship_2", "Ice_ship_3", "Ice_ship_4", "Ice_ship_5", "Ice_ship_6", "Ice_ship_7"
+    };
+
+    /// <summary>Ice, besides everything in the Ice category.</summary>
+    private static readonly HashSet<string> IcePrefabs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "rock3_ice", "ice_rock1", "IcePond_rock", "FrozenGD"
+    };
+
+    /// <summary>Stone, although in the bones category.</summary>
+    private static readonly HashSet<string> NotBonePrefabs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "giant_brain"
+    };
+
+    /// <summary>What a piece that isn't a pickable or metal is made of: one material, or two for
+    /// pieces like the stump hut (wood and ice).</summary>
+    private static string[] MaterialsFor(DecorativePieceDefinition definition)
+    {
+        if (WoodAndIcePrefabs.Contains(definition.PrefabName))
+        {
+            return new[] { Wood, Ice };
+        }
+
+        if (IcePrefabs.Contains(definition.PrefabName) || definition.Category.Equals("Ice", StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { Ice };
+        }
+
+        if (definition.Category.Equals("Bones & Remains", StringComparison.OrdinalIgnoreCase) && !NotBonePrefabs.Contains(definition.PrefabName))
+        {
+            return new[] { Bone };
+        }
+
+        return new[] { MaterialFor(definition) };
+    }
+
+    private static string MaterialFor(DecorativePieceDefinition definition)
     {
         if (StoneCategories.Contains(definition.Category))
         {
@@ -57,10 +208,10 @@ internal static class BuildCosts
         return definition.Tool == BuildTool.Hoe ? Stone : Wood;
     }
 
-    /// <summary>How many of that item, from the largest dimension of the model in meters.</summary>
-    public static int AmountFor(float size)
-    {
-        var amount = size < 2f ? 2 : size < 6f ? 4 : size < 15f ? 6 : 8;
-        return Mathf.Max(1, Mathf.RoundToInt(amount * Multiplier()));
-    }
+    /// <summary>How much wood or stone, from the largest dimension of the model in meters.</summary>
+    private static int AmountFor(float size) => Scaled(size < 2f ? 2 : size < 6f ? 4 : size < 15f ? 6 : 8);
+
+    private static int Scaled(int amount) => Mathf.Max(1, Mathf.RoundToInt(amount * Multiplier()));
+
+    private static ItemDrop? ItemNamed(string name) => PrefabManager.Instance.GetPrefab(name)?.GetComponent<ItemDrop>();
 }
