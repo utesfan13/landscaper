@@ -14,6 +14,16 @@ internal static class BuildKeyHints
     private static readonly List<GameObject> Rows = new();
     private static TMP_Text? _indestructibleLabel;
     private static GameObject? _indestructibleRow;
+    private static TMP_Text? _offsetLabel;
+
+    /// <summary>Updates the scroll row after the rotate/move mode is switched.</summary>
+    public static void RefreshOffsetLabel()
+    {
+        if (_offsetLabel != null)
+        {
+            _offsetLabel.text = OffsetController.HintLabel;
+        }
+    }
 
     /// <summary>Updates the indestructible row after the mode is toggled.</summary>
     public static void RefreshIndestructibleLabel()
@@ -69,7 +79,8 @@ internal static class BuildKeyHints
             if (rotate is not null)
             {
                 last = CreateRow(keyboard, rotate.gameObject, "LandscaperOffset", tint.transform.GetSiblingIndex() + 1,
-                    $"Move ({OffsetController.ModifierNames}: up/sideways/forward)", string.Empty, string.Empty);
+                    OffsetController.HintLabel, string.Empty, string.Empty);
+                _offsetLabel = last.transform.Find("Text")?.GetComponent<TMP_Text>();
             }
 
             // The place row has a single key box, like the toggle.

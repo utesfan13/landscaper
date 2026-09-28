@@ -41,6 +41,7 @@ internal sealed class PieceTraits
 /// Pieces cloned from vanilla build pieces use the vanilla cost and crafting station instead (see
 /// DecorativePieceManager.CostFor); for the rest:
 /// <list type="bullet">
+/// <item>A few pieces have a set cost, such as the guck sacks (1 or 2 guck).</item>
 /// <item>Pickables (bushes, mushrooms, thistle, ...) cost 5 of the item they give; loose stones
 /// and fallen branches, which give plain stone or wood, cost 1.</item>
 /// <item>Metal pieces (lanterns, braziers, iron torches, chains, ...) cost 1 iron.</item>
@@ -102,6 +103,12 @@ internal static class BuildCosts
             yield break;
         }
 
+        if (FixedCosts.TryGetValue(definition.PrefabName, out var fixedCost))
+        {
+            yield return (ItemNamed(fixedCost.Item), Scaled(fixedCost.Amount));
+            yield break;
+        }
+
         if (traits.PickableItem is { } picked)
         {
             var givesBasicMaterial = picked.name is Wood or Stone;
@@ -130,6 +137,45 @@ internal static class BuildCosts
         }
     }
 
+    /// <summary>Pieces with a set cost of their own, instead of one worked out from their size.</summary>
+    private static readonly Dictionary<string, (string Item, int Amount)> FixedCosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["GuckSack_small"] = ("Guck", 1),
+        ["GuckSack"] = ("Guck", 2)
+    };
+
+    /// <summary>
+    /// Pieces made of something other than what their category is mostly made of: wooden and cloth
+    /// pieces among the stone ruins and dungeon decor, and stone pots among the wooden props.
+    /// </summary>
+    private static readonly Dictionary<string, string> MaterialOverrides = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Natural Props
+        ["stubbe"] = Wood, ["stubbe_deepnorth"] = Wood, ["volture_strawpile"] = Wood, ["elaking_trashpile"] = Wood,
+        // Jotun Halls
+        ["Morkhalla_Banner1"] = Wood, ["Morkhalla_Banner2"] = Wood, ["Morkhalla_Bench"] = Wood, ["Morkhalla_Stool"] = Wood,
+        ["Morkhalla_Table"] = Wood, ["Morkhalla_Bedroll1"] = Wood, ["Morkhalla_Bedroll2"] = Wood,
+        ["Morkhalla_WeaponStand"] = Wood, ["Morkhalla_Trainingdummy1"] = Wood, ["Morkhalla_Trainingdummy2"] = Wood,
+        ["Morkhalla_WoodBoards"] = Wood, ["Morkhalla_Rug_middle"] = Wood, ["Morkhalla_Rug_corner"] = Wood,
+        ["Morkhalla_Rug_end1"] = Wood, ["Morkhalla_Rug_end2"] = Wood, ["Morkhalla_Rug_stair"] = Wood,
+        // Dungeon Decor
+        ["dvergrtown_wood_beam"] = Wood, ["dvergrtown_wood_pole"] = Wood, ["dvergrtown_wood_stake"] = Wood,
+        ["dvergrtown_wood_stakewall"] = Wood, ["dvergrtown_stair_corner_wood_left"] = Wood,
+        ["dvergrprops_crate_ashlands"] = Wood, ["cloth_hanging_door"] = Wood, ["cloth_hanging_door_double"] = Wood,
+        ["fenrirhide_hanging_door"] = Wood, ["wooden_path"] = Wood, ["trader_wagon_destructable"] = Wood,
+        ["prop_itemstand"] = Wood, ["prop_piece_chair03"] = Wood,
+        // Props and Workshop Props
+        ["CastleKit_pot03"] = Stone, ["ashland_pot1_green"] = Stone, ["ashland_pot1_red"] = Stone,
+        ["ashland_pot2_green"] = Stone, ["ashland_pot2_red"] = Stone, ["ashland_pot3_green"] = Stone,
+        ["ashland_pot3_red"] = Stone, ["prop_cauldron_ext5_mortarandpestle"] = Stone
+    };
+
+    /// <summary>Metal pieces whose names don't give it away.</summary>
+    private static readonly HashSet<string> MetalPrefabs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "prop_piece_cauldron", "prop_piece_MeadCauldron"
+    };
+
     /// <summary>
     /// Plants, trees, rocks and the like. Some of them glow (glowing mushrooms), but only crafted
     /// light sources such as torches and lanterns cost resin.
@@ -148,6 +194,11 @@ internal static class BuildCosts
 
     private static bool IsMetal(DecorativePieceDefinition definition)
     {
+        if (MetalPrefabs.Contains(definition.PrefabName))
+        {
+            return true;
+        }
+
         if (NeverMetalCategories.Contains(definition.Category))
         {
             return false;
@@ -157,8 +208,6 @@ internal static class BuildCosts
         return MetalNameHints.Any(name.Contains);
     }
 
-    /// <summary>Wood or stone: by category, or for other categories (such as Building Structures,
-    /// Copied and custom ones) by prefab name, falling back to the tool.</summary>
     /// <summary>Wood and ice: stump shelters and ships frozen in ice.</summary>
     private static readonly HashSet<string> WoodAndIcePrefabs = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -200,8 +249,15 @@ internal static class BuildCosts
         return new[] { MaterialFor(definition) };
     }
 
+    /// <summary>Wood or stone: by override, by category, or for other categories (such as Building
+    /// Structures, Copied and custom ones) by prefab name, falling back to the tool.</summary>
     private static string MaterialFor(DecorativePieceDefinition definition)
     {
+        if (MaterialOverrides.TryGetValue(definition.PrefabName, out var material))
+        {
+            return material;
+        }
+
         if (StoneCategories.Contains(definition.Category))
         {
             return Stone;

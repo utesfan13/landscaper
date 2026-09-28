@@ -42,7 +42,7 @@ internal static class ScaleController
             "Make the piece being placed bigger. Alone it scales all axes; hold an axis modifier to scale one axis.");
         _downKey = config.Bind("Scaling", "ScaleDownKey", KeyCode.LeftBracket,
             "Make the piece being placed smaller. Alone it scales all axes; hold an axis modifier to scale one axis.");
-        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint and position offset of the piece being placed.");
+        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint, position offset and tilt of the piece being placed.");
         _xModifier = config.Bind("Scaling", "XAxisModifier", KeyCode.LeftAlt, "Hold with the scale keys to change only X (width). Either side of the keyboard works.");
         _yModifier = config.Bind("Scaling", "YAxisModifier", KeyCode.LeftShift, "Hold with the scale keys to change only Y (height). Either side of the keyboard works.");
         _step = config.Bind("Scaling", "ScaleStep", 0.1f,
@@ -136,7 +136,7 @@ internal static class ScaleController
             _scale = Vector3.one;
             TintController.Reset();
             OffsetController.Reset();
-            player!.Message(MessageHud.MessageType.Center, "Scale, tint and position reset");
+            player!.Message(MessageHud.MessageType.Center, "Scale, tint, position and tilt reset");
             return;
         }
 
@@ -205,11 +205,12 @@ internal static class ScaleController
                     TintController.SetFromColor(copiedTint);
                 }
 
-                OffsetController.Reset();
+                OffsetController.ResetForNewPiece();
             }
 
             _copiedScale = null;
             _copiedTint = null;
+            OffsetController.ClearCopied();
 
             if (!PlacementInput.IsLandscaperPiece(_ghost))
             {
@@ -227,7 +228,13 @@ internal static class ScaleController
 
             // Valheim recalculates the ghost's position every update and places the piece where the
             // ghost is, so moving the ghost here moves the placed piece too.
-            ghost.transform.position += OffsetController.WorldOffset;
+            // Only while Valheim has just positioned the ghost: a hidden ghost keeps its last transform,
+            // and adding to it every frame would pile up.
+            if (ghost.activeSelf)
+            {
+                ghost.transform.position += OffsetController.WorldOffset;
+                ghost.transform.rotation *= OffsetController.Rotation;
+            }
 
             // Valheim clears the ghost's colour every frame and turns it red when placement is invalid;
             // only tint a valid ghost so that warning stays visible.
@@ -308,6 +315,9 @@ internal static class ScaleController
         }
 
         var ghost = _ghost!;
+
+        // Read again: relaxed placement rules can make the ghost valid after it was sized above.
+        _ghostValid = Player.m_localPlayer!.GetPlacementStatus() == Player.PlacementStatus.Valid;
         if (ZNetScene.instance?.GetPrefab(ghost.name) is { } prefab)
         {
             var sizeScale = SizeScaleFor(ghost);

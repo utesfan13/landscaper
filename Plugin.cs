@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.valheim";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.10.3";
+    public const string ModVersion = "0.13.2";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -45,6 +45,10 @@ public sealed class Plugin : BaseUnityPlugin
             Synced("Allow placing indestructible pieces, which never break from lack of support, weather or attacks."));
         var decorativeOnly = Config.Bind("General", "DecorativeOnly", false,
             Synced("When true, placed trees, rocks and plants can't be chopped, mined or picked; remove them with the remove button (middle click) instead."));
+        var ignorePlacementRules = Config.Bind("Placement", "IgnoreRules", true,
+            Synced("Allow placing Landscaper pieces where Valheim normally wouldn't (clipping, unsupported, wrong biome, " +
+                   "in dungeons, ...), and Hoe and Cultivator pieces on floors and objects as well as the ground. Overlapping a player or creature and other players' wards still block placing."));
+        PlacementRules.IgnoreRules = () => ignorePlacementRules.Value;
         var cultivator = Config.Bind("Tools", "CultivatorDecorEnabled", true, Synced("List decorative pieces in the Cultivator menu."));
         var hoe = Config.Bind("Tools", "HoeDecorEnabled", true, Synced("List decorative pieces in the Hoe menu."));
         var hammer = Config.Bind("Tools", "HammerDecorEnabled", true, Synced("List decorative pieces in the Hammer menu."));
