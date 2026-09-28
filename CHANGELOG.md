@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.1
+- Fixed the Old Pine Log, which failed to load properly once placed and couldn't be chopped. Logs
+  already placed work again.
+- Quieter log: only problems and a one-line summary are logged at startup.
+
 ## 0.15.0
 - The mod's ID is now `utesfan13.landscaper`, so its config file is `BepInEx/config/utesfan13.landscaper.cfg`.
   To keep your settings from an earlier version, copy `landscaper.valheim.cfg` to that name. Every player

@@ -94,7 +94,7 @@ public sealed class DecorativePieceManager
             .GroupBy(resources => $"{resources![0].m_amount} {resources[0].m_resItem.m_itemData.m_shared.m_name}")
             .OrderBy(group => group.Key)
             .Select(group => $"{group.Key}: {group.Count()}");
-        _log.LogInfo($"Build costs: {string.Join(", ", costs)}");
+        _log.LogDebug($"Build costs: {string.Join(", ", costs)}");
     }
 
     /// <summary>
@@ -691,7 +691,9 @@ public sealed class DecorativePieceManager
     /// <item>Containers keep working as storage but get no default loot, and don't destroy themselves
     /// when empty (a new cargo crate is empty for a moment and would delete itself straight away).</item>
     /// <item>Floating, network movement sync and rigidbodies are removed so pieces don't roll, fall
-    /// or bob. The placement ghost already has its rigidbodies removed, so this matches the preview.</item>
+    /// or bob. The placement ghost already has its rigidbodies removed, so this matches the preview.
+    /// Fallen logs (TreeLog) use their rigidbody as soon as they're created and break without it, so
+    /// theirs is kept but made kinematic, which holds it still just the same.</item>
     /// </list>
     /// </summary>
     private static void MakeStaticDecoration(GameObject clone)
@@ -705,7 +707,18 @@ public sealed class DecorativePieceManager
         // Components that use the rigidbody go first, or Unity refuses to remove it.
         DestroyAll<Floating>(clone);
         DestroyAll<ZSyncTransform>(clone);
-        DestroyAll<Rigidbody>(clone);
+        foreach (var body in clone.GetComponentsInChildren<Rigidbody>(includeInactive: true))
+        {
+            if (body.GetComponent<TreeLog>() != null)
+            {
+                body.isKinematic = true;
+                body.useGravity = false;
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(body);
+            }
+        }
     }
 
     /// <summary>

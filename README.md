@@ -426,5 +426,6 @@ dotnet build -c Release -t:Package
 
 This writes `bin/Landscaper-<version>.zip`, ready to upload to Thunderstore or Nexus Mods. It contains
 `manifest.json` (from `package/manifest.template.json`), `icon.png` (`package/icon.png`, a 256x256 PNG
-you provide), this README, `CHANGELOG.md` and `plugins/Landscaper.dll`. The version comes from
+you provide), `README.md` (`package/README.md`, a shorter player-facing page; keep it in step with
+this one), `CHANGELOG.md` and `plugins/Landscaper.dll`. The version comes from
 `ModVersion` in `Plugin.cs`, the only place it's set; update `CHANGELOG.md` for each release.

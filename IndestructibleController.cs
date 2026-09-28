@@ -53,7 +53,7 @@ internal static class IndestructibleController
         }
 
         _on = !_on;
-        Plugin.Log.LogInfo($"Indestructible placement {(_on ? "on" : "off")}.");
+        Plugin.Log.LogDebug($"Indestructible placement {(_on ? "on" : "off")}.");
         BuildKeyHints.RefreshIndestructibleLabel();
         player.Message(MessageHud.MessageType.Center, _on
             ? "Indestructible placement ON: pieces placed now won't break"
