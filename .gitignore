@@ -7,3 +7,4 @@ obj/
 *.dll
 *.pdb
 reflect_types.txt
+Local.props

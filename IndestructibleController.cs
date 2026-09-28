@@ -17,6 +17,9 @@ internal static class IndestructibleController
 {
     private const string ZdoKey = "LandscaperIndestructible";
 
+    /// <summary>The key as Valheim stores it; looked up on every hit, so hashed once.</summary>
+    private static readonly int ZdoKeyHash = ZdoKey.GetStableHashCode();
+
     private static ConfigEntry<KeyCode> _toggleKey = null!;
     private static Func<bool> _allowed = () => true;
     private static bool _on;
@@ -66,7 +69,7 @@ internal static class IndestructibleController
             var view = __instance.GetComponent<ZNetView>();
             if (On && view != null && view.IsValid())
             {
-                view.GetZDO().Set(ZdoKey, true);
+                view.GetZDO().Set(ZdoKeyHash, true);
             }
         }
     }
@@ -74,7 +77,7 @@ internal static class IndestructibleController
     public static bool IsIndestructible(Component component)
     {
         var view = component.GetComponent<ZNetView>();
-        return view != null && view.IsValid() && view.GetZDO().GetBool(ZdoKey);
+        return view != null && view.IsValid() && view.GetZDO().GetBool(ZdoKeyHash);
     }
 
     /// <summary>

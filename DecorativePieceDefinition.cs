@@ -36,6 +36,12 @@ public sealed class DecorativePieceDefinition
     /// <summary>Prefab name of a vanilla piece whose chest, chair or bed function this piece copies.</summary>
     public string? FunctionFrom { get; set; }
 
-    /// <summary>Items consumed when placing. Empty means the piece is free.</summary>
+    /// <summary>
+    /// Names this piece was saved under before (full "Landscaper_..." names), so pieces placed under an
+    /// old name keep loading after a rename. Other tools' names are covered automatically.
+    /// </summary>
+    public IReadOnlyList<string> FormerNames { get; set; } = Array.Empty<string>();
+
+    /// <summary>Items consumed when placing. Empty means the automatic cost (see BuildCosts).</summary>
     public List<PieceRequirement> Requirements { get; } = new();
 }

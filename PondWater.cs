@@ -153,27 +153,27 @@ internal static class PondWater
 
         /// <summary>
         /// Adds volume to the grid cells around the point the same way a new pond starts: spread
-        /// evenly over an area-by-area block of cells.
+        /// evenly over an area-by-area block of cells. The simulation empties the outermost ring of
+        /// cells every step, so the block is kept inside it, and the whole volume goes into the cells
+        /// that remain.
         /// </summary>
         private static void AddWater(LiquidVolume pond, Vector3 point, float volume, int area)
         {
             var local = WorldToLocal(pond, point);
             var size = pond.m_width + 1;
-            var centerX = Mathf.Clamp(Mathf.RoundToInt(local.x), 0, pond.m_width);
-            var centerY = Mathf.Clamp(Mathf.RoundToInt(local.y), 0, pond.m_width);
+            area = Mathf.Clamp(area, 1, pond.m_width - 1);
+            var startX = Mathf.Clamp(Mathf.RoundToInt(local.x) - area / 2, 1, pond.m_width - area);
+            var startY = Mathf.Clamp(Mathf.RoundToInt(local.y) - area / 2, 1, pond.m_width - area);
             var perCell = volume / (area * area);
 
             lock (MeshDataLock(pond))
             {
                 var depths = Depths(pond);
-                for (var y = centerY - area / 2; y <= centerY + area / 2; y++)
+                for (var y = startY; y < startY + area; y++)
                 {
-                    for (var x = centerX - area / 2; x <= centerX + area / 2; x++)
+                    for (var x = startX; x < startX + area; x++)
                     {
-                        if (x >= 0 && y >= 0 && x <= pond.m_width && y <= pond.m_width)
-                        {
-                            depths[y * size + x] += perCell;
-                        }
+                        depths[y * size + x] += perCell;
                     }
                 }
 

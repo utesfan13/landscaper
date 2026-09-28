@@ -13,11 +13,14 @@ namespace Landscaper;
 [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
 public sealed class Plugin : BaseUnityPlugin
 {
-    public const string ModGuid = "landscaper.valheim";
+    public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.14.0";
+    public const string ModVersion = "0.15.0";
 
     internal static ManualLogSource Log = null!;
+    /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>
+    internal static Func<bool> ModEnabled { get; private set; } = () => true;
+
     internal static DecorativePieceManager? Pieces;
     private static bool _iconsDone;
     private static bool _refreshPending;
@@ -26,14 +29,15 @@ public sealed class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Log = Logger;
-        MigrateOldConfig();
 
         // Settings that must match between players are admin-only: Jotunn syncs them from the server
         // when joining, and only admins can change them in game.
         var synced = new ConfigurationManagerAttributes { IsAdminOnly = true };
         ConfigDescription Synced(string description) => new($"{description} Synced from the server in multiplayer.", null, synced);
 
-        var enabled = Config.Bind("General", "Enabled", true, "Master toggle for the decorative landscaping pieces. Requires a restart.");
+        var enabled = Config.Bind("General", "Enabled", true,
+            "Master toggle. Off hides the pieces from the tool menus and turns off the building controls. Placed pieces stay in " +
+            "the world and are still loaded, so turning this off never deletes them.");
         var costsEnabled = Config.Bind("Costs", "Enabled", true,
             Synced("Charge a small cost to place pieces: 5 of the item for pickables, 1 iron for metal pieces, otherwise 2 to 8 " +
                    "wood or stone by size, plus 1 resin for crafted light sources. Removing a piece refunds it. " +
@@ -55,20 +59,19 @@ public sealed class Plugin : BaseUnityPlugin
         var customEntries = Config.Bind("CustomEntries", "Entries", string.Empty, Synced(
             "Entries separated by \\n: Display Name|Prefab Name|Tool|Category|Rotation X,Y,Z|Item:Amount,Item:Amount|Scale X,Y,Z. " +
             "Tool is Cultivator, Hoe, or Hammer. Rotation, requirements and scale are optional (leave a field empty to skip it); " +
-            "without requirements the piece is free. Scale is one number or X,Y,Z; a scaled entry is a separate variant. " +
+            "rotation is the starting tilt, and without requirements the piece gets the automatic cost. " +
+            "Scale is one number or X,Y,Z; a scaled entry is a separate variant. " +
             "Find prefab names in game with the landscaper_find console command. " +
             "Removing an entry hides it from the menu; pieces already placed keep loading until the next restart."));
 
         CommandManager.Instance.AddConsoleCommand(new FindPrefabCommand());
         CommandManager.Instance.AddConsoleCommand(new RemoveNearbyCommand());
+        CommandManager.Instance.AddConsoleCommand(new CheckCommand());
 
-        if (!enabled.Value)
-        {
-            Log.LogInfo("Disabled by configuration.");
-            return;
-        }
-
-        bool ToolEnabled(BuildTool tool) => tool switch
+        // Pieces are registered even when the mod is turned off: a host deletes saved objects whose
+        // prefab is missing, so turning it off only hides the pieces and the controls.
+        ModEnabled = () => enabled.Value;
+        bool ToolEnabled(BuildTool tool) => enabled.Value && tool switch
         {
             BuildTool.Cultivator => cultivator.Value,
             BuildTool.Hoe => hoe.Value,
@@ -84,6 +87,7 @@ public sealed class Plugin : BaseUnityPlugin
         // Synced values arrive after the world has started loading, and admins can change them in
         // game, so apply changes as they come instead of only at startup.
         void RequestRefresh(object sender, EventArgs args) => _refreshPending = true;
+        enabled.SettingChanged += RequestRefresh;
         cultivator.SettingChanged += RequestRefresh;
         hoe.SettingChanged += RequestRefresh;
         hammer.SettingChanged += RequestRefresh;
@@ -137,40 +141,6 @@ public sealed class Plugin : BaseUnityPlugin
         if (Pieces is not null)
         {
             ScaleController.LateUpdate();
-        }
-    }
-
-    /// <summary>
-    /// BepInEx names the config file after the mod's GUID, so changing the GUID would start from a
-    /// fresh config. On the first launch with a new GUID, copy the settings from the previous
-    /// Landscaper config file (any other landscaper.*.cfg) and rename that file to *.migrated.
-    /// </summary>
-    private void MigrateOldConfig()
-    {
-        var newPath = Config.ConfigFilePath;
-        var folder = Path.GetDirectoryName(newPath);
-        if (File.Exists(newPath) || folder is null || !Directory.Exists(folder))
-        {
-            return;
-        }
-
-        var oldPath = Directory.GetFiles(folder, "landscaper.*.cfg")
-            .FirstOrDefault(path => !string.Equals(Path.GetFullPath(path), Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase));
-        if (oldPath is null)
-        {
-            return;
-        }
-
-        try
-        {
-            File.Copy(oldPath, newPath);
-            File.Move(oldPath, oldPath + ".migrated");
-            Config.Reload();
-            Log.LogInfo($"Moved settings from {Path.GetFileName(oldPath)} to {Path.GetFileName(newPath)}.");
-        }
-        catch (Exception exception)
-        {
-            Log.LogWarning($"Could not move settings from {Path.GetFileName(oldPath)}: {exception.Message}");
         }
     }
 

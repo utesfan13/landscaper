@@ -25,7 +25,8 @@ public static class PieceCatalog
                     Scale = entry.Scale,
                     OnWater = entry.OnWater,
                     ListAfter = entry.ListAfter,
-                    FunctionFrom = entry.FunctionFrom
+                    FunctionFrom = entry.FunctionFrom,
+                    FormerNames = entry.FormerNames
                 };
             }
         }
@@ -33,8 +34,10 @@ public static class PieceCatalog
 
     private sealed class Entry
     {
-        public Entry(string name, string prefab, string description, Vector3 scale, bool onWater, string? listAfter, string? functionFrom)
+        public Entry(string name, string prefab, string description, Vector3 scale, bool onWater, string? listAfter, string? functionFrom,
+            string[] formerNames)
         {
+            FormerNames = formerNames;
             FunctionFrom = functionFrom;
             OnWater = onWater;
             ListAfter = listAfter;
@@ -51,6 +54,7 @@ public static class PieceCatalog
         public bool OnWater { get; }
         public string? ListAfter { get; }
         public string? FunctionFrom { get; }
+        public string[] FormerNames { get; }
     }
 
     private sealed class Group
@@ -67,9 +71,14 @@ public static class PieceCatalog
         public Entry[] Entries { get; }
     }
 
+    /// <param name="formerNames">
+    /// Full names ("Landscaper_...") the piece was saved under before, when renaming a scaled variant or
+    /// changing its prefab, so copies already placed keep loading. Moving a piece to another tool
+    /// needs nothing here; see DecorativePieceManager.RegisterAliases.
+    /// </param>
     private static Entry E(string name, string prefab, string description = "", Vector3? scale = null, bool onWater = false,
-        string? listAfter = null, string? functionFrom = null) =>
-        new(name, prefab, description, scale ?? Vector3.one, onWater, listAfter, functionFrom);
+        string? listAfter = null, string? functionFrom = null, string[]? formerNames = null) =>
+        new(name, prefab, description, scale ?? Vector3.one, onWater, listAfter, functionFrom, formerNames ?? Array.Empty<string>());
 
     private static readonly Group[] Groups =
     {

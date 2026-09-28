@@ -1,0 +1,10 @@
+{
+  "name": "Landscaper",
+  "version_number": "{VERSION}",
+  "website_url": "https://github.com/utesfan13/landscaper",
+  "description": "Place trees, rocks, plants, ruins, props and hundreds of other world objects with the Cultivator, Hoe and Hammer, then resize, tint, tilt and nudge them while placing.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2351",
+    "ValheimModding-Jotunn-2.30.2"
+  ]
+}

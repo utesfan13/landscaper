@@ -15,6 +15,15 @@ public sealed class DecorativePieceManager
     private readonly Func<string> _customEntries;
     private readonly Func<BuildTool, bool> _toolEnabled;
     private readonly Dictionary<string, RegisteredPiece> _registered = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Other saved names mapped to registered pieces, by name hash; see RegisterAliases.</summary>
+    private readonly Dictionary<int, string> _aliases = new();
+
+    /// <summary>Saved names kept loading by invisible stand-ins; see KeepPlacedPieces.</summary>
+    private readonly SortedSet<string> _standIns = new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly AccessTools.FieldRef<ZNetScene, Dictionary<int, GameObject>> NamedPrefabs =
+        AccessTools.FieldRefAccess<ZNetScene, Dictionary<int, GameObject>>("m_namedPrefabs");
     private readonly HashSet<string> _pieceNames = new(StringComparer.Ordinal);
     private readonly List<(Piece Piece, GameObject Source)> _pendingIcons = new();
 
@@ -71,7 +80,13 @@ public sealed class DecorativePieceManager
         ClutterPrefabs.Build(_log);
         var registered = PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries())).Count(Register);
         _log.LogInfo($"Registered {registered} decorative pieces.");
+        RegisterAliases();
         UpdateMenus();
+        if (_standIns.Count > 0)
+        {
+            _log.LogWarning($"{_standIns.Count} piece(s) couldn't be registered and are kept as invisible stand-ins. " +
+                            "Run landscaper_check in the console (F5) for details.");
+        }
 
         var costs = _registered.Values
             .Select(piece => piece.Clone != null ? piece.Clone.GetComponent<Piece>()?.m_resources : null)
@@ -160,6 +175,7 @@ public sealed class DecorativePieceManager
         }
 
         ApplyCosts();
+        RegisterAliases();
         UpdateMenus();
         RefreshPlayerPieces();
     }
@@ -178,7 +194,7 @@ public sealed class DecorativePieceManager
 
         var wanted = new HashSet<string>(
             PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries(), logErrors: false))
-                .Select(definition => FindSpawnablePrefab(definition.PrefabName) is { } source ? GetCloneName(source, definition) : null)
+                .Select(definition => FindSpawnablePrefab(definition.PrefabName) is { } source ? GetCloneName(source.name, definition) : null)
                 .OfType<string>(),
             StringComparer.OrdinalIgnoreCase);
 
@@ -253,7 +269,65 @@ public sealed class DecorativePieceManager
             .Select(piece => (BuildTool?)piece.Tool)
             .FirstOrDefault();
 
-    /// <summary>The vanilla prefab a Landscaper clone was made from, or null for other prefabs.</summary>
+    /// <summary>Saved names kept loading by invisible stand-ins because their piece couldn't be registered.</summary>
+    public IReadOnlyCollection<string> StandIns => _standIns;
+
+    /// <summary>How many other saved names are mapped to registered pieces.</summary>
+    public int AliasCount => _aliases.Count;
+
+    /// <summary>Whether a vanilla prefab exists that pieces can be made from.</summary>
+    public static bool PrefabExists(string prefabName) => FindSpawnablePrefab(prefabName) is not null;
+
+    /// <summary>
+    /// A placed piece is saved under its prefab's name, and a host deletes saved objects whose prefab
+    /// is missing. The name includes the tool, so moving a piece to another tool would lose every
+    /// copy placed with the old one. So each piece is also registered under its name for the other
+    /// tools, and under any former names from the catalog, unless another piece has that name. Copies
+    /// placed under those names load as this piece. Runs whenever the world's prefabs are set up.
+    /// </summary>
+    private void RegisterAliases()
+    {
+        var scene = ZNetScene.instance;
+        if (scene == null)
+        {
+            return;
+        }
+
+        var named = NamedPrefabs(scene);
+        _aliases.Clear();
+        foreach (var piece in _registered.Values.OrderBy(piece => piece.IsVariant))
+        {
+            if (piece.Clone == null)
+            {
+                continue;
+            }
+
+            var names = ((BuildTool[])Enum.GetValues(typeof(BuildTool)))
+                .Where(tool => tool != piece.Tool)
+                .Select(tool => GetCloneName(piece.SourcePrefab, piece.Definition, tool))
+                .Concat(piece.Definition.FormerNames);
+            foreach (var name in names)
+            {
+                var hash = name.GetStableHashCode();
+                if (!named.ContainsKey(hash))
+                {
+                    named[hash] = piece.Clone;
+                    _aliases[hash] = name;
+                }
+            }
+        }
+    }
+
+    /// <summary>Frees a name taken by an alias, so a piece registered under it now can have it.</summary>
+    private void ReleaseAlias(string cloneName)
+    {
+        var hash = cloneName.GetStableHashCode();
+        if (_aliases.Remove(hash) && ZNetScene.instance != null)
+        {
+            NamedPrefabs(ZNetScene.instance).Remove(hash);
+        }
+    }
+
     /// <summary>Name of the extra box added by EnsureTargetable, which collides with nothing.</summary>
     public const string TargetBoxName = "LandscaperRemoveTarget";
 
@@ -261,8 +335,15 @@ public sealed class DecorativePieceManager
     public float? SizeOf(string cloneName) =>
         _registered.TryGetValue(cloneName, out var piece) ? piece.Traits.Size : null;
 
+    /// <summary>The vanilla prefab a Landscaper clone was made from, or null for other prefabs.</summary>
     public string? SourcePrefabOf(string cloneName) =>
         _registered.TryGetValue(cloneName, out var piece) ? piece.SourcePrefab : null;
+
+    /// <summary>The tilt a piece starts with when selected: a custom entry's rotation, or null.</summary>
+    public Vector3? StartingTiltOf(string cloneName) =>
+        _registered.TryGetValue(cloneName, out var piece) && piece.Definition.PlacementRotation != Vector3.zero
+            ? piece.Definition.PlacementRotation
+            : null;
 
     /// <summary>Whether any registered piece already uses this display name.</summary>
     public bool IsNameUsed(string displayName) =>
@@ -284,7 +365,7 @@ public sealed class DecorativePieceManager
     }
 
     private bool IsRegistered(DecorativePieceDefinition definition) =>
-        FindSpawnablePrefab(definition.PrefabName) is { } source && _registered.ContainsKey(GetCloneName(source, definition));
+        FindSpawnablePrefab(definition.PrefabName) is { } source && _registered.ContainsKey(GetCloneName(source.name, definition));
 
     private bool Register(DecorativePieceDefinition definition)
     {
@@ -295,8 +376,60 @@ public sealed class DecorativePieceManager
         catch (Exception exception)
         {
             _log.LogError($"Failed to register '{definition.DisplayName}' ({definition.PrefabName}): {exception}");
+            var source = FindSpawnablePrefab(definition.PrefabName);
+            KeepPlacedPieces(GetCloneName(source != null ? source.name : definition.PrefabName, definition), "it failed to register");
             return false;
         }
+    }
+
+    /// <summary>
+    /// When a piece can't be registered (its vanilla prefab was renamed or removed by a game update,
+    /// or setting it up failed), makes sure a networked prefab with its saved name still exists.
+    /// Otherwise a host would delete every copy placed in the world when it loads. The stand-in is
+    /// invisible and has no collider, and the placed copies come back once the piece registers again.
+    /// </summary>
+    private void KeepPlacedPieces(string cloneName, string reason)
+    {
+        var scene = ZNetScene.instance;
+        if (scene == null || _registered.ContainsKey(cloneName))
+        {
+            return;
+        }
+
+        _standIns.Add(cloneName);
+        ReleaseAlias(cloneName);
+        if (scene.GetPrefab(cloneName) != null)
+        {
+            return;
+        }
+
+        var prefab = PrefabManager.Instance.GetPrefab(cloneName);
+        if (prefab == null || prefab.GetComponent<ZNetView>() == null)
+        {
+            prefab = PrefabManager.Instance.CreateEmptyPrefab(cloneName);
+            if (prefab == null)
+            {
+                return;
+            }
+
+            // CreateEmptyPrefab makes a cube; keep only the transform and ZNetView.
+            UnityEngine.Object.DestroyImmediate(prefab.GetComponent<Collider>());
+            UnityEngine.Object.DestroyImmediate(prefab.GetComponent<MeshRenderer>());
+            UnityEngine.Object.DestroyImmediate(prefab.GetComponent<MeshFilter>());
+        }
+
+        // Keep the placed copies saved, with their size.
+        var view = prefab.GetComponent<ZNetView>();
+        view.m_persistent = true;
+        view.m_syncInitialScale = true;
+        // Added to Jotunn too, so it's set up again when the next world loads.
+        if (PrefabManager.Instance.GetPrefab(cloneName) == null)
+        {
+            PrefabManager.Instance.AddPrefab(prefab);
+        }
+
+        PrefabManager.Instance.RegisterToZNetScene(prefab);
+        _log.LogWarning($"Keeping placed '{cloneName}' pieces as invisible stand-ins because {reason}; they come back once it registers again.");
     }
 
     private bool TryRegister(DecorativePieceDefinition definition)
@@ -305,11 +438,12 @@ public sealed class DecorativePieceManager
         if (source is null)
         {
             _log.LogWarning($"Prefab '{definition.PrefabName}' for '{definition.DisplayName}' was not found or is not spawnable.");
+            KeepPlacedPieces(GetCloneName(definition.PrefabName, definition), "its prefab wasn't found");
             return false;
         }
 
         var tableName = definition.Tool.ToString();
-        var cloneName = GetCloneName(source, definition);
+        var cloneName = GetCloneName(source.name, definition);
         if (_registered.ContainsKey(cloneName))
         {
             _log.LogWarning($"Skipping '{definition.DisplayName}': '{source.name}' is already on the {tableName}. Give it a scale to add it as a separate variant.");
@@ -323,7 +457,6 @@ public sealed class DecorativePieceManager
             return false;
         }
 
-        clone.transform.localRotation = Quaternion.Euler(definition.PlacementRotation);
         clone.transform.localScale = Vector3.Scale(source.transform.localScale, definition.Scale);
 
         // Save each placed piece's own size with the world, so pieces resized while placing keep
@@ -380,15 +513,19 @@ public sealed class DecorativePieceManager
         if (piece.m_icon is null)
         {
             _log.LogWarning($"No icon available for '{definition.DisplayName}'.");
+            KeepPlacedPieces(cloneName, "it has no icon for the menu");
             return false;
         }
 
         if (!PieceManager.Instance.AddPiece(new CustomPiece(clone, tableName, fixReference: false) { Category = definition.Category }))
         {
+            KeepPlacedPieces(cloneName, "it couldn't be added to the menu");
             return false;
         }
 
         _registered[cloneName] = new RegisteredPiece(clone, definition, source.name, traits);
+        _standIns.Remove(cloneName);
+        ReleaseAlias(cloneName);
 
         // Jotunn adds custom prefabs to ZNetScene when it wakes, which has already happened by the
         // time this runs, so add this one directly. UpdateMenus decides whether it is listed.
@@ -410,10 +547,10 @@ public sealed class DecorativePieceManager
     /// several size variants and a scale can be adjusted without losing pieces already placed.
     /// Jotunn rejects names with spaces or parentheses, which a few vanilla prefabs have.
     /// </summary>
-    private static string GetCloneName(GameObject source, DecorativePieceDefinition definition)
+    private static string GetCloneName(string sourceName, DecorativePieceDefinition definition, BuildTool? tool = null)
     {
-        var prefabName = new string(source.name.Select(c => c is ' ' or '(' or ')' ? '_' : c).ToArray());
-        var cloneName = $"Landscaper_{prefabName}_{definition.Tool}";
+        var prefabName = new string(sourceName.Select(c => c is ' ' or '(' or ')' ? '_' : c).ToArray());
+        var cloneName = $"Landscaper_{prefabName}_{tool ?? definition.Tool}";
         if (definition.Scale == Vector3.one)
         {
             return cloneName;
