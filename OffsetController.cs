@@ -71,11 +71,15 @@ internal static class OffsetController
     /// <summary>Called once the ghost of the copied piece has been set up.</summary>
     public static void ClearCopied() => _copiedTilt = null;
 
-    /// <summary>Resets the offset and tilt for a newly selected piece, keeping a copied object's tilt.</summary>
-    public static void ResetForNewPiece()
+    /// <summary>
+    /// Resets the offset, and the tilt to the piece's starting tilt (a custom entry's rotation), or
+    /// to a copied object's tilt when the piece was just selected by copying.
+    /// </summary>
+    public static void ResetForNewPiece(string? pieceName)
     {
         _offset = Vector3.zero;
-        _tilt = _copiedTilt ?? Vector3.zero;
+        var start = pieceName is not null && Plugin.Pieces?.StartingTiltOf(pieceName) is { } tilt ? tilt : Vector3.zero;
+        _tilt = _copiedTilt ?? new Vector3(Normalize(start.x), Normalize(start.y), Normalize(start.z));
     }
 
     /// <summary>Angle in -180 to 180, rounded to hundredths, so tiny float drift reads as 0.</summary>

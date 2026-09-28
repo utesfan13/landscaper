@@ -27,6 +27,9 @@ internal static class BreakRefund
 
     private static readonly DropTable NoDrops = new();
 
+    /// <summary>Item names treated as harmless byproducts, which should all exist in the game.</summary>
+    public static IEnumerable<string> ReferencedItems() => Byproducts;
+
     /// <summary>Natural drops of each Landscaper prefab, found the first time one is broken.</summary>
     private static readonly Dictionary<int, HashSet<string>> NaturalDrops = new();
 

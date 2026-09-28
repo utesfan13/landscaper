@@ -28,7 +28,7 @@ internal static class CopyController
         private static void Postfix(Player __instance, ref bool __result, PieceTable ___m_buildPieces, int ___m_removeRayMask,
             ref int ___m_placeRotation, float ___m_placeRotationDegrees)
         {
-            if (__instance != Player.m_localPlayer || Plugin.Pieces is null || ___m_buildPieces == null ||
+            if (__instance != Player.m_localPlayer || Plugin.Pieces is null || !Plugin.ModEnabled() || ___m_buildPieces == null ||
                 FindTarget(__instance, ___m_removeRayMask) is not { } target)
             {
                 return;
@@ -179,6 +179,14 @@ internal static class CopyController
         if (target.GetComponent<Ship>() != null || target.GetComponent<Vagon>() != null || target.GetComponent<TombStone>() != null)
         {
             return "That can't be copied.";
+        }
+
+        // A copy would keep spawning creatures, or summoning bosses, wherever it's placed.
+        if (target.GetComponentInChildren<SpawnArea>(includeInactive: true) != null ||
+            target.GetComponentInChildren<CreatureSpawner>(includeInactive: true) != null ||
+            target.GetComponentInChildren<OfferingBowl>(includeInactive: true) != null)
+        {
+            return "Creature spawners and altars can't be copied.";
         }
 
         return null;

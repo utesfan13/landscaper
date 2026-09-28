@@ -87,6 +87,15 @@ internal static class BuildCosts
         "giant_sword", "giant_helmet"
     };
 
+    /// <summary>Prefab names the cost rules single out, which should all be in the catalog.</summary>
+    public static IEnumerable<string> ReferencedPrefabs() =>
+        FixedCosts.Keys.Concat(MaterialOverrides.Keys).Concat(MetalPrefabs).Concat(WoodAndIcePrefabs)
+            .Concat(IcePrefabs).Concat(NotBonePrefabs);
+
+    /// <summary>Item names the cost rules charge, which should all exist in the game.</summary>
+    public static IEnumerable<string> ReferencedItems() =>
+        new[] { Wood, Stone, Iron, Resin, Ice, Bone }.Concat(FixedCosts.Values.Select(cost => cost.Item));
+
     /// <summary>Reads whether automatic costs are on.</summary>
     public static Func<bool> Enabled { get; set; } = () => true;
 

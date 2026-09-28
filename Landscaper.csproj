@@ -11,41 +11,75 @@
     <DebugType>portable</DebugType>
   </PropertyGroup>
 
+  <!--
+    Where Valheim and BepInEx are installed. Override them for your machine in a Local.props file next
+    to this one (it's git-ignored), e.g.
+      <Project><PropertyGroup><ValheimDir>D:\Games\Valheim</ValheimDir></PropertyGroup></Project>
+    or on the command line: dotnet build -p:ValheimDir="D:\Games\Valheim".
+    BepInExDir can point at a mod manager profile instead, such as an r2modman profile folder's BepInEx.
+    Set DeployToGame to true to copy the built DLL into BepInEx\plugins\Landscaper after each build
+    (the copy fails while Valheim is running, because the game locks the DLL).
+  -->
+  <Import Project="Local.props" Condition="Exists('Local.props')" />
+
+  <PropertyGroup>
+    <ValheimDir Condition="'$(ValheimDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Valheim</ValheimDir>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(ValheimDir)\BepInEx</BepInExDir>
+    <ManagedDir>$(ValheimDir)\valheim_Data\Managed</ManagedDir>
+    <DeployToGame Condition="'$(DeployToGame)' == ''">false</DeployToGame>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- The game and its mod loaders provide these at runtime, so they aren't copied to the output. -->
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="assembly_valheim">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\assembly_valheim.dll</HintPath>
-    </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\core\BepInEx.dll</HintPath>
-    </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\core\0Harmony.dll</HintPath>
-    </Reference>
-    <Reference Include="Jotunn">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins\Jotunn\Jotunn.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
-    </Reference>
+    <Reference Include="Assembly-CSharp" HintPath="$(ManagedDir)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="assembly_valheim" HintPath="$(ManagedDir)\assembly_valheim.dll" Private="false" />
+    <Reference Include="assembly_utils" HintPath="$(ManagedDir)\assembly_utils.dll" Private="false" />
+    <Reference Include="UnityEngine" HintPath="$(ManagedDir)\UnityEngine.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedDir)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="UnityEngine.PhysicsModule" HintPath="$(ManagedDir)\UnityEngine.PhysicsModule.dll" Private="false" />
+    <Reference Include="UnityEngine.UI" HintPath="$(ManagedDir)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="Unity.TextMeshPro" HintPath="$(ManagedDir)\Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="BepInEx" HintPath="$(BepInExDir)\core\BepInEx.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(BepInExDir)\core\0Harmony.dll" Private="false" />
+    <Reference Include="Jotunn" HintPath="$(BepInExDir)\plugins\Jotunn\Jotunn.dll" Private="false" />
   </ItemGroup>
+
+  <!-- The mod's version lives in one place, Plugin.ModVersion; the assembly and the package use it too. -->
+  <PropertyGroup>
+    <ModVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\Plugin.cs')), 'ModVersion = "([^"]+)"').Groups[1].Value)</ModVersion>
+    <Version>$(ModVersion)</Version>
+    <PackageDir>$(MSBuildProjectDirectory)\package</PackageDir>
+    <PackageStaging>$(BaseIntermediateOutputPath)package</PackageStaging>
+  </PropertyGroup>
+
+  <!--
+    Builds the Thunderstore / r2modman package: dotnet build -c Release -t:Package
+    Writes bin\Landscaper-<version>.zip with manifest.json (from package\manifest.template.json),
+    icon.png (package\icon.png, 256x256), README.md, CHANGELOG.md and plugins\Landscaper.dll.
+    The same zip works for Nexus Mods.
+  -->
+  <Target Name="Package" DependsOnTargets="Build">
+    <Error Condition="'$(ModVersion)' == ''" Text="Couldn't read ModVersion from Plugin.cs." />
+    <Error Condition="!Exists('$(PackageDir)\icon.png')" Text="Add a 256x256 PNG as package\icon.png before packaging; Thunderstore requires one." />
+    <PropertyGroup>
+      <ManifestText>$([System.IO.File]::ReadAllText('$(PackageDir)\manifest.template.json').Replace('{VERSION}', '$(ModVersion)'))</ManifestText>
+      <PackageZip>$(MSBuildProjectDirectory)\bin\Landscaper-$(ModVersion).zip</PackageZip>
+    </PropertyGroup>
+    <RemoveDir Directories="$(PackageStaging)" />
+    <MakeDir Directories="$(PackageStaging)\plugins" />
+    <WriteLinesToFile File="$(PackageStaging)\manifest.json" Lines="$(ManifestText)" Overwrite="true" />
+    <Copy SourceFiles="$(PackageDir)\icon.png;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" DestinationFolder="$(PackageStaging)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageStaging)\plugins" />
+    <ZipDirectory SourceDirectory="$(PackageStaging)" DestinationFile="$(PackageZip)" Overwrite="true" />
+    <Message Importance="high" Text="Packaged $(PackageZip)" />
+  </Target>
+
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)\plugins\Landscaper" />
+    <Message Importance="high" Text="Copied $(TargetFileName) to $(BepInExDir)\plugins\Landscaper" />
+  </Target>
 </Project>

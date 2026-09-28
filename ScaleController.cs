@@ -117,6 +117,12 @@ internal static class ScaleController
     public static void Update()
     {
         var player = Player.m_localPlayer;
+        if (!Plugin.ModEnabled())
+        {
+            BuildKeyHints.SetVisible(false, false);
+            return;
+        }
+
         var placingLandscaperPiece = PlacingLandscaperPiece;
         BuildKeyHints.SetVisible(placingLandscaperPiece, player is not null && player.InPlaceMode());
 
@@ -135,7 +141,7 @@ internal static class ScaleController
         {
             _scale = Vector3.one;
             TintController.Reset();
-            OffsetController.Reset();
+            OffsetController.ResetForNewPiece(_ghost!.name);
             player!.Message(MessageHud.MessageType.Center, "Scale, tint, position and tilt reset");
             return;
         }
@@ -205,7 +211,7 @@ internal static class ScaleController
                     TintController.SetFromColor(copiedTint);
                 }
 
-                OffsetController.ResetForNewPiece();
+                OffsetController.ResetForNewPiece(_ghost?.name);
             }
 
             _copiedScale = null;

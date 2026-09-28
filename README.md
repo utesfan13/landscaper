@@ -1,19 +1,77 @@
-# landscaper
-Valheim Mod - Prefab placement
+# Landscaper
 
-Adds trees, rocks, plants, furniture and building pieces to the Cultivator, Hoe and Hammer menus.
-Cattails and lily pads, which Valheim only scatters as ground clutter, are available as placeable
-pieces too; lily pads are placed on the water surface.
-Pieces cost a little wood or stone (see [Build Costs](#build-costs)) and need no workbench.
+Build with the world itself. Landscaper adds hundreds of Valheim's own trees, rocks, plants, ruins,
+props and decorations as buildable pieces on the Cultivator, Hoe and Hammer, and gives you tools to
+make each one fit: resize, tint, tilt and nudge pieces while you place them.
+
+## Features
+
+- **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, cattails and lily pads on the
+  Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
+  decor, furniture, roofs, lights and props on the Hammer.
+- **Resize** any piece on each axis, **tint** it with presets or any colour, **tilt** it, and
+  **nudge** it up, sideways or forward, all while placing.
+- **Copy** an object in the world (Shift + middle click) to place more of it, with the same size,
+  tint and rotation.
+- **Functional furniture**: prop chests, chairs, benches and beds work like the vanilla pieces they
+  look like.
+- **Place anywhere**: pieces can be placed where Valheim normally refuses, and can be made
+  **indestructible**.
+- **Fair costs**: a little wood, stone or the matching material, with vanilla costs for vanilla
+  build pieces. Removing a piece refunds it, and breaking one never gives back more valuable
+  resources than it cost.
+- **Multiplayer ready**: sizes, tints and rotations are saved on each piece, and server settings are
+  synced to every player.
+
+## Installation
+
+Install with r2modman or Thunderstore Mod Manager, which also installs the requirements. To install by
+hand: install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)
+and [Jotunn](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/), then copy `Landscaper.dll`
+into `BepInEx/plugins/Landscaper`.
+
+**Every player and the server need the mod**, at the same minor version (for example 0.15.x);
+players without it can't join. Console players on crossplay can't use mods, so they can't join
+either.
+
+## Before You Uninstall
+
+Placed pieces only exist while the mod is installed. **If a world is loaded without Landscaper, by a
+single player or a server, every Landscaper piece in it is permanently deleted.** Back up the world
+before uninstalling or updating in a way that removes the mod. Turning the mod off in its settings
+(`General.Enabled`) is safe: it only hides the pieces.
+
+## Recommended Settings for Public Servers
+
+The defaults suit single player and groups of friends. On a public server, consider:
+
+- Turning off `Placement.IgnoreRules`, which lets pieces be placed in no-build areas, such as boss
+  altars and dungeon entrances.
+- Turning off `Indestructible.Allowed`: together with relaxed placement, anyone could block a path or
+  a portal with pieces nobody can break.
+- Turning on `General.DecorativeOnly`, so placed trees, rocks and plants can't be chopped, mined or
+  picked.
+
+These settings are synced from the server, so only the server's config matters.
+
+Functional furniture is cheaper than its vanilla counterpart: a Dvergr crate gives chest storage for
+a few wood, and the Ashwood bed prop gives an Ashwood bed's comfort without Ashlands materials.
+
+## Known Conflicts
+
+Landscaper changes how pieces are placed, so it can clash with other building mods, particularly
+Gizmo (both use the scroll wheel and rotation while placing), InfinityHammer, PlanBuild and
+Valheim Plus's building options. Every Landscaper key can be changed in the config if another mod
+uses the same one.
 
 ## Settings
 
-In `BepInEx/config/landscaper.valheim.cfg`. Settings marked **synced** come from the server in
+In `BepInEx/config/utesfan13.landscaper.cfg`. Settings marked **synced** come from the server in
 multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 | Setting | Default | Effect |
 |---|---|---|
-| `General.Enabled` | `true` | Master toggle. Requires a restart. |
+| `General.Enabled` | `true` | Master toggle. Off hides the pieces from the menus and turns off the building controls; placed pieces stay in the world. |
 | `Costs.Enabled` | `true` | **Synced.** Charge a small cost to place pieces; see [Build Costs](#build-costs). |
 | `Costs.Multiplier` | `1` | **Synced.** Multiplies the automatic costs (0.25 to 4). |
 | `Indestructible.Allowed` | `true` | **Synced.** Allow placing indestructible pieces; see [Indestructible Pieces](#indestructible-pieces). |
@@ -95,13 +153,13 @@ rocks and plants from being chopped, mined or picked at all, turn on `Decorative
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.12.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.15.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
 
-When joining a server, the synced settings (`DecorativeOnly`, the three tool toggles and custom
-entries) are taken from the server, and only admins can change them in game. Keybinds, tint presets
+When joining a server, the synced settings (costs, `DecorativeOnly`, `Indestructible.Allowed`,
+`Placement.IgnoreRules`, the three tool toggles and custom entries) are taken from the server, and only admins can change them in game. Keybinds, tint presets
 and scale limits stay personal.
 
 When you host a world, or play alone, Valheim permanently deletes saved objects whose prefab it can't
@@ -117,8 +175,9 @@ Cultivator and Hoe only remove Landscaper pieces; crops, buildings and anything 
 The piece that will be removed is highlighted in light blue while you aim at it.
 
 For pieces that are hard to aim at, open the console (F5) and run `landscaper_remove [radius]` to
-remove every Landscaper piece within that many meters of you (default 10, max 100). It never
-removes anything that wasn't placed through this mod.
+remove your Landscaper pieces within that many meters of you (default 10, max 100). It never
+removes anything that wasn't placed through this mod, or anything inside a ward you don't have
+access to. Other players' pieces are only removed when an admin or the host runs it.
 
 ## Modifier Keys
 
@@ -277,7 +336,7 @@ won't appear. Results tagged `(item)` or `(creature)` are not good choices for p
 
 ### From the config file (no rebuild)
 
-Add entries in `BepInEx/config/landscaper.valheim.cfg` under `[CustomEntries]`:
+Add entries in `BepInEx/config/utesfan13.landscaper.cfg` under `[CustomEntries]`:
 
 ```text
 Display Name|ExactPrefabName|Tool|Category|RotationX,RotationY,RotationZ|Item:Amount,Item:Amount|ScaleX,ScaleY,ScaleZ
@@ -290,7 +349,9 @@ Entries = Giant Oak|Oak1|Cultivator|Trees|||2\nFlat Boulder|Rock_destructible|Ho
 ```
 
 Valid tools are `Cultivator`, `Hoe`, and `Hammer`. Rotation, requirements and scale are optional;
-leave a field empty to skip it, as in the example above. Requirements use item prefab names
+leave a field empty to skip it, as in the example above. Rotation is the tilt the piece starts with
+when selected, in degrees (forward, spin, sideways); you can still tilt it further while placing, and
+End goes back to it. Requirements use item prefab names
 (`Wood`, `Stone`, `Resin`, ...), e.g. `Stone:10`; entries without requirements get the automatic
 cost. Scale is
 either one number for all axes (`2`) or separate X,Y,Z values (`1.5,0.5,1.5`). Restart Valheim after
@@ -305,8 +366,65 @@ so a new scale only applies to copies placed afterwards.
 
 Add an `E("Display Name", "PrefabName")` line to the matching group in `PieceCatalog.cs`. Each
 group sets the tool and menu category. For a scaled variant, pass a scale:
-`E("Giant Oak", "Oak1", scale: new Vector3(2f, 2f, 2f))`. Rebuild and copy `Landscaper.dll` into
-`BepInEx/plugins/Landscaper`.
+`E("Giant Oak", "Oak1", scale: new Vector3(2f, 2f, 2f))`. Rebuild (see [Building](#building)).
 
-Don't move an existing prefab to a different tool. Placed pieces are saved under
-`Landscaper_<prefab>_<tool>` (plus the display name for scaled variants), so changing the tool makes copies already placed in a world disappear.
+Placed pieces are saved under `Landscaper_<prefab>_<tool>`, plus the display name for scaled
+variants. Moving a piece to a different tool is safe: every piece is also registered under its names
+for the other tools, so copies placed with the old tool load as the moved piece. Renaming a scaled
+variant, or switching a piece to a renamed vanilla prefab, changes its saved name; list the old name
+so placed copies keep loading:
+`E("Huge Oak", "Oak1", scale: new Vector3(2f, 2f, 2f), formerNames: new[] { "Landscaper_Oak1_Cultivator_GiantOak" })`.
+
+## Checking After a Valheim Update
+
+Game updates occasionally rename or remove prefabs. A piece whose prefab is gone can't be placed,
+and its placed copies are kept as invisible stand-ins (so a host doesn't delete them) until it's
+fixed. After an update, load a world, open the console (F5) and run:
+
+```
+landscaper_check
+```
+
+It lists catalog pieces whose prefab no longer exists, missing furniture templates, cost rules that
+refer to pieces or items that don't exist, and pieces currently kept as stand-ins. The same lines go
+to the BepInEx log, and a warning is logged at startup whenever there are stand-ins. To fix a
+missing prefab, find its new name with `landscaper_find` and update the entry, listing the old saved
+name in `formerNames`.
+
+## Building
+
+Requires the .NET SDK. From the repository folder:
+
+```
+dotnet build -c Release
+```
+
+The DLL is written to `bin/Release/Landscaper.dll`; copy it to `BepInEx/plugins/Landscaper`. The
+project looks for Valheim in the default Steam folder. If yours is elsewhere, or you use a mod manager
+profile, create a `Local.props` file next to `Landscaper.csproj` (it's git-ignored):
+
+```xml
+<Project>
+  <PropertyGroup>
+    <ValheimDir>D:\Games\Valheim</ValheimDir>
+    <!-- Optional: a mod manager profile's BepInEx folder instead of the one in ValheimDir. -->
+    <BepInExDir>C:\Users\you\AppData\Roaming\r2modmanPlus-local\Valheim\profiles\Default\BepInEx</BepInExDir>
+    <!-- Optional: copy the DLL into BepInEx/plugins/Landscaper after every build. -->
+    <DeployToGame>true</DeployToGame>
+  </PropertyGroup>
+</Project>
+```
+
+The same properties work on the command line, e.g. `dotnet build -c Release -p:DeployToGame=true`.
+The copy fails while Valheim is running, because the game locks the DLL.
+
+### Packaging a release
+
+```
+dotnet build -c Release -t:Package
+```
+
+This writes `bin/Landscaper-<version>.zip`, ready to upload to Thunderstore or Nexus Mods. It contains
+`manifest.json` (from `package/manifest.template.json`), `icon.png` (`package/icon.png`, a 256x256 PNG
+you provide), this README, `CHANGELOG.md` and `plugins/Landscaper.dll`. The version comes from
+`ModVersion` in `Plugin.cs`, the only place it's set; update `CHANGELOG.md` for each release.

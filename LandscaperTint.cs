@@ -11,6 +11,9 @@ namespace Landscaper;
 internal sealed class LandscaperTint : MonoBehaviour
 {
     private const string ZdoKey = "LandscaperTint";
+
+    /// <summary>The key as Valheim stores it, hashed once.</summary>
+    private static readonly int ZdoKeyHash = ZdoKey.GetStableHashCode();
     private const float RecheckSeconds = 3f;
     private static readonly int ColorId = Shader.PropertyToID("_Color");
 
@@ -35,7 +38,7 @@ internal sealed class LandscaperTint : MonoBehaviour
             return;
         }
 
-        view.GetZDO().Set(ZdoKey, new Vector3(tint.r, tint.g, tint.b));
+        view.GetZDO().Set(ZdoKeyHash, new Vector3(tint.r, tint.g, tint.b));
         piece.GetComponent<LandscaperTint>()?.Apply();
     }
 
@@ -48,7 +51,7 @@ internal sealed class LandscaperTint : MonoBehaviour
             return null;
         }
 
-        var tint = view.GetZDO().GetVec3(ZdoKey, Vector3.zero);
+        var tint = view.GetZDO().GetVec3(ZdoKeyHash, Vector3.zero);
         return tint == Vector3.zero ? null : new Color(tint.x, tint.y, tint.z);
     }
 
@@ -61,7 +64,7 @@ internal sealed class LandscaperTint : MonoBehaviour
         }
 
         // No tint is stored as zero; a real tint always keeps some brightness.
-        var tint = _view.GetZDO().GetVec3(ZdoKey, Vector3.zero);
+        var tint = _view.GetZDO().GetVec3(ZdoKeyHash, Vector3.zero);
         _applied = tint;
         if (tint != Vector3.zero)
         {
@@ -160,7 +163,7 @@ internal sealed class LandscaperTint : MonoBehaviour
 
         _seenRevision = zdo.DataRevision;
         _seenScaleY = transform.localScale.y;
-        if (zdo.GetVec3(ZdoKey, Vector3.zero) != _applied || Mathf.Abs(CurrentHeightScale() - _appliedHeightScale) > 0.001f)
+        if (zdo.GetVec3(ZdoKeyHash, Vector3.zero) != _applied || Mathf.Abs(CurrentHeightScale() - _appliedHeightScale) > 0.001f)
         {
             Apply();
         }
