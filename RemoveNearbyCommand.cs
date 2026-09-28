@@ -40,7 +40,7 @@ public sealed class RemoveNearbyCommand : ConsoleCommand
         var skipped = 0;
         foreach (var piece in pieces)
         {
-            if (piece == null || !piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal))
+            if (piece == null || !PlacementInput.IsLandscaperPiece(piece.gameObject))
             {
                 continue;
             }

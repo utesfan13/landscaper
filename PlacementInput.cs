@@ -82,7 +82,7 @@ internal static class PlacementInput
     // Unity's == also treats destroyed objects as null; the placement ghost is destroyed whenever
     // the selected piece changes.
     public static bool IsLandscaperPiece(GameObject? gameObject) =>
-        gameObject != null && gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal);
+        gameObject != null && gameObject.TryGetComponent<LandscaperTint>(out _);
 
     /// <summary>A key as shown in the build hints.</summary>
     public static string KeyName(KeyCode key) => key switch

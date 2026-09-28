@@ -73,8 +73,24 @@ Custom entries with their own requirements keep them. Resizing a piece while pla
 its cost.
 
 Turn costs off with `Costs.Enabled`, or scale them with `Costs.Multiplier` (every cost stays at
-least 1). Chopping, mining or picking a placed piece can give back more than it cost; turn on
-`DecorativeOnly` to prevent that.
+least 1).
+
+### Breaking placed pieces
+
+Breaking a placed piece (chopping, mining or smashing it) never turns its cost into something better:
+
+- If everything it naturally drops is what it cost, it drops as normal, bonus included. A rock bought
+  with stone gives stone, and a beech bought with wood gives wood (plus resin and seeds, which are
+  always fine).
+- Otherwise it gives back exactly its build cost instead of its own drops once it's fully broken.
+  A copper deposit bought with stone gives the stone back, not copper ore; a birch tree gives back
+  wood, not fine wood, and disappears when felled rather than falling into logs; a crate or barrel
+  gives back its wood rather than loot. Pieces that would drop nothing give back their cost too.
+- Hammer building pieces give back their cost when they break, like vanilla ones.
+- Picking isn't affected: planting a berry bush for 5 berries that keeps regrowing is intended.
+
+With costs turned off, pieces cost nothing, so breaking them gives nothing. To stop placed trees,
+rocks and plants from being chopped, mined or picked at all, turn on `DecorativeOnly`.
 
 ## Multiplayer
 

@@ -276,6 +276,12 @@ internal static class ScaleController
     [HarmonyPatch(typeof(Player), "CheckPlacementGhostVSPlayers")]
     private static class IgnoreTargetBoxWhenBlockedPatch
     {
+        // This runs every frame while placing, so the ghost's colliders are found once per ghost and
+        // the list of nearby characters is reused.
+        private static readonly List<Character> Characters = new();
+        private static readonly List<Collider> GhostColliders = new();
+        private static GameObject? _collidersOwner;
+
         private static bool Prefix(GameObject ___m_placementGhost, Player __instance, ref bool __result)
         {
             if (!PlacementInput.IsLandscaperPiece(___m_placementGhost))
@@ -283,19 +289,47 @@ internal static class ScaleController
                 return true;
             }
 
-            var characters = new List<Character>();
-            Character.GetCharactersInRange(__instance.transform.position, 30f, characters);
-            __result = ___m_placementGhost.GetComponentsInChildren<Collider>().Any(collider =>
-                !collider.isTrigger && collider.enabled && collider.gameObject != ___m_placementGhost &&
-                collider.gameObject.name != DecorativePieceManager.TargetBoxName &&
-                (collider is not MeshCollider mesh || mesh.convex) &&
-                characters.Any(character =>
+            if (!ReferenceEquals(___m_placementGhost, _collidersOwner))
+            {
+                _collidersOwner = ___m_placementGhost;
+                GhostColliders.Clear();
+                foreach (var collider in ___m_placementGhost.GetComponentsInChildren<Collider>(includeInactive: true))
+                {
+                    if (collider.gameObject != ___m_placementGhost && collider.gameObject.name != DecorativePieceManager.TargetBoxName &&
+                        (collider is not MeshCollider mesh || mesh.convex))
+                    {
+                        GhostColliders.Add(collider);
+                    }
+                }
+            }
+
+            Characters.Clear();
+            Character.GetCharactersInRange(__instance.transform.position, 30f, Characters);
+            __result = Overlaps();
+            return false;
+        }
+
+        private static bool Overlaps()
+        {
+            foreach (var collider in GhostColliders)
+            {
+                if (collider == null || collider.isTrigger || !collider.enabled || !collider.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                foreach (var character in Characters)
                 {
                     var capsule = character.GetCollider();
-                    return capsule != null && Physics.ComputePenetration(
-                        collider, collider.transform.position, collider.transform.rotation,
-                        capsule, capsule.transform.position, capsule.transform.rotation, out _, out _);
-                }));
+                    if (capsule != null && Physics.ComputePenetration(
+                            collider, collider.transform.position, collider.transform.rotation,
+                            capsule, capsule.transform.position, capsule.transform.rotation, out _, out _))
+                    {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
     }

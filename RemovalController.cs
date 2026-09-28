@@ -82,7 +82,7 @@ internal static class RemovalController
 
             var piece = ___m_hoveringPiece;
             var canRemove = ___m_buildPieces != null && ___m_buildPieces.m_canRemovePieces;
-            var isLandscaper = piece != null && piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal);
+            var isLandscaper = piece != null && PlacementInput.IsLandscaperPiece(piece.gameObject);
 
             // Pieces with WearNTear are already highlighted by Valheim.
             SetHighlight(canRemove && isLandscaper && piece!.GetComponent<WearNTear>() == null ? piece.gameObject : null);
@@ -115,7 +115,7 @@ internal static class RemovalController
                 Vector3.Distance(hit.point, __instance.m_eye.position) < __instance.m_maxPlaceDistance)
             {
                 var piece = hit.collider.GetComponentInParent<Piece>();
-                if (piece != null && piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal))
+                if (piece != null && PlacementInput.IsLandscaperPiece(piece.gameObject))
                 {
                     return true;
                 }

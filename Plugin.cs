@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.valheim";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.13.2";
+    public const string ModVersion = "0.14.0";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -128,6 +128,7 @@ public sealed class Plugin : BaseUnityPlugin
         }
 
         PlacementInput.Update();
+        LandscaperTint.CheckSome();
         ScaleController.Update();
     }
 
