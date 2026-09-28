@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "landscaper.valheim";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.9.0";
+    public const string ModVersion = "0.10.3";
 
     internal static ManualLogSource Log = null!;
     internal static DecorativePieceManager? Pieces;
@@ -90,6 +90,7 @@ public sealed class Plugin : BaseUnityPlugin
         ScaleController.Bind(Config);
         TintController.Bind(Config);
         OffsetController.Bind(Config);
+        PondWater.Bind(Config);
         CopyController.Bind(customEntries);
         IndestructibleController.Bind(Config, () => allowIndestructible.Value);
         PrefabManager.OnPrefabsRegistered += OnPrefabsRegistered;

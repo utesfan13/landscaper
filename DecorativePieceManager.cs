@@ -312,6 +312,7 @@ public sealed class DecorativePieceManager
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
         MakeStaticDecoration(clone);
+        PondWater.Prepare(clone);
         RemoveEmptyMeshColliders(clone);
         // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
         var modelSize = TryGetModelBounds(clone, out var modelBounds)
@@ -324,7 +325,8 @@ public sealed class DecorativePieceManager
             pickable != null && pickable.m_itemPrefab != null ? pickable.m_itemPrefab.GetComponent<ItemDrop>() : null,
             clone.GetComponentsInChildren<Light>(includeInactive: true).Length > 0,
             vanillaPiece != null && vanillaPiece.m_resources is { Length: > 0 } ? vanillaPiece.m_resources.ToArray() : null,
-            vanillaPiece != null ? vanillaPiece.m_craftingStation : null);
+            vanillaPiece != null ? vanillaPiece.m_craftingStation : null,
+            clone.GetComponent<LiquidVolume>() != null);
         EnsureTargetable(clone, definition.Tool);
         clone.AddComponent<LandscaperTint>();
 
@@ -550,6 +552,12 @@ public sealed class DecorativePieceManager
     /// </summary>
     private static void RemoveEmptyMeshColliders(GameObject clone)
     {
+        // Liquids (pond water, tar) build their collider mesh while simulating; keep those.
+        if (clone.GetComponent<LiquidVolume>() != null)
+        {
+            return;
+        }
+
         foreach (var collider in clone.GetComponentsInChildren<MeshCollider>(includeInactive: true))
         {
             if (collider.sharedMesh == null)

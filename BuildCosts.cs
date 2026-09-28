@@ -6,14 +6,19 @@ namespace Landscaper;
 /// <summary>What a piece's automatic cost is based on, measured from its prefab when registered.</summary>
 internal sealed class PieceTraits
 {
-    public PieceTraits(float size, ItemDrop? pickableItem, bool hasLight, Piece.Requirement[]? vanillaResources, CraftingStation? vanillaStation)
+    public PieceTraits(float size, ItemDrop? pickableItem, bool hasLight, Piece.Requirement[]? vanillaResources, CraftingStation? vanillaStation,
+        bool isLiquid)
     {
+        IsLiquid = isLiquid;
         Size = size;
         PickableItem = pickableItem;
         HasLight = hasLight;
         VanillaResources = vanillaResources;
         VanillaStation = vanillaStation;
     }
+
+    /// <summary>Whether it is a simulated liquid, such as pond water, which is free to place.</summary>
+    public bool IsLiquid { get; }
 
     /// <summary>The cost of the vanilla build piece this piece is cloned from, if it is one.</summary>
     public Piece.Requirement[]? VanillaResources { get; }
@@ -36,7 +41,8 @@ internal sealed class PieceTraits
 /// Pieces cloned from vanilla build pieces use the vanilla cost and crafting station instead (see
 /// DecorativePieceManager.CostFor); for the rest:
 /// <list type="bullet">
-/// <item>Pickables (bushes, mushrooms, thistle, ...) cost 5 of the item they give.</item>
+/// <item>Pickables (bushes, mushrooms, thistle, ...) cost 5 of the item they give; loose stones
+/// and fallen branches, which give plain stone or wood, cost 1.</item>
 /// <item>Metal pieces (lanterns, braziers, iron torches, chains, ...) cost 1 iron.</item>
 /// <item>Everything else costs 2 to 8 depending on the size of its model, of wood or stone depending
 /// on what it is, ice for ice and snow, bone fragments for bones, or wood and ice split evenly for
@@ -89,10 +95,17 @@ internal static class BuildCosts
     /// <summary>The items and amounts a piece costs. An item is null if it can't be found.</summary>
     public static IEnumerable<(ItemDrop? Item, int Amount)> CostFor(DecorativePieceDefinition definition, PieceTraits traits)
     {
-        // Pickables cost only 5 of what they give, even the ones that glow.
+        // Pickables cost only 5 of what they give, even the ones that glow. Loose stones and fallen
+        // branches give plain stone or wood, so they cost just 1, the same as picking them gives.
+        if (traits.IsLiquid)
+        {
+            yield break;
+        }
+
         if (traits.PickableItem is { } picked)
         {
-            yield return (picked, Scaled(PickableAmount));
+            var givesBasicMaterial = picked.name is Wood or Stone;
+            yield return (picked, Scaled(givesBasicMaterial ? 1 : PickableAmount));
             yield break;
         }
 

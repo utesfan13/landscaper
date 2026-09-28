@@ -6,7 +6,7 @@ namespace Landscaper;
 /// <summary>
 /// Added to every Landscaper clone. A placed piece's tint is saved in its ZDO, so it is kept with
 /// the world and shared with other players; this applies it on every player's game and keeps it
-/// applied.
+/// applied. It also scales vegetation sway with the piece's size (see <see cref="VegetationSway"/>).
 /// </summary>
 internal sealed class LandscaperTint : MonoBehaviour
 {
@@ -16,6 +16,7 @@ internal sealed class LandscaperTint : MonoBehaviour
 
     private ZNetView? _view;
     private Vector3 _applied;
+    private float _appliedHeightScale = 1f;
 
     /// <summary>Saves a tint on a just-placed piece and applies it.</summary>
     public static void Save(GameObject piece, Color tint)
@@ -58,6 +59,20 @@ internal sealed class LandscaperTint : MonoBehaviour
         {
             MaterialMan.instance.SetValue(gameObject, ColorId, new Color(tint.x, tint.y, tint.z));
         }
+
+        if (ZNetScene.instance?.GetPrefab(_view.GetZDO().GetPrefab()) is { } prefab && prefab.transform.localScale.y > 0f)
+        {
+            _appliedHeightScale = transform.localScale.y / prefab.transform.localScale.y;
+            VegetationSway.Apply(gameObject, prefab, _appliedHeightScale);
+        }
+    }
+
+    private float CurrentHeightScale()
+    {
+        var prefab = ZNetScene.instance?.GetPrefab(_view!.GetZDO().GetPrefab());
+        return prefab != null && prefab.transform.localScale.y > 0f
+            ? transform.localScale.y / prefab.transform.localScale.y
+            : 1f;
     }
 
     private void Start()
@@ -77,7 +92,8 @@ internal sealed class LandscaperTint : MonoBehaviour
 
     private void Recheck()
     {
-        if (_view != null && _view.IsValid() && _view.GetZDO().GetVec3(ZdoKey, Vector3.zero) != _applied)
+        if (_view != null && _view.IsValid() &&
+            (_view.GetZDO().GetVec3(ZdoKey, Vector3.zero) != _applied || Mathf.Abs(CurrentHeightScale() - _appliedHeightScale) > 0.001f))
         {
             Apply();
         }

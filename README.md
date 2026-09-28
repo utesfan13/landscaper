@@ -43,8 +43,8 @@ Placing a piece has a small cost, and removing it refunds the cost:
 - **Vanilla build pieces** (chests, beds, banners, walls, floors, torches, ...) cost exactly what the
   vanilla piece costs and need the same crafting station nearby (workbench, forge, stonecutter, ...),
   so the scalable, tintable copy matches the original. `Costs.Multiplier` doesn't change these.
-- **Pickables** (berry bushes, mushrooms, thistle, loose stones, branches, ...) cost only 5 of the
-  item they give, e.g. a blueberry bush costs 5 blueberries.
+- **Pickables** (berry bushes, mushrooms, thistle, ...) cost only 5 of the item they give, e.g. a
+  blueberry bush costs 5 blueberries. Loose stones and fallen branches cost 1 stone or wood.
 - **Metal pieces** (lanterns, braziers, iron torches, sconces, chains, the iron gate, iron floors and
   walls, ...) cost 1 iron.
 - **Everything else** costs wood or stone depending on its size:
@@ -73,7 +73,7 @@ least 1). Chopping, mining or picking a placed piece can give back more than it 
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.9.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.10.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
@@ -124,6 +124,20 @@ from 0.01x to 20x by default; narrow it with `MinScale` and `MaxScale`. The curr
 more of the same piece, and resets to normal size whenever you select a different piece (including
 switching back to one you scaled earlier). Each placed piece saves its size with the world.
 X and Z follow the piece's own orientation, so they swap roles as you rotate it.
+
+## Pond Water (experimental)
+
+The Hoe's **Water** tab has **Pond Water**: Valheim's simulated liquid (the kind used for tar pits),
+set to water. Placed on the ground it pours out a fixed amount of water that flows into and fills the
+lowest ground around it, over an area of about 64 m. Dig a hollow with the Hoe or a pickaxe first,
+then place the water in it. The placement preview is invisible, since the water only takes shape once
+placed. Resizing doesn't change how much water it holds.
+
+Pond water is free. Each placement pours 1 m³ of water; while Pond Water is selected, the scale keys
+(`]` / `[`) change how much instead of resizing it, and the amount is shown mid-screen. The default is
+set with `Water.PondVolume`. To fill a hollow, keep placing pond water inside the pond: the new water
+is poured into that pond rather than starting a separate one, so the level rises each time. To remove a pond, aim at the water (or the ground under it) with the remove
+button; the whole pond is removed.
 
 ## Copying World Objects
 

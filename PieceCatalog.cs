@@ -162,6 +162,11 @@ public static class PieceCatalog
             E("Ice Shelf 5", "IceShelf_05"), E("Ice Shelf 6", "IceShelf_06"), E("Ice Shelf 7", "IceShelf_07"),
             E("Ice Shelf 8", "IceShelf_08"), E("Ice Shelf 9", "IceShelf_09"), E("Ice Shelf 10", "IceShelf_10")),
 
+        new(BuildTool.Hoe, "Water",
+            // Valheim's simulated liquid, set to water: it pours in and settles into the lowest ground
+            // around where it's placed, so dig a hollow first.
+            E("Pond Water", "WaterLiquid", "Water that flows into the hollow you place it in. Dig the hollow first.")),
+
         new(BuildTool.Hoe, "Ore & Mining",
             E("Copper Boulder", "rock4_copper"), E("Silver Boulder", "rock3_silver"), E("Silver Vein", "silvervein"),
             E("Gold Vein", "goldvein"),

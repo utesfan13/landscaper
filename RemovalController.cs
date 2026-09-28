@@ -98,6 +98,13 @@ internal static class RemovalController
         /// </summary>
         private static bool Prefix(Player __instance, ref bool __result, PieceTable ___m_buildPieces, int ___m_removeRayMask)
         {
+            // Ponds can't be hit by the remove ray directly; see PondWater.
+            if (PondWater.TryRemoveAimedPond(__instance, ___m_removeRayMask))
+            {
+                __result = true;
+                return false;
+            }
+
             if (___m_buildPieces is null || !LandscaperOnlyTables.Contains(___m_buildPieces))
             {
                 return true;

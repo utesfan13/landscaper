@@ -81,6 +81,18 @@ internal static class ScaleController
         return Mathf.Abs(clamped - 1f) < 0.001f ? 1f : clamped;
     }
 
+    /// <summary>
+    /// How much the scale keys multiply a pond's water: the combined scale of all three axes, so one
+    /// step up on all axes pours about a third more.
+    /// </summary>
+    public static float WaterFactor => _scale.x * _scale.y * _scale.z;
+
+    /// <summary>Ponds (Valheim's simulated liquid) break if resized, so the scale keys set how much
+    /// water they pour instead, and they always keep their own size.</summary>
+    private static bool IsLiquid(GameObject? gameObject) => gameObject != null && gameObject.GetComponent<LiquidVolume>() != null;
+
+    private static Vector3 SizeScaleFor(GameObject gameObject) => IsLiquid(gameObject) ? Vector3.one : _scale;
+
     /// <summary>Scale-up key as shown in the build hints.</summary>
     public static string UpKeyName => PlacementInput.KeyName(_upKey.Value);
 
@@ -135,7 +147,9 @@ internal static class ScaleController
         if (direction != 0)
         {
             Adjust(direction);
-            player!.Message(MessageHud.MessageType.Center, $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
+            player!.Message(MessageHud.MessageType.Center, IsLiquid(_ghost)
+                ? $"Water per placement: {PondWater.CurrentVolume:0.##} cubic m"
+                : $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
         }
     }
 
@@ -206,7 +220,7 @@ internal static class ScaleController
             var prefab = ZNetScene.instance?.GetPrefab(ghost.name);
             if (prefab is not null)
             {
-                ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
+                ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, SizeScaleFor(ghost));
             }
 
             ExtendPlacementRange(__instance, ghost);
@@ -296,7 +310,15 @@ internal static class ScaleController
         var ghost = _ghost!;
         if (ZNetScene.instance?.GetPrefab(ghost.name) is { } prefab)
         {
-            ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
+            var sizeScale = SizeScaleFor(ghost);
+            ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, sizeScale);
+            VegetationSway.Apply(ghost, prefab, sizeScale.y);
+        }
+
+        // A new pond fills itself as soon as it's created, so keep the amount it will pour current.
+        if (IsLiquid(ghost))
+        {
+            PondWater.RefreshVolume();
         }
 
         var tint = TintController.Current;
@@ -346,7 +368,7 @@ internal static class ScaleController
             // ghost or copy its size, and multiplying again would square the scale.
             var prefab = ZNetScene.instance.GetPrefab(view.GetZDO().GetPrefab());
             var baseScale = prefab != null ? prefab.transform.localScale : __instance.transform.localScale;
-            var scale = Vector3.Scale(baseScale, _scale);
+            var scale = Vector3.Scale(baseScale, SizeScaleFor(__instance.gameObject));
             if (__instance.transform.localScale != scale)
             {
                 view.SetLocalScale(scale);
