@@ -30,6 +30,12 @@ public sealed class DecorativePieceDefinition
     /// <summary>Placed on the water surface, like docks, rather than on the ground.</summary>
     public bool OnWater { get; set; }
 
+    /// <summary>Prefab name of a piece in the same menu to list this one right after, if any.</summary>
+    public string? ListAfter { get; set; }
+
+    /// <summary>Prefab name of a vanilla piece whose chest, chair or bed function this piece copies.</summary>
+    public string? FunctionFrom { get; set; }
+
     /// <summary>Items consumed when placing. Empty means the piece is free.</summary>
     public List<PieceRequirement> Requirements { get; } = new();
 }

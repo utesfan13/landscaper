@@ -8,7 +8,7 @@ Pieces cost a little wood or stone (see [Build Costs](#build-costs)) and need no
 
 ## Settings
 
-In `BepInEx/config/landscaper.zackc.cfg`. Settings marked **synced** come from the server in
+In `BepInEx/config/landscaper.valheim.cfg`. Settings marked **synced** come from the server in
 multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 | Setting | Default | Effect |
@@ -19,11 +19,12 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Indestructible.Allowed` | `true` | **Synced.** Allow placing indestructible pieces; see [Indestructible Pieces](#indestructible-pieces). |
 | `Indestructible.ToggleKey` | `Backslash` | Turn indestructible placement on or off while building. |
 | `General.DecorativeOnly` | `false` | **Synced.** When `true`, placed trees, rocks and plants can't be chopped, mined or picked. Remove them with the remove button (middle click). |
+| `Placement.IgnoreRules` | `true` | **Synced.** Place Landscaper pieces where Valheim normally refuses (clipping into other pieces, no support, wrong biome, inside dungeons, steep ground, ...), and Hoe and Cultivator pieces on floors, rocks and other objects as well as the ground. Overlapping a player or creature and other players' wards still block placing. |
 | `Tools.CultivatorDecorEnabled` / `HoeDecorEnabled` / `HammerDecorEnabled` | `true` | **Synced.** List pieces in that tool's menu. Turning one off only hides its pieces; ones already placed stay in the world. |
 | `CustomEntries.Entries` | empty | **Synced.** Extra pieces; see below. |
 | `Scaling.ScaleUpKey` / `ScaleDownKey` | `]` / `[` | Resize the piece being placed. |
 | `Scaling.XAxisModifier` / `YAxisModifier` | `LeftAlt` / `LeftShift` | Hold with the scale keys to change X or Y; hold both for Z. Either side of the keyboard works. |
-| `Scaling.ScaleResetKey` | `End` | Reset the size, colour and height of the piece being placed. |
+| `Scaling.ScaleResetKey` | `End` | Reset the size, colour, position and tilt of the piece being placed. |
 | `Scaling.ScaleStep` | `0.1` | How much each key press changes the scale, as a fraction of the current size (0.1 = 10%). |
 | `Scaling.ScaleRepeatRate` | `15` | Steps per second while a scale key is held down. |
 | `Scaling.MinScale` / `MaxScale` | `0.01` / `20` | Smallest and largest scale allowed on any axis (0.01 to 1, and 1 to 20). |
@@ -33,8 +34,10 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Tint.StrengthBrightnessStep` | `0.1` | How much each key press changes strength or brightness (0.1 = 10%). |
 | `Tint.TintRepeatRate` | `15` | Steps per second while a tint key is held down. |
 | `Tint.Presets` | 10 presets | `Name:hue,strength,brightness` entries separated by semicolons; see below. |
-| `Offset.UpDownModifier` / `SideModifier` | `LeftAlt` / `LeftShift` | Hold and scroll to move the piece being placed up/down or sideways; hold both for toward/away from you. |
-| `Offset.Step` | `0.1` | Meters per scroll step. |
+| `Offset.UpDownModifier` / `SideModifier` | `LeftAlt` / `LeftShift` | Hold and scroll to tilt the piece being placed forward/back or sideways, or spin it finely with both (rotate mode); or to move it up/down, sideways, or toward/away from you with both (move mode). |
+| `Offset.ModeKey` | `Slash` (`/`) | Switch the modifiers' scrolling between rotate mode (the default) and move mode. |
+| `Offset.Step` | `0.1` | Meters per scroll step in move mode. |
+| `Offset.RotationStep` | `5` | Degrees per scroll step in rotate mode (0.5 to 45). |
 
 ## Build Costs
 
@@ -43,8 +46,9 @@ Placing a piece has a small cost, and removing it refunds the cost:
 - **Vanilla build pieces** (chests, beds, banners, walls, floors, torches, ...) cost exactly what the
   vanilla piece costs and need the same crafting station nearby (workbench, forge, stonecutter, ...),
   so the scalable, tintable copy matches the original. `Costs.Multiplier` doesn't change these.
-- **Pickables** (berry bushes, mushrooms, thistle, loose stones, branches, ...) cost only 5 of the
-  item they give, e.g. a blueberry bush costs 5 blueberries.
+- **Pickables** (berry bushes, mushrooms, thistle, ...) cost only 5 of the item they give, e.g. a
+  blueberry bush costs 5 blueberries. Loose stones and fallen branches cost 1 stone or wood.
+- **Guck sacks** cost guck: 1 for the small one, 2 for the regular one.
 - **Metal pieces** (lanterns, braziers, iron torches, sconces, chains, the iron gate, iron floors and
   walls, ...) cost 1 iron.
 - **Everything else** costs wood or stone depending on its size:
@@ -57,7 +61,9 @@ Placing a piece has a small cost, and removing it refunds the cost:
 | 15 m and over (cliffs, great pillars, frozen ships) | 8 |
 
   Trees, plants, stumps, furniture and wooden props cost wood; rocks, cliffs, statues and ruins
-  cost stone; ice and snow pieces cost ice; bones, skulls and carcasses cost bone fragments. The
+  cost stone, except for the wooden and cloth pieces among them (tree stumps, the wooden path, the
+  trader wagon, Jotun benches and rugs, ...), which cost wood; clay pots cost stone and the prop
+  cauldrons iron. Ice and snow pieces cost ice; bones, skulls and carcasses cost bone fragments. The
   stump hut and hole and the frozen ships cost wood and ice, split evenly. Building structures and
   copied objects go by their name (stone, crystal and so on cost stone).
 - **Crafted light sources** (torches, lanterns, braziers, ...) cost 1 resin on top. Pickables and other
@@ -67,13 +73,29 @@ Custom entries with their own requirements keep them. Resizing a piece while pla
 its cost.
 
 Turn costs off with `Costs.Enabled`, or scale them with `Costs.Multiplier` (every cost stays at
-least 1). Chopping, mining or picking a placed piece can give back more than it cost; turn on
-`DecorativeOnly` to prevent that.
+least 1).
+
+### Breaking placed pieces
+
+Breaking a placed piece (chopping, mining or smashing it) never turns its cost into something better:
+
+- If everything it naturally drops is what it cost, it drops as normal, bonus included. A rock bought
+  with stone gives stone, and a beech bought with wood gives wood (plus resin and seeds, which are
+  always fine).
+- Otherwise it gives back exactly its build cost instead of its own drops once it's fully broken.
+  A copper deposit bought with stone gives the stone back, not copper ore; a birch tree gives back
+  wood, not fine wood, and disappears when felled rather than falling into logs; a crate or barrel
+  gives back its wood rather than loot. Pieces that would drop nothing give back their cost too.
+- Hammer building pieces give back their cost when they break, like vanilla ones.
+- Picking isn't affected: planting a berry bush for 5 berries that keeps regrowing is intended.
+
+With costs turned off, pieces cost nothing, so breaking them gives nothing. To stop placed trees,
+rocks and plants from being chopped, mined or picked at all, turn on `DecorativeOnly`.
 
 ## Multiplayer
 
 Every player, and a dedicated server, needs Landscaper (and Jotunn) installed at the same minor
-version, e.g. any 0.8.x. Jotunn checks this when joining and refuses the connection with a message if
+version, e.g. any 0.12.x. Jotunn checks this when joining and refuses the connection with a message if
 a player's version doesn't match. Players without the mod couldn't see Landscaper pieces anyway.
 
 Scale and tint are saved on each placed piece, so every player sees them.
@@ -116,7 +138,7 @@ While the placement preview of any Landscaper piece is showing:
 | Alt + `]` / `[` | Wider / narrower (X) |
 | Shift + `]` / `[` | Taller / shorter (Y) |
 | Alt + Shift + `]` / `[` | Deeper / shallower (Z) |
-| End | Reset size, tint and position |
+| End | Reset size, tint, position and tilt |
 
 Each step changes the size by 10% of its current value, so steps are fine near normal size and
 quick at large sizes. Hold a scale key to keep resizing; after a short pause it repeats until you let go. Each axis goes
@@ -124,6 +146,34 @@ from 0.01x to 20x by default; narrow it with `MinScale` and `MaxScale`. The curr
 more of the same piece, and resets to normal size whenever you select a different piece (including
 switching back to one you scaled earlier). Each placed piece saves its size with the world.
 X and Z follow the piece's own orientation, so they swap roles as you rotate it.
+
+## Pond Water (experimental)
+
+The Hoe has **Pond Water**, listed with its terrain tools right after paved road: Valheim's simulated liquid (the kind used for tar pits),
+set to water. Placed on the ground it pours out a fixed amount of water that flows into and fills the
+lowest ground around it, over an area of about 64 m. Dig a hollow with the Hoe or a pickaxe first,
+then place the water in it. The placement preview is invisible, since the water only takes shape once
+placed. Resizing doesn't change how much water it holds.
+
+Pond water is free. Each placement pours 1 m³ of water; while Pond Water is selected, the scale keys
+(`]` / `[`) change how much instead of resizing it, and the amount is shown mid-screen. The default is
+set with `Water.PondVolume`. To fill a hollow, keep placing pond water inside the pond: the new water
+is poured into that pond rather than starting a separate one, so the level rises each time. To remove a pond, aim at the water (or the ground under it) with the remove
+button; the whole pond is removed.
+
+## Functional Furniture
+
+Some decorative copies work like the vanilla piece they resemble:
+
+- **Chests:** Wardrobe (Prop), Barrel, Dvergr Barrel, Dvergr Crate, Dvergr Long Crate, Dvergr Ashlands
+  Crate and Braided Box store items (no opening animation). They never contain loot.
+- **Seats:** Darkwood Chair (Prop), Runed Bench (Prop), Dvergr Chair, Dvergr Stool, Mountain Chair,
+  Jotun Stool and Jotun Bench can be sat on.
+- **Beds:** Bed (Prop), Ashwood Bed (Prop), Dvergr Bed and Jotun Bedrolls can be slept in and set
+  your spawn point.
+
+They give the same comfort as the vanilla piece. Like vanilla chests, a chest with items in it can't
+be removed, including with `landscaper_remove`.
 
 ## Copying World Objects
 
@@ -143,22 +193,27 @@ copies its tint too.
 - Creatures, items, ships, carts and gravestones can't be copied. Some small wild plants such as
   mushrooms can't be aimed at to copy; once placed through Landscaper they can.
 
-## Moving Pieces While Placing
+## Tilting and Moving Pieces While Placing
 
-While the placement preview of any Landscaper piece is showing, hold a modifier and scroll to nudge
-the piece 0.1 m per scroll step:
+While the placement preview of any Landscaper piece is showing, hold a modifier and scroll to tilt
+or move it. Plain scrolling still spins the piece in Valheim's usual steps. Press `/` to switch the
+modifiers between rotate mode (the default) and move mode; the build hints show the current mode.
 
-| Keys | Effect |
-|---|---|
-| Alt + scroll | Up / down |
-| Shift + scroll | Left / right |
-| Alt + Shift + scroll | Away from / toward you |
+| Keys | Rotate mode (5° per step) | Move mode (0.1 m per step) |
+|---|---|---|
+| Alt + scroll | Tilt forward / back | Up / down |
+| Shift + scroll | Tilt left / right | Left / right |
+| Alt + Shift + scroll | Fine spin | Away from / toward you |
 
-Left/right and away/toward follow the direction you're facing, so they match the screen. This is
-useful for lining pieces up exactly, such as stacking one staircase on another without a gap. The
-piece doesn't rotate while one of these modifiers is held. Shift is also Valheim's "place without
-snapping" key, so snapping is off while you nudge sideways or forward and back. The offset is shown mid-screen, stays set while you place
-more of the same piece, and resets when you select a different piece or press End.
+The tilt is relative to the piece, so after tilting a tree to make it lean, plain scrolling turns
+which way it leans. Moving left/right and away/toward follows the direction you're facing, so it
+matches the screen. Moving is useful for lining pieces up exactly, such as stacking one staircase on
+another without a gap. Valheim's own spin doesn't change while one of these modifiers is held. Shift
+is also Valheim's "place without snapping" key, so snapping is off while you use it. The tilt and
+offset are shown mid-screen, stay set while you place more of the same piece, and reset when you
+select a different piece or press End; the mode stays as you left it. The game saves each piece's
+rotation itself, so tilted pieces look the same for everyone. Copying an object (see
+[Copying World Objects](#copying-world-objects)) takes its exact rotation, including any lean.
 
 Building pieces that need support (for example the Ashlands ruin walls) can still break if moved off
 the ground with nothing under them, unless they're placed as indestructible.
@@ -186,7 +241,7 @@ While the placement preview of any Landscaper piece is showing:
 | Alt + `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
 | Shift + `,` / `.` | Weaker / stronger tint |
 | Alt + Shift + `,` / `.` | Darker / lighter |
-| End | Reset size, tint and position |
+| End | Reset size, tint, position and tilt |
 
 The preview shows the tint as you change it, and the current values are shown mid-screen. Like
 scaling, the tint stays set while you place more of the same piece, resets when you select a different
@@ -222,7 +277,7 @@ won't appear. Results tagged `(item)` or `(creature)` are not good choices for p
 
 ### From the config file (no rebuild)
 
-Add entries in `BepInEx/config/landscaper.zackc.cfg` under `[CustomEntries]`:
+Add entries in `BepInEx/config/landscaper.valheim.cfg` under `[CustomEntries]`:
 
 ```text
 Display Name|ExactPrefabName|Tool|Category|RotationX,RotationY,RotationZ|Item:Amount,Item:Amount|ScaleX,ScaleY,ScaleZ

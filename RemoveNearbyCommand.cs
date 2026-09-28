@@ -37,9 +37,10 @@ public sealed class RemoveNearbyCommand : ConsoleCommand
         Piece.GetAllPiecesInRadius(player.transform.position, radius, pieces);
 
         var removed = 0;
+        var skipped = 0;
         foreach (var piece in pieces)
         {
-            if (piece == null || !piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal))
+            if (piece == null || !PlacementInput.IsLandscaperPiece(piece.gameObject))
             {
                 continue;
             }
@@ -47,6 +48,13 @@ public sealed class RemoveNearbyCommand : ConsoleCommand
             var view = piece.GetComponent<ZNetView>();
             if (view == null || !view.IsValid())
             {
+                continue;
+            }
+
+            // Like the remove button: not while a chest still has items in it, or someone is using it.
+            if (!piece.CanBeRemoved())
+            {
+                skipped++;
                 continue;
             }
 
@@ -68,5 +76,9 @@ public sealed class RemoveNearbyCommand : ConsoleCommand
         context.AddString(removed == 0
             ? $"No Landscaper pieces within {radius:0.#} m."
             : $"Removed {removed} Landscaper piece(s) within {radius:0.#} m.");
+        if (skipped > 0)
+        {
+            context.AddString($"Skipped {skipped} that can't be removed yet (a chest with items in it, or in use).");
+        }
     }
 }

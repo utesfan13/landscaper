@@ -82,7 +82,7 @@ internal static class RemovalController
 
             var piece = ___m_hoveringPiece;
             var canRemove = ___m_buildPieces != null && ___m_buildPieces.m_canRemovePieces;
-            var isLandscaper = piece != null && piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal);
+            var isLandscaper = piece != null && PlacementInput.IsLandscaperPiece(piece.gameObject);
 
             // Pieces with WearNTear are already highlighted by Valheim.
             SetHighlight(canRemove && isLandscaper && piece!.GetComponent<WearNTear>() == null ? piece.gameObject : null);
@@ -98,6 +98,13 @@ internal static class RemovalController
         /// </summary>
         private static bool Prefix(Player __instance, ref bool __result, PieceTable ___m_buildPieces, int ___m_removeRayMask)
         {
+            // Ponds can't be hit by the remove ray directly; see PondWater.
+            if (PondWater.TryRemoveAimedPond(__instance, ___m_removeRayMask))
+            {
+                __result = true;
+                return false;
+            }
+
             if (___m_buildPieces is null || !LandscaperOnlyTables.Contains(___m_buildPieces))
             {
                 return true;
@@ -108,7 +115,7 @@ internal static class RemovalController
                 Vector3.Distance(hit.point, __instance.m_eye.position) < __instance.m_maxPlaceDistance)
             {
                 var piece = hit.collider.GetComponentInParent<Piece>();
-                if (piece != null && piece.gameObject.name.StartsWith("Landscaper_", StringComparison.Ordinal))
+                if (piece != null && PlacementInput.IsLandscaperPiece(piece.gameObject))
                 {
                     return true;
                 }

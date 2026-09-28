@@ -42,7 +42,7 @@ internal static class ScaleController
             "Make the piece being placed bigger. Alone it scales all axes; hold an axis modifier to scale one axis.");
         _downKey = config.Bind("Scaling", "ScaleDownKey", KeyCode.LeftBracket,
             "Make the piece being placed smaller. Alone it scales all axes; hold an axis modifier to scale one axis.");
-        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint and position offset of the piece being placed.");
+        _resetKey = config.Bind("Scaling", "ScaleResetKey", KeyCode.End, "Reset the scale, tint, position offset and tilt of the piece being placed.");
         _xModifier = config.Bind("Scaling", "XAxisModifier", KeyCode.LeftAlt, "Hold with the scale keys to change only X (width). Either side of the keyboard works.");
         _yModifier = config.Bind("Scaling", "YAxisModifier", KeyCode.LeftShift, "Hold with the scale keys to change only Y (height). Either side of the keyboard works.");
         _step = config.Bind("Scaling", "ScaleStep", 0.1f,
@@ -80,6 +80,18 @@ internal static class ScaleController
         // Snap float drift back to exactly normal size.
         return Mathf.Abs(clamped - 1f) < 0.001f ? 1f : clamped;
     }
+
+    /// <summary>
+    /// How much the scale keys multiply a pond's water: the combined scale of all three axes, so one
+    /// step up on all axes pours about a third more.
+    /// </summary>
+    public static float WaterFactor => _scale.x * _scale.y * _scale.z;
+
+    /// <summary>Ponds (Valheim's simulated liquid) break if resized, so the scale keys set how much
+    /// water they pour instead, and they always keep their own size.</summary>
+    private static bool IsLiquid(GameObject? gameObject) => gameObject != null && gameObject.GetComponent<LiquidVolume>() != null;
+
+    private static Vector3 SizeScaleFor(GameObject gameObject) => IsLiquid(gameObject) ? Vector3.one : _scale;
 
     /// <summary>Scale-up key as shown in the build hints.</summary>
     public static string UpKeyName => PlacementInput.KeyName(_upKey.Value);
@@ -124,7 +136,7 @@ internal static class ScaleController
             _scale = Vector3.one;
             TintController.Reset();
             OffsetController.Reset();
-            player!.Message(MessageHud.MessageType.Center, "Scale, tint and position reset");
+            player!.Message(MessageHud.MessageType.Center, "Scale, tint, position and tilt reset");
             return;
         }
 
@@ -135,7 +147,9 @@ internal static class ScaleController
         if (direction != 0)
         {
             Adjust(direction);
-            player!.Message(MessageHud.MessageType.Center, $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
+            player!.Message(MessageHud.MessageType.Center, IsLiquid(_ghost)
+                ? $"Water per placement: {PondWater.CurrentVolume:0.##} cubic m"
+                : $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
         }
     }
 
@@ -191,11 +205,12 @@ internal static class ScaleController
                     TintController.SetFromColor(copiedTint);
                 }
 
-                OffsetController.Reset();
+                OffsetController.ResetForNewPiece();
             }
 
             _copiedScale = null;
             _copiedTint = null;
+            OffsetController.ClearCopied();
 
             if (!PlacementInput.IsLandscaperPiece(_ghost))
             {
@@ -206,14 +221,20 @@ internal static class ScaleController
             var prefab = ZNetScene.instance?.GetPrefab(ghost.name);
             if (prefab is not null)
             {
-                ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
+                ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, SizeScaleFor(ghost));
             }
 
             ExtendPlacementRange(__instance, ghost);
 
             // Valheim recalculates the ghost's position every update and places the piece where the
             // ghost is, so moving the ghost here moves the placed piece too.
-            ghost.transform.position += OffsetController.WorldOffset;
+            // Only while Valheim has just positioned the ghost: a hidden ghost keeps its last transform,
+            // and adding to it every frame would pile up.
+            if (ghost.activeSelf)
+            {
+                ghost.transform.position += OffsetController.WorldOffset;
+                ghost.transform.rotation *= OffsetController.Rotation;
+            }
 
             // Valheim clears the ghost's colour every frame and turns it red when placement is invalid;
             // only tint a valid ghost so that warning stays visible.
@@ -255,6 +276,12 @@ internal static class ScaleController
     [HarmonyPatch(typeof(Player), "CheckPlacementGhostVSPlayers")]
     private static class IgnoreTargetBoxWhenBlockedPatch
     {
+        // This runs every frame while placing, so the ghost's colliders are found once per ghost and
+        // the list of nearby characters is reused.
+        private static readonly List<Character> Characters = new();
+        private static readonly List<Collider> GhostColliders = new();
+        private static GameObject? _collidersOwner;
+
         private static bool Prefix(GameObject ___m_placementGhost, Player __instance, ref bool __result)
         {
             if (!PlacementInput.IsLandscaperPiece(___m_placementGhost))
@@ -262,19 +289,47 @@ internal static class ScaleController
                 return true;
             }
 
-            var characters = new List<Character>();
-            Character.GetCharactersInRange(__instance.transform.position, 30f, characters);
-            __result = ___m_placementGhost.GetComponentsInChildren<Collider>().Any(collider =>
-                !collider.isTrigger && collider.enabled && collider.gameObject != ___m_placementGhost &&
-                collider.gameObject.name != DecorativePieceManager.TargetBoxName &&
-                (collider is not MeshCollider mesh || mesh.convex) &&
-                characters.Any(character =>
+            if (!ReferenceEquals(___m_placementGhost, _collidersOwner))
+            {
+                _collidersOwner = ___m_placementGhost;
+                GhostColliders.Clear();
+                foreach (var collider in ___m_placementGhost.GetComponentsInChildren<Collider>(includeInactive: true))
+                {
+                    if (collider.gameObject != ___m_placementGhost && collider.gameObject.name != DecorativePieceManager.TargetBoxName &&
+                        (collider is not MeshCollider mesh || mesh.convex))
+                    {
+                        GhostColliders.Add(collider);
+                    }
+                }
+            }
+
+            Characters.Clear();
+            Character.GetCharactersInRange(__instance.transform.position, 30f, Characters);
+            __result = Overlaps();
+            return false;
+        }
+
+        private static bool Overlaps()
+        {
+            foreach (var collider in GhostColliders)
+            {
+                if (collider == null || collider.isTrigger || !collider.enabled || !collider.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                foreach (var character in Characters)
                 {
                     var capsule = character.GetCollider();
-                    return capsule != null && Physics.ComputePenetration(
-                        collider, collider.transform.position, collider.transform.rotation,
-                        capsule, capsule.transform.position, capsule.transform.rotation, out _, out _);
-                }));
+                    if (capsule != null && Physics.ComputePenetration(
+                            collider, collider.transform.position, collider.transform.rotation,
+                            capsule, capsule.transform.position, capsule.transform.rotation, out _, out _))
+                    {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
     }
@@ -294,9 +349,20 @@ internal static class ScaleController
         }
 
         var ghost = _ghost!;
+
+        // Read again: relaxed placement rules can make the ghost valid after it was sized above.
+        _ghostValid = Player.m_localPlayer!.GetPlacementStatus() == Player.PlacementStatus.Valid;
         if (ZNetScene.instance?.GetPrefab(ghost.name) is { } prefab)
         {
-            ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, _scale);
+            var sizeScale = SizeScaleFor(ghost);
+            ghost.transform.localScale = Vector3.Scale(prefab.transform.localScale, sizeScale);
+            VegetationSway.Apply(ghost, prefab, sizeScale.y);
+        }
+
+        // A new pond fills itself as soon as it's created, so keep the amount it will pour current.
+        if (IsLiquid(ghost))
+        {
+            PondWater.RefreshVolume();
         }
 
         var tint = TintController.Current;
@@ -346,7 +412,7 @@ internal static class ScaleController
             // ghost or copy its size, and multiplying again would square the scale.
             var prefab = ZNetScene.instance.GetPrefab(view.GetZDO().GetPrefab());
             var baseScale = prefab != null ? prefab.transform.localScale : __instance.transform.localScale;
-            var scale = Vector3.Scale(baseScale, _scale);
+            var scale = Vector3.Scale(baseScale, SizeScaleFor(__instance.gameObject));
             if (__instance.transform.localScale != scale)
             {
                 view.SetLocalScale(scale);

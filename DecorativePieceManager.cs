@@ -201,7 +201,29 @@ public sealed class DecorativePieceManager
             {
                 table.m_pieces.Remove(piece.Clone);
             }
+
+            if (visible && piece.Definition.ListAfter is { } after)
+            {
+                MoveAfter(table.m_pieces, piece.Clone, after);
+            }
         }
+    }
+
+    /// <summary>
+    /// Moves a piece to right after another in its menu. Pieces are listed in their table's order and
+    /// Jotunn appends new ones, so this runs again whenever the menus are rebuilt.
+    /// </summary>
+    private static void MoveAfter(List<GameObject> pieces, GameObject piece, string afterPrefab)
+    {
+        var anchor = pieces.FindIndex(candidate => candidate != null && candidate.name == afterPrefab);
+        var current = pieces.IndexOf(piece);
+        if (anchor < 0 || current < 0 || current == anchor + 1)
+        {
+            return;
+        }
+
+        pieces.RemoveAt(current);
+        pieces.Insert(current < anchor ? anchor : anchor + 1, piece);
     }
 
     private static void RefreshPlayerPieces()
@@ -312,6 +334,11 @@ public sealed class DecorativePieceManager
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
         MakeStaticDecoration(clone);
+        PondWater.Prepare(clone);
+        if (definition.FunctionFrom is { } functionFrom)
+        {
+            FunctionalPieces.Apply(clone, functionFrom);
+        }
         RemoveEmptyMeshColliders(clone);
         // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
         var modelSize = TryGetModelBounds(clone, out var modelBounds)
@@ -324,7 +351,8 @@ public sealed class DecorativePieceManager
             pickable != null && pickable.m_itemPrefab != null ? pickable.m_itemPrefab.GetComponent<ItemDrop>() : null,
             clone.GetComponentsInChildren<Light>(includeInactive: true).Length > 0,
             vanillaPiece != null && vanillaPiece.m_resources is { Length: > 0 } ? vanillaPiece.m_resources.ToArray() : null,
-            vanillaPiece != null ? vanillaPiece.m_craftingStation : null);
+            vanillaPiece != null ? vanillaPiece.m_craftingStation : null,
+            clone.GetComponent<LiquidVolume>() != null);
         EnsureTargetable(clone, definition.Tool);
         clone.AddComponent<LandscaperTint>();
 
@@ -550,6 +578,12 @@ public sealed class DecorativePieceManager
     /// </summary>
     private static void RemoveEmptyMeshColliders(GameObject clone)
     {
+        // Liquids (pond water, tar) build their collider mesh while simulating; keep those.
+        if (clone.GetComponent<LiquidVolume>() != null)
+        {
+            return;
+        }
+
         foreach (var collider in clone.GetComponentsInChildren<MeshCollider>(includeInactive: true))
         {
             if (collider.sharedMesh == null)
@@ -605,6 +639,13 @@ public sealed class DecorativePieceManager
             return true;
         }
 
+        // Liquids have no mesh until they simulate, so there's nothing to render.
+        if (source.GetComponent<LiquidVolume>() != null)
+        {
+            piece.m_icon = WaterIcon() ?? piece.m_icon;
+            return true;
+        }
+
         try
         {
             var sprite = RenderManager.Instance.Render(new RenderManager.RenderRequest(source)
@@ -624,6 +665,56 @@ public sealed class DecorativePieceManager
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// An icon for pond water: the water drop Valheim shows for the Wet status effect, or failing
+    /// that the ice pond rock's icon tinted blue.
+    /// </summary>
+    private Sprite? WaterIcon()
+    {
+        if (ObjectDB.instance?.GetStatusEffect(SEMan.s_statusEffectWet)?.m_icon is { } wet)
+        {
+            return wet;
+        }
+
+        var rock = ZNetScene.instance?.GetPrefab("IcePond_rock");
+        if (rock == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var rendered = RenderManager.Instance.Render(new RenderManager.RenderRequest(rock)
+            {
+                Rotation = RenderManager.IsometricRotation,
+                UseCache = true,
+                TargetPlugin = _plugin
+            });
+            return rendered != null ? Tinted(rendered, new Color(0.35f, 0.6f, 1f)) : null;
+        }
+        catch (Exception exception)
+        {
+            _log.LogWarning($"Could not render a water icon: {exception.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>A copy of a sprite with its colours multiplied by <paramref name="tint"/>.</summary>
+    private static Sprite Tinted(Sprite sprite, Color tint)
+    {
+        var source = sprite.texture;
+        var pixels = source.GetPixels();
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Color(pixels[i].r * tint.r, pixels[i].g * tint.g, pixels[i].b * tint.b, pixels[i].a);
+        }
+
+        var texture = new Texture2D(source.width, source.height, TextureFormat.RGBA32, mipChain: false);
+        texture.SetPixels(pixels);
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
     }
 
     private static Sprite? GetToolIcon(BuildTool tool)

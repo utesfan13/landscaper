@@ -41,6 +41,7 @@ internal static class CopyController
                 if (isLandscaper && ZNetScene.instance.GetPrefab(target.GetZDO().GetPrefab()) is { } clone)
                 {
                     ScaleController.ApplyCopied(ScaleRatio(target.transform, clone.transform), LandscaperTint.Read(target.gameObject));
+                    ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
                 }
 
                 return;
@@ -49,9 +50,20 @@ internal static class CopyController
             if (Copy(__instance, ___m_buildPieces, target, isLandscaper))
             {
                 ___m_placeRotation = (int)Math.Round(target.transform.rotation.eulerAngles.y / ___m_placeRotationDegrees);
+                ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
                 __result = true;
             }
         }
+    }
+
+    /// <summary>
+    /// Valheim turns the copy to the nearest of its rotation steps; the tilt makes up the rest, so
+    /// the copy is turned exactly like the object, including any lean.
+    /// </summary>
+    private static void ApplyCopiedTilt(Transform target, int placeRotation, float placeRotationDegrees)
+    {
+        var valheimRotation = Quaternion.Euler(0f, placeRotation * placeRotationDegrees, 0f);
+        OffsetController.ApplyCopied(Quaternion.Inverse(valheimRotation) * target.rotation);
     }
 
     private static bool Copy(Player player, PieceTable table, ZNetView target, bool isLandscaper)
