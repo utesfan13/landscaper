@@ -38,8 +38,7 @@ While placing a piece (Landscaper pieces and vanilla build pieces alike):
 | `[` / `]` | Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth. |
 | `,` / `.` | Previous / next tint preset. Fine tune hue/strength/brightness with alt/shift/alt+shift |
 | Scroll | Rotate, as usual |
-| Alt / Shift / both + scroll | Tilt forward/back, tilt sideways, fine tune rotation when in **rotation** mode 
-OR up and down/side to side/toward and away in **move** mode. |
+| Alt / Shift / both + scroll | Tilt forward/back, tilt sideways, fine tune rotation when in **rotation** mode <br> OR up and down/side to side/toward and away in **move** mode. |
 | `/` | Switch between rotation and move mode |
 | End | Reset size, tint, tilt and position |
 | `\` | Indestructible placement on / off |
