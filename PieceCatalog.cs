@@ -20,8 +20,11 @@ public static class PieceCatalog
 
     private static readonly Group[] RetiredGroups =
     {
-        // The game keeps its model hidden (it only holds the egg in eagle nests), so it was invisible.
-        new(BuildTool.Hammer, "Dungeon Decor", E("Dragon Egg Cup", "dragoneggcup"))
+        new(BuildTool.Hammer, "Dungeon Decor",
+            // The game keeps its model hidden (it only holds the egg in eagle nests), so it was invisible.
+            E("Dragon Egg Cup", "dragoneggcup"),
+            // Invisible when placed.
+            E("Sunken Crypt Tower Wall", "SunkenKit_int_towerwall_LOD"))
     };
 
     private static IEnumerable<DecorativePieceDefinition> Definitions(IEnumerable<Group> groups)
@@ -321,7 +324,7 @@ public static class PieceCatalog
             E("Big Jotun Statue Legs", "Morkhalla_StatuePieceLegs_big"), E("Big Jotun Statue Sword", "Morkhalla_StatuePieceSword_big"), E("Big Jotun Statue Torso", "Morkhalla_StatuePieceTorso_big")),
 
         new(BuildTool.Hammer, "Dungeon Decor",
-            E("Sunken Crypt Tower Wall", "SunkenKit_int_towerwall_LOD"), E("Stone Chest", "stonechest"), E("Horizontal Web", "horizontal_web"),
+            E("Stone Chest", "stonechest"), E("Horizontal Web", "horizontal_web"),
             E("Vertical Web", "vertical_web"), E("Web Tunnel", "tunnel_web"), E("Jotun Web Corner", "morkhalla_web_corner"),
             E("Jotun Web", "morkhalla_web_horisontal"), E("Jotun Web Tunnel", "morkhalla_web_tunnel"), E("Infested Hanging Egg 1", "CreepProp_egg_hanging01"),
             E("Infested Hanging Egg 2", "CreepProp_egg_hanging02"), E("Infested Hanging Growth", "CreepProp_hanging01"), E("Infested Wall Growth", "CreepProp_wall01"),
