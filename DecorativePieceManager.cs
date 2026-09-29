@@ -40,12 +40,23 @@ public sealed class DecorativePieceManager
     /// <summary>A plain entry, for the names Landscaper copies of vanilla pieces were saved under.</summary>
     private static readonly DecorativePieceDefinition PlainDefinition = new();
 
+    /// <summary>
+    /// The webs. Their models reach tens of meters out to one side of their origin (the vertical web
+    /// starts 30 m up), and the Hammer places a piece with the near face of its bounds on the aim
+    /// point, so a web's preview started far from the crosshair. They're placed with the bottom
+    /// middle of the model exactly at the crosshair instead (see RecenterModel). Their strands are
+    /// too thin to show in a rendered icon, so their icon is the web texture itself.
+    /// </summary>
+    private static readonly HashSet<string> WebPrefabs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "horizontal_web", "vertical_web", "tunnel_web", "morkhalla_web_corner", "morkhalla_web_horisontal", "morkhalla_web_tunnel"
+    };
+
     /// <summary>Saved names kept loading by invisible stand-ins; see KeepPlacedPieces.</summary>
     private readonly SortedSet<string> _standIns = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly AccessTools.FieldRef<ZNetScene, Dictionary<int, GameObject>> NamedPrefabs =
         AccessTools.FieldRefAccess<ZNetScene, Dictionary<int, GameObject>>("m_namedPrefabs");
-    private readonly HashSet<string> _pieceNames = new(StringComparer.Ordinal);
     private readonly List<(Piece Piece, GameObject Source)> _pendingIcons = new();
 
     private sealed class RegisteredPiece
@@ -86,8 +97,10 @@ public sealed class DecorativePieceManager
 
     public bool HasRegistered { get; private set; }
 
-    /// <summary>Display names of every registered piece, for silent unlocking.</summary>
-    public IReadOnlyCollection<string> PieceNames => _pieceNames;
+    /// <summary>The Piece of every registered Landscaper piece, for unlocking them.</summary>
+    public IEnumerable<Piece> RegisteredPieces =>
+        _registered.Values.Select(piece => piece.Clone != null ? piece.Clone.GetComponent<Piece>() : null).OfType<Piece>();
+
 
     /// <summary>
     /// Registers every catalog and custom entry. Call once, from ZNetScene.Awake, so the clones exist
@@ -100,8 +113,10 @@ public sealed class DecorativePieceManager
         HasRegistered = true;
         ClutterPrefabs.Build(_log);
         var adjustable = MakeVanillaPiecesAdjustable();
+        // Retired pieces are registered but never listed: UpdateMenus only lists catalog and custom entries.
         var registered = PieceCatalog.Entries().Where(definition => !DuplicatesVanillaPiece(definition))
             .Concat(ParseCustomEntries(_customEntries())).Count(Register);
+        PieceCatalog.Retired().Count(Register);
         _log.LogInfo($"Registered {registered} decorative pieces; {adjustable} vanilla build pieces can be adjusted too.");
         RegisterAliases();
         UpdateMenus();
@@ -133,7 +148,7 @@ public sealed class DecorativePieceManager
             if (component != null)
             {
                 component.m_resources = CostFor(piece.Definition, piece.Traits);
-                component.m_craftingStation = StationFor(piece.Definition, piece.Traits);
+                component.m_craftingStation = StationFor(piece.Definition, piece.Traits, component.m_resources);
             }
         }
     }
@@ -142,10 +157,24 @@ public sealed class DecorativePieceManager
     /// The crafting station needed nearby to place a piece: the vanilla piece's station when the piece
     /// uses the vanilla cost, otherwise none.
     /// </summary>
-    private static CraftingStation? StationFor(DecorativePieceDefinition definition, PieceTraits traits) =>
-        definition.Requirements.Count == 0 && BuildCosts.Enabled() && traits.VanillaResources is not null
-            ? traits.VanillaStation
-            : null;
+    private static CraftingStation? StationFor(DecorativePieceDefinition definition, PieceTraits traits, Piece.Requirement[] resources)
+    {
+        // Custom entries with their own requirements, and free pieces, need no station.
+        if (definition.Requirements.Count > 0 || !BuildCosts.Enabled())
+        {
+            return null;
+        }
+
+        // Pieces with the vanilla cost keep the vanilla station, whichever it is (or none).
+        if (traits.VanillaResources is not null)
+        {
+            return traits.VanillaStation;
+        }
+
+        var name = BuildCosts.StationFor(definition, traits,
+            resources.Where(requirement => requirement.m_resItem != null).Select(requirement => requirement.m_resItem.name));
+        return name is null ? null : PrefabManager.Instance.GetPrefab(name)?.GetComponent<CraftingStation>();
+    }
 
     private Piece.Requirement[] CostFor(DecorativePieceDefinition definition, PieceTraits traits)
     {
@@ -584,6 +613,10 @@ public sealed class DecorativePieceManager
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
         MakeStaticDecoration(clone);
+        if (WebPrefabs.Contains(definition.PrefabName))
+        {
+            RecenterModel(clone);
+        }
         PondWater.Prepare(clone);
         if (definition.FunctionFrom is { } functionFrom)
         {
@@ -629,13 +662,20 @@ public sealed class DecorativePieceManager
             piece.m_waterPiece = true;
             piece.m_noInWater = false;
             piece.m_clipEverything = true;
+            clone.AddComponent<WaterFloat>();
+        }
+
+        // Webs go exactly where the crosshair is, like water pieces; see WebPrefabs.
+        if (WebPrefabs.Contains(definition.PrefabName))
+        {
+            piece.m_clipEverything = true;
         }
 
         piece.m_groundPiece = definition.Tool != BuildTool.Hammer && !definition.OnWater;
         piece.m_groundOnly = false;
         piece.m_canBeRemoved = true;
-        piece.m_craftingStation = StationFor(definition, traits);
         piece.m_resources = CostFor(definition, traits);
+        piece.m_craftingStation = StationFor(definition, traits, piece.m_resources);
         piece.m_icon = vanillaIcon ?? GetToolIcon(definition.Tool);
         if (piece.m_icon is null)
         {
@@ -662,8 +702,6 @@ public sealed class DecorativePieceManager
         {
             _pendingIcons.Add((piece, source));
         }
-
-        _pieceNames.Add(piece.m_name);
 
         return true;
     }
@@ -750,8 +788,11 @@ public sealed class DecorativePieceManager
         box.size = Vector3.Max(combined.size, new Vector3(0.1f, 0.1f, 0.1f));
     }
 
-    /// <summary>The combined bounds of a clone's visible meshes, in the clone's local space.</summary>
-    private static bool TryGetModelBounds(GameObject clone, out Bounds bounds)
+    /// <summary>
+    /// The combined bounds of a clone's visible meshes, in the clone's local space, or in the space
+    /// <paramref name="fromRoot"/> maps the clone's local space to.
+    /// </summary>
+    private static bool TryGetModelBounds(GameObject clone, out Bounds bounds, Matrix4x4? fromRoot = null)
     {
         var root = clone.transform;
         bounds = default;
@@ -768,7 +809,7 @@ public sealed class DecorativePieceManager
             return false;
         }
 
-        var toRoot = root.worldToLocalMatrix;
+        var toRoot = (fromRoot ?? Matrix4x4.identity) * root.worldToLocalMatrix;
         Bounds? combined = null;
         foreach (var (transform, meshBounds) in meshes)
         {
@@ -927,11 +968,19 @@ public sealed class DecorativePieceManager
             return true;
         }
 
+        // Web strands don't show in a rendered icon; the web texture itself does.
+        if (WebPrefabs.Contains(source.name) && TextureIcon(source) is { } webIcon)
+        {
+            piece.m_icon = webIcon;
+            return true;
+        }
+
         try
         {
             var sprite = RenderManager.Instance.Render(new RenderManager.RenderRequest(source)
             {
                 Rotation = RenderManager.IsometricRotation,
+                DistanceMultiplier = IconDistanceFor(source, RenderManager.IsometricRotation),
                 UseCache = true,
                 TargetPlugin = _plugin
             });
@@ -946,6 +995,106 @@ public sealed class DecorativePieceManager
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Moves everything under the clone so the bottom middle of the model is at the clone's origin.
+    /// Pieces already placed keep their saved position, so they appear moved by the same amount.
+    /// </summary>
+    private static void RecenterModel(GameObject clone)
+    {
+        if (!TryGetVertexBounds(clone, out var bounds) && !TryGetModelBounds(clone, out bounds))
+        {
+            return;
+        }
+
+        var bottomMiddle = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
+        foreach (Transform child in clone.transform)
+        {
+            child.localPosition -= bottomMiddle;
+        }
+    }
+
+    /// <summary>
+    /// The combined bounds of the clone's mesh vertices, in the clone's local space. Tighter than
+    /// TryGetModelBounds for rotated models: the horizontal web is a flat sheet turned 45 degrees, and
+    /// its turned mesh box reaches from the ground to 33 m while the sheet itself is at 16.5 m. Needs
+    /// meshes the game lets mods read; false if any isn't.
+    /// </summary>
+    private static bool TryGetVertexBounds(GameObject clone, out Bounds bounds)
+    {
+        var root = clone.transform;
+        bounds = default;
+        Bounds? combined = null;
+        foreach (var filter in clone.GetComponentsInChildren<MeshFilter>(includeInactive: true))
+        {
+            var mesh = filter.sharedMesh;
+            if (mesh == null || !IsActiveWithin(filter.transform, root))
+            {
+                continue;
+            }
+
+            if (!mesh.isReadable)
+            {
+                return false;
+            }
+
+            var toRoot = root.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+            foreach (var vertex in mesh.vertices)
+            {
+                var point = toRoot.MultiplyPoint3x4(vertex);
+                if (combined is { } existing)
+                {
+                    existing.Encapsulate(point);
+                    combined = existing;
+                }
+                else
+                {
+                    combined = new Bounds(point, Vector3.zero);
+                }
+            }
+        }
+
+        if (combined is not { } result)
+        {
+            return false;
+        }
+
+        bounds = result;
+        return true;
+    }
+
+    /// <summary>An icon from the main texture of the model's first material, or null if it has none.</summary>
+    private static Sprite? TextureIcon(GameObject model)
+    {
+        var texture = model.GetComponentsInChildren<Renderer>(includeInactive: true)
+            .SelectMany(renderer => renderer.sharedMaterials)
+            .Where(material => material != null && material.HasProperty("_MainTex"))
+            .Select(material => material.mainTexture as Texture2D)
+            .FirstOrDefault(candidate => candidate != null);
+        return texture == null ? null : Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+    }
+
+    /// <summary>
+    /// Jotunn frames an icon by the model's size, but measures it from the model's own origin: the
+    /// distance to the far edge plus the distance to the near edge. That's right for models around
+    /// their origin, but a model that sits away from it (such as the big Jotun statue horns) measures
+    /// far bigger than it is, the camera backs off, and the icon comes out tiny. Returns how much
+    /// nearer the camera should be, from the real size; only when Jotunn is more than 10% off, so the
+    /// icons that are framed right already don't change.
+    /// </summary>
+    private static float IconDistanceFor(GameObject model, Quaternion rotation)
+    {
+        // The model as Jotunn renders it: turned to the icon angle, at its own scale.
+        if (!TryGetModelBounds(model, out var bounds, Matrix4x4.TRS(Vector3.zero, rotation, model.transform.localScale)))
+        {
+            return 1f;
+        }
+
+        var measured = Mathf.Max(Mathf.Abs(bounds.min.x) + Mathf.Abs(bounds.max.x), Mathf.Abs(bounds.min.y) + Mathf.Abs(bounds.max.y));
+        var actual = Mathf.Max(bounds.size.x, bounds.size.y);
+        var ratio = (actual + 0.1f) / (measured + 0.1f);
+        return ratio < 0.9f ? ratio : 1f;
     }
 
     /// <summary>

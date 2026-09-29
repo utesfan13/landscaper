@@ -39,7 +39,7 @@ internal static class CopyController
             if (__result)
             {
                 // Valheim copied a piece from the current tool; for adjustable pieces also take their look.
-                if (isAdjustable && ZNetScene.instance.GetPrefab(target.GetZDO().GetPrefab()) is { } clone)
+                if (isAdjustable && SavedPieces.PrefabOf(target.GetZDO()) is { } clone)
                 {
                     ScaleController.ApplyCopied(ScaleRatio(target.transform, clone.transform), LandscaperTint.Read(target.gameObject));
                     ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
@@ -81,7 +81,7 @@ internal static class CopyController
             return false;
         }
 
-        var prefab = ZNetScene.instance.GetPrefab(target.GetZDO().GetPrefab());
+        var prefab = SavedPieces.PrefabOf(target.GetZDO());
         if (prefab == null)
         {
             return false;

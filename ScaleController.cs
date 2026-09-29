@@ -238,6 +238,15 @@ internal static class ScaleController
             // and adding to it every frame would pile up.
             if (ghost.activeSelf)
             {
+                // Landscaper water pieces (lily pads) rest on the surface: the aim ray finds a pond's
+                // collider 2 m below it, and the sea's surface moves with the waves.
+                if (ghost.TryGetComponent<WaterFloat>(out _) && WaterFloat.SurfaceAt(ghost.transform.position) is { } surface)
+                {
+                    var position = ghost.transform.position;
+                    position.y = surface;
+                    ghost.transform.position = position;
+                }
+
                 ghost.transform.position += OffsetController.WorldOffset;
                 ghost.transform.rotation *= OffsetController.Rotation;
             }
@@ -416,7 +425,7 @@ internal static class ScaleController
             // Set the size from the prefab, the same way the ghost is sized, rather than multiplying the
             // placed object's current size: some mods create the placed object from the already scaled
             // ghost or copy its size, and multiplying again would square the scale.
-            var prefab = ZNetScene.instance.GetPrefab(view.GetZDO().GetPrefab());
+            var prefab = SavedPieces.PrefabOf(view.GetZDO());
             var baseScale = prefab != null ? prefab.transform.localScale : __instance.transform.localScale;
             var scale = Vector3.Scale(baseScale, SizeScaleFor(__instance.gameObject));
             if (__instance.transform.localScale != scale)
@@ -429,6 +438,12 @@ internal static class ScaleController
             if (TintController.Current is { } tint)
             {
                 LandscaperTint.Save(__instance.gameObject, tint);
+            }
+
+            // A water piece keeps its nudged height relative to the moving surface.
+            if (__instance.TryGetComponent<WaterFloat>(out _))
+            {
+                WaterFloat.SaveOffset(__instance.gameObject, OffsetController.WorldOffset.y);
             }
         }
     }

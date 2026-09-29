@@ -20,8 +20,9 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
   look like.
 - **Place anywhere**: pieces can be placed where Valheim normally refuses, and can be made
   **indestructible**.
-- **Fair costs**: a little wood, stone or the matching material, with vanilla costs for vanilla
-  build pieces. Removing a piece refunds it, and breaking one never gives back more valuable
+- **Fair costs, unlocked like vanilla**: a little wood, stone or the matching material from the
+  piece's biome (Yggdrasil wood and black marble for Dvergr pieces, ashwood and grausten for the
+  Ashlands, ...), shown once you've found those materials. Removing a piece refunds it, and breaking one never gives back more valuable
   resources than it cost.
 - **Multiplayer ready**: sizes, tints and rotations are saved on each piece, and server settings are
   synced to every player.
@@ -39,10 +40,16 @@ either.
 
 ## Before You Uninstall
 
-Landscaper's own pieces (the trees, rocks, ruins, props and so on from its tabs) only exist while the
-mod is installed. **If a world is loaded without Landscaper, by a single player or a server, every one
-of them is permanently deleted.** Vanilla build pieces are safe: they just go back to normal size and
-colour. Back up the world before uninstalling or updating in a way that removes the mod. Turning the mod off in its settings
+Uninstalling doesn't wipe your landscaping. Every placed piece is saved as the game object it's made
+from, so a world loaded without Landscaper keeps it in place as that ordinary object: a placed beech
+is a normal beech tree, a placed ruin wall a normal ruin wall. Without the mod they lose their tint,
+may go back to normal size, and behave like any other world object (trees can be chopped, ore mined).
+Reinstall Landscaper and they come back as Landscaper pieces, with their size and tint, unless
+something happened to them meanwhile (a tree chopped down stays gone). Vanilla build pieces just go
+back to normal size and colour.
+
+Two exceptions are deleted without the mod, because they aren't game objects: **cattails and lily
+pads**, which Landscaper builds from the game's ground clutter. Back up the world before uninstalling or updating in a way that removes the mod. Turning the mod off in its settings
 (`General.Enabled`) is safe: it only hides the pieces.
 
 ## Recommended Settings for Public Servers
@@ -103,7 +110,9 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 ## Build Costs
 
-Placing a piece has a small cost, and removing it refunds the cost:
+Placing a piece has a small cost, and removing it refunds the cost. Like vanilla pieces, a piece
+only shows up in the build menu once you've found everything it's built with (and know its crafting
+station, if it needs one); a message says how many new Landscaper pieces each discovery unlocks.
 
 - **Vanilla build pieces** keep their own cost and crafting station; Landscaper only makes them
   adjustable. Landscaper pieces made from a vanilla build piece the menu doesn't list (such as the
@@ -130,6 +139,41 @@ Placing a piece has a small cost, and removing it refunds the cost:
   cauldrons iron. Ice and snow pieces cost ice; bones, skulls and carcasses cost bone fragments. The
   stump hut and hole and the frozen ships cost wood and ice, split evenly. Building structures and
   copied objects go by their name (stone, crystal and so on cost stone).
+
+  The wood, stone and bone are the ones from the biome the piece comes from, so pieces from later
+  biomes cost that biome's materials:
+
+  | Biome | Wood | Stone | Bone |
+  |---|---|---|---|
+  | Meadows | Wood | Stone | Bone fragments |
+  | Black Forest | Core wood | Stone | Bone fragments |
+  | Swamp | Ancient bark | Stone | Bone fragments |
+  | Mountain | Wood | Obsidian | Bone fragments |
+  | Plains | Fine wood | Stone | Bone fragments |
+  | Mistlands | Yggdrasil wood | Black marble | Bone fragments |
+  | Ashlands | Ashwood | Grausten | Charred bone |
+  | Deep North | Frostwood | Stone | Bone fragments |
+
+  The biome comes from the piece's name and tab: Dvergr and Mistlands pieces are Mistlands, Jotun
+  hall pieces Deep North, Fuling village pieces Plains, and so on.
+
+  Some pieces cost what they're made of instead: ore rocks their ore (copper, tin, silver, gold,
+  obsidian, flametal), muddy scrap piles scrap iron, Jotun stonework, statues, railings, floors and
+  the Morkborg gate grausten, the Jotun bridge fine wood, cloth hangings, the Fuling banner and
+  Jotun rugs red jute, and the Bog Witch rugs their fur. The Fuling straw pile costs 2 flax and 2 barley,
+  the webs 2 resin and 2 linen thread,
+  and the infested growths resin by size plus 1 black marble.
+  The Fuling roofs also cost lox pelts, 2 to 8 by size.
+  The Fuling roofs cost lox pelts.
+  Jotun and charred banners also cost 2 red jute, the Fuling walls,
+  stairs and ladder 2 linen thread, and each trophy stand its trophy. Placed ore rocks and scrap piles never mine for more ore than they cost:
+  breaking one gives back exactly its cost.
+- **Crafting stations**: like vanilla pieces, pieces need a crafting station nearby, the one that
+  fits what they're made of: the stonecutter for stone, obsidian, black marble, grausten and ore
+  rocks 2 m or larger (smaller stone things, such as pots, just need the workbench); the forge for bronze and iron (the black forge for Mistlands and later metal pieces, such as
+  Dvergr lanterns); the workbench for everything else. Cultivator pieces (trees, plants, crops)
+  need no station, like planting in vanilla. Pieces with the vanilla cost keep the
+  vanilla station; pond water, and custom entries with their own requirements, need none.
 - **Crafted light sources** (torches, lanterns, braziers, ...) cost 1 resin on top. Pickables and other
   natural pieces never do, even ones that glow.
 
@@ -137,7 +181,10 @@ Custom entries with their own requirements keep them. Resizing a piece while pla
 its cost.
 
 Turn costs off with `Costs.Enabled`, or scale them with `Costs.Multiplier` (every cost stays at
-least 1).
+least 1). To make everything free, vanilla build pieces included, the host or an admin can run
+`landscaper_costs off` in the console (F5); `landscaper_costs on` puts costs back. It turns off
+`Costs.Enabled` and sets the world's "no build cost" option. While costs are off, removing a piece
+gives nothing back, as in vanilla.
 
 ### Breaking placed pieces
 
@@ -168,10 +215,10 @@ When joining a server, the synced settings (costs, `DecorativeOnly`, `Indestruct
 `Placement.IgnoreRules`, the three tool toggles and custom entries) are taken from the server, and only admins can change them in game. Keybinds, tint presets
 and scale limits stay personal.
 
-When you host a world, or play alone, Valheim permanently deletes saved objects whose prefab it can't
-find. Removing a custom entry hides it from the menu but keeps it loading until you restart; after a
-restart, copies of it already placed in the world are deleted when the world loads. Keep an entry
-until you have removed its placed copies, e.g. with `landscaper_remove`.
+Removing a custom entry hides it from the menu but keeps it loading until you restart. After a
+restart, copies of it already placed in the world load as the ordinary game object they're made from
+(see [Before You Uninstall](#before-you-uninstall)); add the entry again and they're Landscaper pieces
+again.
 
 ## Removing Pieces
 
@@ -365,9 +412,10 @@ either one number for all axes (`2`) or separate X,Y,Z values (`1.5,0.5,1.5`). R
 changing the config.
 
 A scaled entry is a separate variant, so you can have a normal Oak Tree and a Giant Oak at the same
-time. Variants are saved under their display name: you can change a variant's scale freely, but
-renaming it makes copies already placed in a world disappear. Each placed copy saves its own size,
-so a new scale only applies to copies placed afterwards.
+time. Variants are known by their display name: you can change a variant's scale freely, but after
+renaming one, copies already placed load as the ordinary game object instead (keeping their size where
+the object saves it). Each placed copy saves its own size, so a new scale only applies to copies
+placed afterwards.
 
 ### In code
 

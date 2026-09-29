@@ -71,7 +71,7 @@ internal sealed class LandscaperTint : MonoBehaviour
             MaterialMan.instance.SetValue(gameObject, ColorId, new Color(tint.x, tint.y, tint.z));
         }
 
-        if (ZNetScene.instance?.GetPrefab(_view.GetZDO().GetPrefab()) is { } prefab && prefab.transform.localScale.y > 0f)
+        if (SavedPieces.PrefabOf(_view.GetZDO()) is { } prefab && prefab.transform.localScale.y > 0f)
         {
             _appliedHeightScale = transform.localScale.y / prefab.transform.localScale.y;
             VegetationSway.Apply(gameObject, prefab, _appliedHeightScale);
@@ -109,7 +109,7 @@ internal sealed class LandscaperTint : MonoBehaviour
 
     private float CurrentHeightScale()
     {
-        var prefab = ZNetScene.instance?.GetPrefab(_view!.GetZDO().GetPrefab());
+        var prefab = SavedPieces.PrefabOf(_view!.GetZDO());
         return prefab != null && prefab.transform.localScale.y > 0f
             ? transform.localScale.y / prefab.transform.localScale.y
             : 1f;
@@ -124,7 +124,7 @@ internal sealed class LandscaperTint : MonoBehaviour
             return;
         }
 
-        SaveAsVanillaPiece();
+        SaveUnderGameName();
         Apply();
 
         // Pick up a tint that arrives or changes after the piece was created on this player's game.
@@ -133,13 +133,20 @@ internal sealed class LandscaperTint : MonoBehaviour
     }
 
     /// <summary>
-    /// A vanilla build piece placed as a Landscaper copy in an earlier version is saved under the
-    /// copy's name, which now loads as the vanilla piece. Save it under the vanilla name, so it no
-    /// longer depends on this mod. Only the owner changes saved data.
+    /// Saves the piece under a name the game knows without this mod, so uninstalling doesn't delete
+    /// it: a Landscaper piece under its game object's name (see SavedPieces), and a vanilla build
+    /// piece placed as a Landscaper copy in an earlier version under the vanilla name (that copy's
+    /// name now loads as the vanilla piece). Only the owner changes saved data.
     /// </summary>
-    private void SaveAsVanillaPiece()
+    private void SaveUnderGameName()
     {
-        if (PlacementInput.IsLandscaperPiece(gameObject) || !_view!.IsOwner())
+        if (PlacementInput.IsLandscaperPiece(gameObject))
+        {
+            SavedPieces.SaveUnderGameName(_view!);
+            return;
+        }
+
+        if (!_view!.IsOwner())
         {
             return;
         }

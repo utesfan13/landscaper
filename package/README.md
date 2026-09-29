@@ -20,8 +20,9 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
   look like.
 - **Place anywhere**: pieces can be placed where Valheim normally refuses, and can be made
   **indestructible**.
-- **Fair costs**: a little wood, stone or the matching material, with vanilla costs for vanilla
-  build pieces. Removing a piece refunds it, and breaking one never gives back more valuable
+- **Fair costs, unlocked like vanilla**: a little wood, stone or the matching material from the
+  piece's biome (Yggdrasil wood and black marble for Dvergr pieces, ashwood and grausten for the
+  Ashlands, ...), shown once you've found those materials. Removing a piece refunds it, and breaking one never gives back more valuable
   resources than it cost.
 - **Multiplayer ready**: sizes, tints and rotations are saved on each piece, and server settings are
   synced to every player.
@@ -36,10 +37,16 @@ either.
 
 ## Before You Uninstall
 
-Landscaper's own pieces (the trees, rocks, ruins, props and so on from its tabs) only exist while the
-mod is installed. **If a world is loaded without Landscaper, by a single player or a server, every one
-of them is permanently deleted.** Vanilla build pieces are safe: they just go back to normal size and
-colour. Back up the world before uninstalling. Turning the mod off in its settings (`General.Enabled`) is safe: it only hides
+Uninstalling doesn't wipe your landscaping. Every placed piece is saved as the game object it's made
+from, so a world loaded without Landscaper keeps it in place as that ordinary object: a placed beech
+is a normal beech tree, a placed ruin wall a normal ruin wall. Without the mod they lose their tint,
+may go back to normal size, and behave like any other world object (trees can be chopped, ore mined).
+Reinstall Landscaper and they come back as Landscaper pieces, with their size and tint, unless
+something happened to them meanwhile (a tree chopped down stays gone). Vanilla build pieces just go
+back to normal size and colour.
+
+Two exceptions are deleted without the mod, because they aren't game objects: **cattails and lily
+pads**, which Landscaper builds from the game's ground clutter. Back up the world before uninstalling. Turning the mod off in its settings (`General.Enabled`) is safe: it only hides
 the pieces.
 
 ## Controls
@@ -67,6 +74,8 @@ Console commands (F5):
 - `landscaper_remove [radius]` removes your Landscaper pieces around you (admins: anyone's), never
   inside a ward you can't access.
 - `landscaper_check` checks the pieces against your version of Valheim, useful after a game update.
+- `landscaper_costs [on|off]` turns build costs off or on for every piece, vanilla ones included
+  (host or admin only). While costs are off, removing pieces gives nothing back.
 
 ## Settings
 

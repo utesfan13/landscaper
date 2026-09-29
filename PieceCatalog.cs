@@ -4,14 +4,29 @@ namespace Landscaper;
 
 /// <summary>
 /// Built-in pieces. Each entry is cloned as "Landscaper_{prefab}_{tool}" (scaled entries add their
-/// display name), and pieces placed in a world are saved under that name, so moving an existing
-/// prefab to a different tool makes previously placed copies of it disappear.
+/// display name), the name placed pieces are known by. Moving a prefab to a different tool is safe
+/// (see DecorativePieceManager.RegisterAliases).
 /// </summary>
 public static class PieceCatalog
 {
-    public static IEnumerable<DecorativePieceDefinition> Entries()
+    public static IEnumerable<DecorativePieceDefinition> Entries() => Definitions(Groups);
+
+    /// <summary>
+    /// Pieces taken out of the menus. They're still registered, so copies already placed keep loading
+    /// as Landscaper pieces and can be removed (with the remove button or landscaper_remove); left to
+    /// the game they'd be objects nothing can remove.
+    /// </summary>
+    public static IEnumerable<DecorativePieceDefinition> Retired() => Definitions(RetiredGroups);
+
+    private static readonly Group[] RetiredGroups =
     {
-        foreach (var group in Groups)
+        // The game keeps its model hidden (it only holds the egg in eagle nests), so it was invisible.
+        new(BuildTool.Hammer, "Dungeon Decor", E("Dragon Egg Cup", "dragoneggcup"))
+    };
+
+    private static IEnumerable<DecorativePieceDefinition> Definitions(IEnumerable<Group> groups)
+    {
+        foreach (var group in groups)
         {
             foreach (var entry in group.Entries)
             {
@@ -314,7 +329,7 @@ public static class PieceCatalog
             E("Dvergr Town Pole", "dvergrtown_wood_pole"), E("Dvergr Town Stake", "dvergrtown_wood_stake"), E("Dvergr Town Stake Wall", "dvergrtown_wood_stakewall"),
             E("Dvergr Corner Stair", "dvergrtown_stair_corner_wood_left"), E("Dvergr Ashlands Crate", "dvergrprops_crate_ashlands", functionFrom: "piece_chest_wood"), E("Broken Dvergr Demister", "dverger_demister_broken"),
             E("Ruined Dvergr Demister", "dverger_demister_ruins"), E("Hanging Cloth Door", "cloth_hanging_door"), E("Hanging Cloth Double Door", "cloth_hanging_door_double"),
-            E("Hanging Fenris Hide Door", "fenrirhide_hanging_door"), E("Wooden Path", "wooden_path"), E("Dragon Egg Cup", "dragoneggcup"),
+            E("Hanging Fenris Hide Door", "fenrirhide_hanging_door"), E("Wooden Path", "wooden_path"),
             E("Trader Wagon", "trader_wagon_destructable"), E("Item Stand (Prop)", "prop_itemstand"), E("Darkwood Chair (Prop)", "prop_piece_chair03", functionFrom: "piece_chair03")),
 
         new(BuildTool.Hammer, "Dvergr",

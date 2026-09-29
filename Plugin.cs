@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.16.0";
+    public const string ModVersion = "0.17.3";
 
     internal static ManualLogSource Log = null!;
     /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>
@@ -40,7 +40,7 @@ public sealed class Plugin : BaseUnityPlugin
             "the world and are still loaded, so turning this off never deletes them.");
         var costsEnabled = Config.Bind("Costs", "Enabled", true,
             Synced("Charge a small cost to place pieces: 5 of the item for pickables that grow back (what one pick gives for crops), 1 iron for metal pieces, otherwise 2 to 8 " +
-                   "wood or stone by size, plus 1 resin for crafted light sources. Removing a piece refunds it. " +
+                   "of the wood, stone or bone of the piece's biome by size, plus 1 resin for crafted light sources. Removing a piece refunds it. " +
                    "Custom entries with their own requirements keep them."));
         var costMultiplier = Config.Bind("Costs", "Multiplier", 1f, new ConfigDescription(
             "Multiplies the automatic costs, e.g. 0.5 for cheaper or 2 for more expensive. Synced from the server in multiplayer.",
@@ -67,6 +67,7 @@ public sealed class Plugin : BaseUnityPlugin
         CommandManager.Instance.AddConsoleCommand(new FindPrefabCommand());
         CommandManager.Instance.AddConsoleCommand(new RemoveNearbyCommand());
         CommandManager.Instance.AddConsoleCommand(new CheckCommand());
+        CommandManager.Instance.AddConsoleCommand(new CostsCommand(costsEnabled));
 
         // Pieces are registered even when the mod is turned off: a host deletes saved objects whose
         // prefab is missing, so turning it off only hides the pieces and the controls.
@@ -170,23 +171,51 @@ public sealed class Plugin : BaseUnityPlugin
 }
 
 /// <summary>
-/// Marks Landscaper pieces as known before Valheim checks for new recipes. Valheim would unlock them
-/// anyway once the player knows wood and stone, but it would show a "new piece" message for every
-/// one of them on a new character.
+/// Unlocks Landscaper pieces like vanilla ones: a piece shows up in the build menu once the player
+/// has found everything it's built with (and knows its crafting station, if it needs one). Valheim
+/// would show a "new piece" message for each; finding one material can unlock dozens of Landscaper
+/// pieces at once, so they're marked known quietly, with one message saying how many. Pieces whose
+/// materials aren't all known yet are taken out of the known list, which also re-locks pieces that
+/// earlier versions unlocked straight away.
 /// </summary>
 [HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
-internal static class SilentUnlockPatch
+internal static class UnlockLikeVanillaPatch
 {
-    private static void Prefix(HashSet<string> ___m_knownRecipes)
+    /// <summary>The player whose first check has run; that one just catches up, without a message.</summary>
+    private static Player? _caughtUp;
+
+    private static void Prefix(Player __instance, HashSet<string> ___m_knownRecipes)
     {
-        if (Plugin.Pieces is null)
+        if (Plugin.Pieces is null || __instance != Player.m_localPlayer)
         {
             return;
         }
 
-        foreach (var name in Plugin.Pieces.PieceNames)
+        var unlocked = 0;
+        foreach (var piece in Plugin.Pieces.RegisteredPieces)
         {
-            ___m_knownRecipes.Add(name);
+            if (__instance.HaveRequirements(piece, Player.RequirementMode.IsKnown))
+            {
+                if (___m_knownRecipes.Add(piece.m_name))
+                {
+                    unlocked++;
+                }
+            }
+            else
+            {
+                ___m_knownRecipes.Remove(piece.m_name);
+            }
+        }
+
+        if (!ReferenceEquals(_caughtUp, __instance))
+        {
+            _caughtUp = __instance;
+            return;
+        }
+
+        if (unlocked > 0)
+        {
+            __instance.Message(MessageHud.MessageType.TopLeft, $"{unlocked} new Landscaper piece{(unlocked == 1 ? "" : "s")}");
         }
     }
 }

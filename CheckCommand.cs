@@ -50,6 +50,12 @@ public sealed class CheckCommand : ConsoleCommand
             problems.Add($"Missing item used by the cost rules: {item}");
         }
 
+        foreach (var station in BuildCosts.ReferencedStations()
+                     .Where(station => PrefabManager.Instance.GetPrefab(station)?.GetComponent<CraftingStation>() == null))
+        {
+            problems.Add($"Missing crafting station used by the cost rules: {station}");
+        }
+
         foreach (var name in pieces.StandIns)
         {
             problems.Add($"Kept as an invisible stand-in: {name}");
