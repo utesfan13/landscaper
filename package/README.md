@@ -8,7 +8,7 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
 
 - **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, fully grown crops, cattails
   and lily pads on the Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
-  decor, furniture, roofs, lights and props on the Hammer.
+  decor, Dvergr and Fuling pieces, shipwrecks and props on the Hammer.
 - **Vanilla build pieces too**: walls, floors, roofs, furniture and the rest can be resized, tinted,
   tilted and nudged, with nothing else about them changed. They stay ordinary vanilla pieces, so
   without the mod they're just normal size and colour again, not deleted.
@@ -36,9 +36,10 @@ either.
 
 ## Before You Uninstall
 
-Placed pieces only exist while the mod is installed. **If a world is loaded without Landscaper, by a
-single player or a server, every Landscaper piece in it is permanently deleted.** Back up the world
-before uninstalling. Turning the mod off in its settings (`General.Enabled`) is safe: it only hides
+Landscaper's own pieces (the trees, rocks, ruins, props and so on from its tabs) only exist while the
+mod is installed. **If a world is loaded without Landscaper, by a single player or a server, every one
+of them is permanently deleted.** Vanilla build pieces are safe: they just go back to normal size and
+colour. Back up the world before uninstalling. Turning the mod off in its settings (`General.Enabled`) is safe: it only hides
 the pieces.
 
 ## Controls

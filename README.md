@@ -8,7 +8,7 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
 
 - **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, fully grown crops, cattails
   and lily pads on the Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
-  decor, furniture, roofs, lights and props on the Hammer.
+  decor, Dvergr and Fuling pieces, shipwrecks and props on the Hammer.
 - **Vanilla build pieces too**: walls, floors, roofs, furniture and the rest can be resized, tinted,
   tilted and nudged, with nothing else about them changed. They stay ordinary vanilla pieces, so
   without the mod they're just normal size and colour again, not deleted.
@@ -39,9 +39,10 @@ either.
 
 ## Before You Uninstall
 
-Placed pieces only exist while the mod is installed. **If a world is loaded without Landscaper, by a
-single player or a server, every Landscaper piece in it is permanently deleted.** Back up the world
-before uninstalling or updating in a way that removes the mod. Turning the mod off in its settings
+Landscaper's own pieces (the trees, rocks, ruins, props and so on from its tabs) only exist while the
+mod is installed. **If a world is loaded without Landscaper, by a single player or a server, every one
+of them is permanently deleted.** Vanilla build pieces are safe: they just go back to normal size and
+colour. Back up the world before uninstalling or updating in a way that removes the mod. Turning the mod off in its settings
 (`General.Enabled`) is safe: it only hides the pieces.
 
 ## Recommended Settings for Public Servers
@@ -104,9 +105,9 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 
 Placing a piece has a small cost, and removing it refunds the cost:
 
-- **Vanilla build pieces** (chests, beds, banners, walls, floors, torches, ...) cost exactly what the
-  vanilla piece costs and need the same crafting station nearby (workbench, forge, stonecutter, ...),
-  so the scalable, tintable copy matches the original. `Costs.Multiplier` doesn't change these.
+- **Vanilla build pieces** keep their own cost and crafting station; Landscaper only makes them
+  adjustable. Landscaper pieces made from a vanilla build piece the menu doesn't list (such as the
+  turf roofs) cost the same as it and need the same station. `Costs.Multiplier` doesn't change these.
 - **Pickables** that grow back (berry bushes, mushrooms, thistle, ...) cost only 5 of the item they
   give, e.g. a blueberry bush costs 5 blueberries. Ones that are used up when picked (fully grown
   crops, loose stones, fallen branches) cost exactly what picking them gives, e.g. a grown carrot
@@ -194,7 +195,8 @@ Input language hot keys*, or use Right Alt instead.
 
 ## Resizing Pieces While Placing
 
-While the placement preview of any Landscaper piece is showing:
+While the placement preview of any adjustable piece is showing (every Landscaper piece, and every
+vanilla build piece apart from ships and carts):
 
 | Keys | Effect |
 |---|---|
@@ -243,8 +245,8 @@ be removed, including with `landscaper_remove`.
 
 With the Hammer, Cultivator or Hoe out, aim at a rock, tree, bush, statue or other object and use
 Valheim's copy shortcut (Shift + middle click by default). Landscaper selects the matching piece, facing
-the same way and at the same size as the object, ready to place. Copying a tinted Landscaper piece
-copies its tint too.
+the same way and at the same size as the object, ready to place. Copying a tinted or tilted piece,
+vanilla build pieces included, copies its tint and tilt too.
 
 - It works whichever of the three tools you have out. If the object belongs to another tool, that
   tool is equipped from your inventory and the piece selected. Without that tool, the host (or a
@@ -259,7 +261,7 @@ copies its tint too.
 
 ## Tilting and Moving Pieces While Placing
 
-While the placement preview of any Landscaper piece is showing, hold a modifier and scroll to tilt
+While the placement preview of any adjustable piece is showing, hold a modifier and scroll to tilt
 or move it. Plain scrolling still spins the piece in Valheim's usual steps. Press `/` to switch the
 modifiers between rotate mode (the default) and move mode; the build hints show the current mode.
 
@@ -297,7 +299,7 @@ already placed as indestructible stay that way.
 
 ## Tinting Pieces While Placing
 
-While the placement preview of any Landscaper piece is showing:
+While the placement preview of any adjustable piece is showing:
 
 | Keys | Effect |
 |---|---|
