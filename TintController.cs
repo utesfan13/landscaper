@@ -161,14 +161,23 @@ internal static class TintController
                 return;
             }
 
-            _presetIndex = _presetIndex < 0
-                ? (direction > 0 ? 0 : _presets.Count - 1)
-                : (_presetIndex + direction + _presets.Count) % _presets.Count;
-            var preset = _presets[_presetIndex];
-            _hue = preset.Hue;
-            _strength = preset.Strength;
-            _brightness = preset.Brightness;
-            presetName = preset.Name;
+            // "No tint" is a stop in the cycle, just before the first preset, so stepping back the
+            // other way from a preset that doesn't suit returns to the piece's own look.
+            var stops = _presets.Count + 1;
+            var position = (_presetIndex + 1 + direction + stops) % stops - 1;
+            if (position < 0)
+            {
+                Reset();
+            }
+            else
+            {
+                var preset = _presets[position];
+                _hue = preset.Hue;
+                _strength = preset.Strength;
+                _brightness = preset.Brightness;
+                presetName = preset.Name;
+                _presetIndex = position;
+            }
         }
 
         player.Message(MessageHud.MessageType.Center, Describe(presetName));

@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.18.0
+- "No tint" is part of the tint preset cycle: stepping back from a preset returns to the untinted look.
 - Removed the Sunken Crypt Tower Wall, which was invisible when placed. Ones already placed can still
   be removed.
 - Fixed a "new piece" message repeating on every item pickup when another mod has a piece with the

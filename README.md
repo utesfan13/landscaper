@@ -350,7 +350,7 @@ While the placement preview of any adjustable piece is showing:
 
 | Keys | Effect |
 |---|---|
-| `,` / `.` | Previous / next preset |
+| `,` / `.` | Previous / next preset; "no tint" is a stop between the last and first, so stepping back returns to the piece's own look |
 | Alt + `,` / `.` | Hue backward / forward round the colour wheel (red, yellow, green, cyan, blue, magenta) |
 | Shift + `,` / `.` | Weaker / stronger tint |
 | Alt + Shift + `,` / `.` | Darker / lighter |
