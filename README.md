@@ -14,6 +14,8 @@ Landscaper is designed to unleash your creativity in Valheim. The mod adds hundr
 
 ![Crates resized, tinted and tilted](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/crates-resized-tinted.jpg)
 
+![A bookshelf decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/bookshelf.jpg)
+
 ### Some of the new pieces
 
 ![Cultivator pieces: trees, plants and crops](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/cultivator-pieces.jpg)

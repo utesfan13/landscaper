@@ -9,13 +9,15 @@ Landscaper is designed to unleash your creativity in Valheim. The mod adds hundr
 
 ## Features
 
-- **Hundreds of pieces**: over 150+ added buildable prefabs from objects you see out in the world: rocks, bushes, stone walls, spider webs, and many more. 
+- **Tons of new pieces**: over 150+ buildable prefabs from objects you see out in the world: rocks, bushes, stone walls, spider webs, and many more. 
 - **Adjust each piece to fit your vibe**: recolor (tint), resize, rotate (on 3 axes), and nudge items to get each piece to fit perfectly. 
 - **Place pond water**: Make a pond for your base! Note: Uses tar pit mechanics which can be a bit finicky. Water can be removed with middle click.
 - **Indestructible**: place indestructible pieces; protect your wood from the rain or build a floating castle.
 - **Somewhat survival friendly**: all pieces are given a reasonable cost, and unlocked just like vanilla pieces. May be game breaking in some ways (especially indestructible) so use with caution. 
 
 ![Crates resized, tinted and tilted](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/crates-resized-tinted.jpg)
+
+![A bookshelf decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/bookshelf.jpg)
 
 ### Some of the new pieces
 
@@ -41,7 +43,7 @@ While placing a piece (Landscaper pieces and vanilla build pieces alike):
 | `[` / `]` | Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth. |
 | `,` / `.` | Previous / next tint preset. Fine tune hue/strength/brightness with alt/shift/alt+shift |
 | Scroll | Rotate, as usual |
-| Alt / Shift / both + scroll | Tilt forward/back, tilt sideways, fine tune rotation when in **rotation** mode OR up/side to side/toward and away in **move** mode. |
+| Scroll + <br> Alt / Shift / Alt + Shift | Tilt forward/back, tilt sideways, fine tune rotation when in **rotation** mode <br> **OR** up and down/side to side/toward and away in **move** mode. |
 | `/` | Switch between rotation and move mode |
 | End | Reset size, tint, tilt and position |
 | `\` | Indestructible placement on / off |
@@ -54,7 +56,7 @@ Keys can be changed in the config.
 
 Open the console with F5:
 
-- `landscaper_remove [radius]`: remove your Landscaper pieces around you (if admin: everyone's)
+- `landscaper_remove [radius=10]`: remove your Landscaper pieces around you (if admin: everyone's)
 - `landscaper_costs [on|off]`: turn build costs off or on for every piece (host or admin)
 
 ## Server Settings
