@@ -7,8 +7,10 @@ namespace Landscaper;
 internal sealed class PieceTraits
 {
     public PieceTraits(float size, ItemDrop? pickableItem, bool hasLight, Piece.Requirement[]? vanillaResources, CraftingStation? vanillaStation,
-        bool isLiquid)
+        bool isLiquid, int pickableAmount = 1, bool pickableRegrows = true)
     {
+        PickableAmount = pickableAmount;
+        PickableRegrows = pickableRegrows;
         IsLiquid = isLiquid;
         Size = size;
         PickableItem = pickableItem;
@@ -32,6 +34,13 @@ internal sealed class PieceTraits
     /// <summary>The item picking it gives, for bushes, mushrooms and other pickables.</summary>
     public ItemDrop? PickableItem { get; }
 
+    /// <summary>How many of <see cref="PickableItem"/> picking it gives.</summary>
+    public int PickableAmount { get; }
+
+    /// <summary>Whether it grows back after picking (bushes, mushrooms) rather than being used up
+    /// (crops, loose stones).</summary>
+    public bool PickableRegrows { get; }
+
     /// <summary>Whether it gives off light, like torches, lanterns and braziers.</summary>
     public bool HasLight { get; }
 }
@@ -42,8 +51,9 @@ internal sealed class PieceTraits
 /// DecorativePieceManager.CostFor); for the rest:
 /// <list type="bullet">
 /// <item>A few pieces have a set cost, such as the guck sacks (1 or 2 guck).</item>
-/// <item>Pickables (bushes, mushrooms, thistle, ...) cost 5 of the item they give; loose stones
-/// and fallen branches, which give plain stone or wood, cost 1.</item>
+/// <item>Pickables that grow back (bushes, mushrooms, thistle, ...) cost 5 of the item they give.
+/// Ones that are used up when picked (crops, loose stones, fallen branches) cost exactly what picking
+/// them gives, so placing and picking one breaks even.</item>
 /// <item>Metal pieces (lanterns, braziers, iron torches, chains, ...) cost 1 iron.</item>
 /// <item>Everything else costs 2 to 8 depending on the size of its model, of wood or stone depending
 /// on what it is, ice for ice and snow, bone fragments for bones, or wood and ice split evenly for
@@ -105,8 +115,9 @@ internal static class BuildCosts
     /// <summary>The items and amounts a piece costs. An item is null if it can't be found.</summary>
     public static IEnumerable<(ItemDrop? Item, int Amount)> CostFor(DecorativePieceDefinition definition, PieceTraits traits)
     {
-        // Pickables cost only 5 of what they give, even the ones that glow. Loose stones and fallen
-        // branches give plain stone or wood, so they cost just 1, the same as picking them gives.
+        // Pickables cost only what they give, even the ones that glow: 5 for ones that grow back, and
+        // what one pick gives for ones that are used up, such as crops. Plain stone or wood always
+        // costs just 1.
         if (traits.IsLiquid)
         {
             yield break;
@@ -121,7 +132,7 @@ internal static class BuildCosts
         if (traits.PickableItem is { } picked)
         {
             var givesBasicMaterial = picked.name is Wood or Stone;
-            yield return (picked, Scaled(givesBasicMaterial ? 1 : PickableAmount));
+            yield return (picked, Scaled(givesBasicMaterial ? 1 : traits.PickableRegrows ? PickableAmount : Mathf.Max(1, traits.PickableAmount)));
             yield break;
         }
 

@@ -6,9 +6,12 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
 
 ## Features
 
-- **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, cattails and lily pads on the
-  Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
+- **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, fully grown crops, cattails
+  and lily pads on the Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
   decor, furniture, roofs, lights and props on the Hammer.
+- **Vanilla build pieces too**: walls, floors, roofs, furniture and the rest can be resized, tinted,
+  tilted and nudged, with nothing else about them changed. They stay ordinary vanilla pieces, so
+  without the mod they're just normal size and colour again, not deleted.
 - **Resize** any piece on each axis, **tint** it with presets or any colour, **tilt** it, and
   **nudge** it up, sideways or forward, all while placing.
 - **Copy** an object in the world (Shift + middle click) to place more of it, with the same size,
@@ -77,7 +80,7 @@ multiplayer (see [Multiplayer](#multiplayer)) and take effect without a restart.
 | `Indestructible.Allowed` | `true` | **Synced.** Allow placing indestructible pieces; see [Indestructible Pieces](#indestructible-pieces). |
 | `Indestructible.ToggleKey` | `Backslash` | Turn indestructible placement on or off while building. |
 | `General.DecorativeOnly` | `false` | **Synced.** When `true`, placed trees, rocks and plants can't be chopped, mined or picked. Remove them with the remove button (middle click). |
-| `Placement.IgnoreRules` | `true` | **Synced.** Place Landscaper pieces where Valheim normally refuses (clipping into other pieces, no support, wrong biome, inside dungeons, steep ground, ...), and Hoe and Cultivator pieces on floors, rocks and other objects as well as the ground. Overlapping a player or creature and other players' wards still block placing. |
+| `Placement.IgnoreRules` | `true` | **Synced.** Place any piece, vanilla build pieces included, where Valheim normally refuses (clipping into other pieces, no support, wrong biome, inside dungeons, steep ground, ...), and Hoe and Cultivator pieces on floors, rocks and other objects as well as the ground. Overlapping a player or creature and other players' wards still block placing. |
 | `Tools.CultivatorDecorEnabled` / `HoeDecorEnabled` / `HammerDecorEnabled` | `true` | **Synced.** List pieces in that tool's menu. Turning one off only hides its pieces; ones already placed stay in the world. |
 | `CustomEntries.Entries` | empty | **Synced.** Extra pieces; see below. |
 | `Scaling.ScaleUpKey` / `ScaleDownKey` | `]` / `[` | Resize the piece being placed. |
@@ -104,8 +107,10 @@ Placing a piece has a small cost, and removing it refunds the cost:
 - **Vanilla build pieces** (chests, beds, banners, walls, floors, torches, ...) cost exactly what the
   vanilla piece costs and need the same crafting station nearby (workbench, forge, stonecutter, ...),
   so the scalable, tintable copy matches the original. `Costs.Multiplier` doesn't change these.
-- **Pickables** (berry bushes, mushrooms, thistle, ...) cost only 5 of the item they give, e.g. a
-  blueberry bush costs 5 blueberries. Loose stones and fallen branches cost 1 stone or wood.
+- **Pickables** that grow back (berry bushes, mushrooms, thistle, ...) cost only 5 of the item they
+  give, e.g. a blueberry bush costs 5 blueberries. Ones that are used up when picked (fully grown
+  crops, loose stones, fallen branches) cost exactly what picking them gives, e.g. a grown carrot
+  costs 1 carrot, so placing and picking one breaks even.
 - **Guck sacks** cost guck: 1 for the small one, 2 for the regular one.
 - **Metal pieces** (lanterns, braziers, iron torches, sconces, chains, the iron gate, iron floors and
   walls, ...) cost 1 iron.

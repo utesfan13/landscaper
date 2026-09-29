@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.15.1";
+    public const string ModVersion = "0.16.0";
 
     internal static ManualLogSource Log = null!;
     /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>
@@ -39,7 +39,7 @@ public sealed class Plugin : BaseUnityPlugin
             "Master toggle. Off hides the pieces from the tool menus and turns off the building controls. Placed pieces stay in " +
             "the world and are still loaded, so turning this off never deletes them.");
         var costsEnabled = Config.Bind("Costs", "Enabled", true,
-            Synced("Charge a small cost to place pieces: 5 of the item for pickables, 1 iron for metal pieces, otherwise 2 to 8 " +
+            Synced("Charge a small cost to place pieces: 5 of the item for pickables that grow back (what one pick gives for crops), 1 iron for metal pieces, otherwise 2 to 8 " +
                    "wood or stone by size, plus 1 resin for crafted light sources. Removing a piece refunds it. " +
                    "Custom entries with their own requirements keep them."));
         var costMultiplier = Config.Bind("Costs", "Multiplier", 1f, new ConfigDescription(
@@ -50,7 +50,7 @@ public sealed class Plugin : BaseUnityPlugin
         var decorativeOnly = Config.Bind("General", "DecorativeOnly", false,
             Synced("When true, placed trees, rocks and plants can't be chopped, mined or picked; remove them with the remove button (middle click) instead."));
         var ignorePlacementRules = Config.Bind("Placement", "IgnoreRules", true,
-            Synced("Allow placing Landscaper pieces where Valheim normally wouldn't (clipping, unsupported, wrong biome, " +
+            Synced("Allow placing any piece, vanilla build pieces included, where Valheim normally wouldn't (clipping, unsupported, wrong biome, " +
                    "in dungeons, ...), and Hoe and Cultivator pieces on floors and objects as well as the ground. Overlapping a player or creature and other players' wards still block placing."));
         PlacementRules.IgnoreRules = () => ignorePlacementRules.Value;
         var cultivator = Config.Bind("Tools", "CultivatorDecorEnabled", true, Synced("List decorative pieces in the Cultivator menu."));

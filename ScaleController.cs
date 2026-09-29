@@ -103,13 +103,13 @@ internal static class ScaleController
     public static string ModifierNames =>
         PlacementInput.ChordNames(_xModifier.Value, _yModifier.Value);
 
-    /// <summary>Whether the local player is placing a Landscaper piece right now.</summary>
-    public static bool PlacingLandscaperPiece
+    /// <summary>Whether the local player is placing a piece that can be adjusted right now.</summary>
+    public static bool PlacingAdjustablePiece
     {
         get
         {
             var player = Player.m_localPlayer;
-            return player is not null && player.InPlaceMode() && PlacementInput.IsLandscaperPiece(_ghost);
+            return player is not null && player.InPlaceMode() && PlacementInput.IsAdjustable(_ghost);
         }
     }
 
@@ -123,8 +123,8 @@ internal static class ScaleController
             return;
         }
 
-        var placingLandscaperPiece = PlacingLandscaperPiece;
-        BuildKeyHints.SetVisible(placingLandscaperPiece, player is not null && player.InPlaceMode());
+        var placingAdjustablePiece = PlacingAdjustablePiece;
+        BuildKeyHints.SetVisible(placingAdjustablePiece, player is not null && player.InPlaceMode());
 
         // The indestructible mode stays on across pieces, so it can be toggled with any piece selected.
         if (player is not null && player.InPlaceMode() && !PlacementInput.IsTyping())
@@ -132,7 +132,7 @@ internal static class ScaleController
             IndestructibleController.HandleInput(player);
         }
 
-        if (!placingLandscaperPiece || PlacementInput.IsTyping())
+        if (!placingAdjustablePiece || PlacementInput.IsTyping())
         {
             return;
         }
@@ -218,7 +218,7 @@ internal static class ScaleController
             _copiedTint = null;
             OffsetController.ClearCopied();
 
-            if (!PlacementInput.IsLandscaperPiece(_ghost))
+            if (!PlacementInput.IsAdjustable(_ghost))
             {
                 return;
             }
@@ -349,7 +349,7 @@ internal static class ScaleController
     /// </summary>
     public static void LateUpdate()
     {
-        if (!PlacingLandscaperPiece)
+        if (!PlacingAdjustablePiece)
         {
             return;
         }
@@ -402,7 +402,7 @@ internal static class ScaleController
     {
         private static void Postfix(Piece __instance)
         {
-            if (!PlacementInput.IsLandscaperPiece(_ghost) || !PlacementInput.IsLandscaperPiece(__instance.gameObject))
+            if (!PlacementInput.IsAdjustable(_ghost) || !PlacementInput.IsAdjustable(__instance.gameObject))
             {
                 return;
             }

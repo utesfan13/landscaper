@@ -19,6 +19,27 @@ public sealed class DecorativePieceManager
     /// <summary>Other saved names mapped to registered pieces, by name hash; see RegisterAliases.</summary>
     private readonly Dictionary<int, string> _aliases = new();
 
+    /// <summary>Vanilla build pieces made adjustable; see MakeVanillaPiecesAdjustable.</summary>
+    private readonly List<GameObject> _adjustableVanilla = new();
+
+    /// <summary>The largest dimension of each adjustable vanilla piece, by prefab name.</summary>
+    private readonly Dictionary<string, float> _vanillaSizes = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Vanilla pieces listed in each tool's menu, by prefab name.</summary>
+    private readonly Dictionary<BuildTool, HashSet<string>> _vanillaInMenus = new();
+
+    /// <summary>
+    /// Vanilla pieces with these components aren't made adjustable: ships and carts are physics
+    /// objects that resizing would break, and planting and the terrain tools aren't objects at all.
+    /// </summary>
+    private static readonly HashSet<string> NotAdjustableComponents = new(StringComparer.Ordinal)
+    {
+        "Ship", "Vagon", "Plant", "TerrainOp", "TerrainModifier"
+    };
+
+    /// <summary>A plain entry, for the names Landscaper copies of vanilla pieces were saved under.</summary>
+    private static readonly DecorativePieceDefinition PlainDefinition = new();
+
     /// <summary>Saved names kept loading by invisible stand-ins; see KeepPlacedPieces.</summary>
     private readonly SortedSet<string> _standIns = new(StringComparer.OrdinalIgnoreCase);
 
@@ -78,8 +99,10 @@ public sealed class DecorativePieceManager
     {
         HasRegistered = true;
         ClutterPrefabs.Build(_log);
-        var registered = PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries())).Count(Register);
-        _log.LogInfo($"Registered {registered} decorative pieces.");
+        var adjustable = MakeVanillaPiecesAdjustable();
+        var registered = PieceCatalog.Entries().Where(definition => !DuplicatesVanillaPiece(definition))
+            .Concat(ParseCustomEntries(_customEntries())).Count(Register);
+        _log.LogInfo($"Registered {registered} decorative pieces; {adjustable} vanilla build pieces can be adjusted too.");
         RegisterAliases();
         UpdateMenus();
         if (_standIns.Count > 0)
@@ -316,6 +339,22 @@ public sealed class DecorativePieceManager
                 }
             }
         }
+
+        // Earlier versions had Landscaper copies of vanilla build pieces; those load as the vanilla
+        // piece now, and LandscaperTint saves them as it, so they no longer depend on this mod.
+        foreach (var prefab in _adjustableVanilla.Where(prefab => prefab != null))
+        {
+            foreach (BuildTool tool in Enum.GetValues(typeof(BuildTool)))
+            {
+                var name = GetCloneName(prefab.name, PlainDefinition, tool);
+                var hash = name.GetStableHashCode();
+                if (!named.ContainsKey(hash))
+                {
+                    named[hash] = prefab;
+                    _aliases[hash] = name;
+                }
+            }
+        }
     }
 
     /// <summary>Frees a name taken by an alias, so a piece registered under it now can have it.</summary>
@@ -333,7 +372,13 @@ public sealed class DecorativePieceManager
 
     /// <summary>The largest dimension of a registered piece's model in meters, or null if unknown.</summary>
     public float? SizeOf(string cloneName) =>
-        _registered.TryGetValue(cloneName, out var piece) ? piece.Traits.Size : null;
+        _registered.TryGetValue(cloneName, out var piece) ? piece.Traits.Size
+        : _vanillaSizes.TryGetValue(cloneName, out var size) ? size
+        : null;
+
+    /// <summary>The tool whose menu lists this vanilla build piece, or null if none does.</summary>
+    public BuildTool? VanillaToolFor(string prefabName) =>
+        _vanillaInMenus.Where(pair => pair.Value.Contains(prefabName)).Select(pair => (BuildTool?)pair.Key).FirstOrDefault();
 
     /// <summary>The vanilla prefab a Landscaper clone was made from, or null for other prefabs.</summary>
     public string? SourcePrefabOf(string cloneName) =>
@@ -381,6 +426,78 @@ public sealed class DecorativePieceManager
             return false;
         }
     }
+
+    /// <summary>
+    /// Makes the vanilla build pieces on the Cultivator, Hoe and Hammer adjustable in place, so they
+    /// can be resized, tinted, tilted and nudged like Landscaper's own pieces, with nothing else about
+    /// them changed: same menu, order, name, cost, unlock and crafting station. Each placed piece saves
+    /// its own size (ZNetView.m_syncInitialScale) and tint (LandscaperTint). They stay vanilla
+    /// objects, so without this mod they'd just be normal size and colour again, not deleted. Pieces
+    /// from other mods are left alone, so every player with the same game version gets the same set.
+    /// Returns how many there are.
+    /// </summary>
+    private int MakeVanillaPiecesAdjustable()
+    {
+        foreach (BuildTool tool in Enum.GetValues(typeof(BuildTool)))
+        {
+            // The tool's piece table, straight from the item, before Jotunn adds mod pieces to it.
+            var table = ZNetScene.instance?.GetPrefab(tool.ToString())?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_buildPieces;
+            if (table == null)
+            {
+                continue;
+            }
+
+            if (!_vanillaInMenus.TryGetValue(tool, out var inMenu))
+            {
+                _vanillaInMenus[tool] = inMenu = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            foreach (var prefab in table.m_pieces)
+            {
+                if (prefab == null || PlacementInput.IsLandscaperPiece(prefab) || PieceManager.Instance.GetPiece(prefab.name) != null ||
+                    !prefab.TryGetComponent<Piece>(out var piece) || piece.m_repairPiece ||
+                    !prefab.TryGetComponent<ZNetView>(out var view) ||
+                    prefab.GetComponentsInChildren<Component>(includeInactive: true).Any(component =>
+                        component != null && NotAdjustableComponents.Contains(component.GetType().Name)))
+                {
+                    continue;
+                }
+
+                if (piece.m_enabled)
+                {
+                    inMenu.Add(prefab.name);
+                }
+
+                if (_adjustableVanilla.Contains(prefab))
+                {
+                    continue;
+                }
+
+                view.m_syncInitialScale = true;
+                if (!prefab.TryGetComponent<LandscaperTint>(out _))
+                {
+                    prefab.AddComponent<LandscaperTint>();
+                }
+
+                var size = TryGetModelBounds(prefab, out var bounds) ? Vector3.Scale(bounds.size, prefab.transform.localScale) : Vector3.one;
+                _vanillaSizes[prefab.name] = Mathf.Max(size.x, size.y, size.z);
+                _adjustableVanilla.Add(prefab);
+            }
+        }
+
+        return _adjustableVanilla.Count;
+    }
+
+    /// <summary>
+    /// Whether a catalog entry is just a vanilla piece already in its tool's menu, which is adjustable
+    /// itself now, so the entry isn't registered and its saved name loads as the vanilla piece.
+    /// Scaled variants, furniture made functional, and pieces the menu doesn't list (such as the turf
+    /// roofs and out-of-season festive pieces) are still Landscaper pieces.
+    /// </summary>
+    private bool DuplicatesVanillaPiece(DecorativePieceDefinition definition) =>
+        definition.Scale == Vector3.one && definition.FunctionFrom is null && !definition.OnWater &&
+        _vanillaInMenus.TryGetValue(definition.Tool, out var inMenu) &&
+        FindSpawnablePrefab(definition.PrefabName) is { } source && inMenu.Contains(source.name);
 
     /// <summary>
     /// When a piece can't be registered (its vanilla prefab was renamed or removed by a game update,
@@ -485,12 +602,22 @@ public sealed class DecorativePieceManager
             clone.GetComponentsInChildren<Light>(includeInactive: true).Length > 0,
             vanillaPiece != null && vanillaPiece.m_resources is { Length: > 0 } ? vanillaPiece.m_resources.ToArray() : null,
             vanillaPiece != null ? vanillaPiece.m_craftingStation : null,
-            clone.GetComponent<LiquidVolume>() != null);
+            clone.GetComponent<LiquidVolume>() != null,
+            pickable != null ? pickable.m_amount : 1,
+            pickable == null || pickable.m_respawnTimeMinutes > 0f);
         EnsureTargetable(clone, definition.Tool);
         clone.AddComponent<LandscaperTint>();
+        clone.AddComponent<LandscaperPiece>();
 
         var piece = clone.GetComponent<Piece>() ?? clone.AddComponent<Piece>();
         var vanillaIcon = piece.m_icon;
+        // Leftover pieces the game ships but doesn't let you build have untranslated names, and often
+        // borrow another piece's icon: the turf roofs use the thatch roofs' icons, so they looked like
+        // thatch in the menu. Render their own icon instead.
+        if (vanillaIcon != null && !piece.m_name.StartsWith("$", StringComparison.Ordinal))
+        {
+            vanillaIcon = null;
+        }
         piece.m_name = definition.DisplayName;
         piece.m_description = definition.Description;
         piece.m_enabled = true;
@@ -694,6 +821,9 @@ public sealed class DecorativePieceManager
     /// or bob. The placement ghost already has its rigidbodies removed, so this matches the preview.
     /// Fallen logs (TreeLog) use their rigidbody as soon as they're created and break without it, so
     /// theirs is kept but made kinematic, which holds it still just the same.</item>
+    /// <item>StaticPhysics is removed. On trees, rocks and plants it snaps the object to the terrain
+    /// 20 seconds after it loads: up if it's sunk into the ground, down if it's floating. That undid
+    /// pieces placed partly underground, raised with the nudge keys, or placed on floors and rocks.</item>
     /// </list>
     /// </summary>
     private static void MakeStaticDecoration(GameObject clone)
@@ -705,6 +835,7 @@ public sealed class DecorativePieceManager
         }
 
         // Components that use the rigidbody go first, or Unity refuses to remove it.
+        DestroyAll<StaticPhysics>(clone);
         DestroyAll<Floating>(clone);
         DestroyAll<ZSyncTransform>(clone);
         foreach (var body in clone.GetComponentsInChildren<Rigidbody>(includeInactive: true))

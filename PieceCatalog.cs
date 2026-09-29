@@ -130,6 +130,13 @@ public static class PieceCatalog
             E("Loose Stone", "Pickable_Stone"), E("Loose Rock", "Pickable_StoneRock"),
             E("Sulfur Rock", "Pickable_SulfurRock"), E("Flint", "Pickable_Flint"), E("Fallen Branch", "Pickable_Branch")),
 
+        // Fully grown crops, ready to pick, and the seed stage that gives seeds.
+        new(BuildTool.Cultivator, "Crops",
+            E("Carrot", "Pickable_Carrot"), E("Turnip", "Pickable_Turnip"), E("Onion", "Pickable_Onion"),
+            E("Barley", "Pickable_Barley"), E("Flax", "Pickable_Flax"), E("Kale", "Pickable_Kale"),
+            E("Seed Carrot", "Pickable_SeedCarrot"), E("Seed Turnip", "Pickable_SeedTurnip"),
+            E("Seed Onion", "Pickable_SeedOnion"), E("Seed Kale", "Pickable_SeedKale")),
+
         new(BuildTool.Cultivator, "Roots & Branches",
             E("Root 1", "root07"), E("Root 2", "root08"), E("Root 3", "root11"), E("Root 4", "root12"),
             E("Huge Root", "HugeRoot1"), E("Big Branch", "BigBranch"),

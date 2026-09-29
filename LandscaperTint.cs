@@ -124,11 +124,35 @@ internal sealed class LandscaperTint : MonoBehaviour
             return;
         }
 
+        SaveAsVanillaPiece();
         Apply();
 
         // Pick up a tint that arrives or changes after the piece was created on this player's game.
         _placedIndex = Placed.Count;
         Placed.Add(this);
+    }
+
+    /// <summary>
+    /// A vanilla build piece placed as a Landscaper copy in an earlier version is saved under the
+    /// copy's name, which now loads as the vanilla piece. Save it under the vanilla name, so it no
+    /// longer depends on this mod. Only the owner changes saved data.
+    /// </summary>
+    private void SaveAsVanillaPiece()
+    {
+        if (PlacementInput.IsLandscaperPiece(gameObject) || !_view!.IsOwner())
+        {
+            return;
+        }
+
+        var zdo = _view.GetZDO();
+        if (ZNetScene.instance?.GetPrefab(zdo.GetPrefab()) is { } prefab)
+        {
+            var hash = prefab.name.GetStableHashCode();
+            if (zdo.GetPrefab() != hash)
+            {
+                zdo.SetPrefab(hash);
+            }
+        }
     }
 
     private void OnDestroy()

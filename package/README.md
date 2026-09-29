@@ -6,9 +6,12 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
 
 ## Features
 
-- **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, cattails and lily pads on the
-  Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
+- **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, fully grown crops, cattails
+  and lily pads on the Cultivator; rocks, cliffs, ore deposits, ice and pond water on the Hoe; ruins, statues, dungeon
   decor, furniture, roofs, lights and props on the Hammer.
+- **Vanilla build pieces too**: walls, floors, roofs, furniture and the rest can be resized, tinted,
+  tilted and nudged, with nothing else about them changed. They stay ordinary vanilla pieces, so
+  without the mod they're just normal size and colour again, not deleted.
 - **Resize** any piece on each axis, **tint** it with presets or any colour, **tilt** it, and
   **nudge** it up, sideways or forward, all while placing.
 - **Copy** an object in the world (Shift + middle click) to place more of it, with the same size,
@@ -54,7 +57,8 @@ While placing a Landscaper piece (every key can be changed in the config):
 | Middle click | Remove a Landscaper piece, also with the Cultivator and Hoe |
 | Shift + middle click | Copy the object you're aiming at |
 
-The build hints show these while a Landscaper piece is selected.
+The build hints show these while a piece that can be adjusted is selected: any Landscaper piece and
+any vanilla build piece apart from ships and carts.
 
 Console commands (F5):
 
@@ -71,7 +75,7 @@ admins can change them in game):
 | Setting | Default | Effect |
 |---|---|---|
 | `Costs.Enabled` / `Costs.Multiplier` | on / 1 | Build costs, and how expensive they are |
-| `Placement.IgnoreRules` | on | Place Landscaper pieces where Valheim normally refuses |
+| `Placement.IgnoreRules` | on | Place any piece where Valheim normally refuses |
 | `Indestructible.Allowed` | on | Allow indestructible placement |
 | `General.DecorativeOnly` | off | Placed trees, rocks and plants can't be chopped, mined or picked |
 | `Tools.*DecorEnabled` | on | List pieces in the Cultivator, Hoe and Hammer menus |

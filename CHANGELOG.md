@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.16.0
+- Vanilla build pieces can be resized, tinted, tilted and nudged too (all but ships and carts), and
+  copying one takes its size, tint and tilt. They stay ordinary vanilla pieces: same menu, cost and
+  unlocks, and without the mod they're just normal size and colour again, not deleted.
+- Landscaper no longer lists its own copies of vanilla build pieces (extra furniture, lights, roofs,
+  stacks); the adjustable vanilla pieces replace them, and ones already placed are saved as the vanilla
+  piece. Scaled variants, functional props, the turf roofs and festive pieces stay.
+- `Placement.IgnoreRules` covers every piece, not just Landscaper's.
+- New Crops tab on the Cultivator: fully grown carrots, turnips, onions, barley, flax and kale, and
+  the seed stage of carrots, turnips, onions and kale.
+- Pickables that are used up when picked (crops, loose stones, branches) cost exactly what picking
+  them gives; ones that grow back still cost 5.
+- Placed trees, rocks and plants stay where you put them. About 20 seconds after loading, the game
+  snapped them to the terrain: sunken pieces popped up, and raised ones or ones placed on floors
+  dropped down.
+- The turf (grass) roof pieces had the thatch roof's icons, so they looked like thatch in the menu;
+  they now show their own.
+
 ## 0.15.1
 - Fixed the Old Pine Log, which failed to load properly once placed and couldn't be chopped. Logs
   already placed work again.

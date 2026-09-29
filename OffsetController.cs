@@ -89,7 +89,7 @@ internal static class OffsetController
     public static string ModifierNames => PlacementInput.ChordNames(_upModifier.Value, _sideModifier.Value);
 
     /// <summary>Whether scrolling should tilt or move the piece instead of Valheim rotating it right now.</summary>
-    public static bool Active => ScaleController.PlacingLandscaperPiece && AxisHeld() is not null;
+    public static bool Active => ScaleController.PlacingAdjustablePiece && AxisHeld() is not null;
 
     /// <summary>The offset in world space, turned to match the direction the camera faces.</summary>
     public static Vector3 WorldOffset
