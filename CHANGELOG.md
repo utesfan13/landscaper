@@ -1,6 +1,13 @@
 # Changelog
 
+## 0.18.0
+- Removed the Sunken Crypt Tower Wall, which was invisible when placed. Ones already placed can still
+  be removed.
+- Fixed a "new piece" message repeating on every item pickup when another mod has a piece with the
+  same name as a Landscaper piece (such as a "Dvergr Banner").
+
 ## 0.17.3
+- Pond water no longer turns white like snow in the mountains and in snowy weather.
 - Webs are placed with the bottom of the web itself exactly at the crosshair (measured from the web's
   strands, since the horizontal webs are sheets turned 45 degrees inside a much taller box), and their
   icon is the web texture, since the strands don't show in a rendered icon.

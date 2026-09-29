@@ -15,7 +15,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.17.3";
+    public const string ModVersion = "0.18.0";
 
     internal static ManualLogSource Log = null!;
     /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>
@@ -174,14 +174,17 @@ public sealed class Plugin : BaseUnityPlugin
 /// Unlocks Landscaper pieces like vanilla ones: a piece shows up in the build menu once the player
 /// has found everything it's built with (and knows its crafting station, if it needs one). Valheim
 /// would show a "new piece" message for each; finding one material can unlock dozens of Landscaper
-/// pieces at once, so they're marked known quietly, with one message saying how many. Pieces whose
-/// materials aren't all known yet are taken out of the known list, which also re-locks pieces that
-/// earlier versions unlocked straight away.
+/// pieces at once, so they're marked known quietly, with one message saying how many.
+/// Valheim keeps known pieces by name. Earlier versions of Landscaper marked every piece known
+/// straight away, so the first check after loading a character takes out the names of Landscaper
+/// pieces whose materials aren't known yet. It never takes out a name another piece also uses (other
+/// mods can have pieces called the same, such as a "Dvergr Banner"): Valheim would add it straight
+/// back with a "new piece" message, on every check. After that first check names are only added.
 /// </summary>
 [HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
 internal static class UnlockLikeVanillaPatch
 {
-    /// <summary>The player whose first check has run; that one just catches up, without a message.</summary>
+    /// <summary>The player whose first check has run; that one catches up quietly.</summary>
     private static Player? _caughtUp;
 
     private static void Prefix(Player __instance, HashSet<string> ___m_knownRecipes)
@@ -190,6 +193,10 @@ internal static class UnlockLikeVanillaPatch
         {
             return;
         }
+
+        var firstCheck = !ReferenceEquals(_caughtUp, __instance);
+        _caughtUp = __instance;
+        var otherNames = firstCheck ? NamesOfOtherPieces(__instance) : null;
 
         var unlocked = 0;
         foreach (var piece in Plugin.Pieces.RegisteredPieces)
@@ -201,21 +208,26 @@ internal static class UnlockLikeVanillaPatch
                     unlocked++;
                 }
             }
-            else
+            else if (otherNames is not null && !otherNames.Contains(piece.m_name))
             {
                 ___m_knownRecipes.Remove(piece.m_name);
             }
         }
 
-        if (!ReferenceEquals(_caughtUp, __instance))
-        {
-            _caughtUp = __instance;
-            return;
-        }
-
-        if (unlocked > 0)
+        if (!firstCheck && unlocked > 0)
         {
             __instance.Message(MessageHud.MessageType.TopLeft, $"{unlocked} new Landscaper piece{(unlocked == 1 ? "" : "s")}");
         }
+    }
+
+    /// <summary>Names of the pieces in the player's tools that aren't Landscaper's.</summary>
+    private static HashSet<string> NamesOfOtherPieces(Player player)
+    {
+        var tables = new List<PieceTable>();
+        player.GetInventory().GetAllPieceTables(tables);
+        return new HashSet<string>(tables.SelectMany(table => table.m_pieces)
+            .Where(prefab => prefab != null && !PlacementInput.IsLandscaperPiece(prefab))
+            .Select(prefab => prefab.GetComponent<Piece>()?.m_name)
+            .OfType<string>());
     }
 }

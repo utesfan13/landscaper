@@ -60,6 +60,8 @@ internal static class PondWater
     private static readonly Func<LiquidVolume, Vector3, Vector2> WorldToLocal =
         AccessTools.MethodDelegate<Func<LiquidVolume, Vector3, Vector2>>(AccessTools.Method(typeof(LiquidVolume), "WorldToLocal"));
 
+    private static readonly int AddSnowId = Shader.PropertyToID("_AddSnow");
+
     /// <summary>Call when registering a clone.</summary>
     public static void Prepare(GameObject clone)
     {
@@ -67,6 +69,36 @@ internal static class PondWater
         {
             Prefabs.Add(liquid);
             ApplyVolume(liquid);
+            WithoutSnow(clone);
+        }
+    }
+
+    /// <summary>
+    /// The water's material has snow cover on (_AddSnow), the shader feature that lets snow settle on
+    /// rocks in cold places and snowy weather. A pond's surface faces straight up, so it came out
+    /// white as snow. The pond gets its own copy of the material with snow cover off; the game's
+    /// shared material is left as it is.
+    /// </summary>
+    private static void WithoutSnow(GameObject clone)
+    {
+        foreach (var renderer in clone.GetComponentsInChildren<Renderer>(includeInactive: true))
+        {
+            var materials = renderer.sharedMaterials;
+            var changed = false;
+            for (var i = 0; i < materials.Length; i++)
+            {
+                if (materials[i] != null && materials[i].HasProperty(AddSnowId) && materials[i].GetFloat(AddSnowId) != 0f)
+                {
+                    materials[i] = new Material(materials[i]) { name = materials[i].name + " (no snow)" };
+                    materials[i].SetFloat(AddSnowId, 0f);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                renderer.sharedMaterials = materials;
+            }
         }
     }
 
