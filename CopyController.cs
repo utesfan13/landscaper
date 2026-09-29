@@ -34,11 +34,12 @@ internal static class CopyController
                 return;
             }
 
-            var isLandscaper = PlacementInput.IsLandscaperPiece(target.gameObject);
+            // Takes the size, tint and tilt of anything adjustable, vanilla build pieces included.
+            var isAdjustable = PlacementInput.IsAdjustable(target.gameObject);
             if (__result)
             {
-                // Valheim copied a piece from the current tool; for Landscaper pieces also take their look.
-                if (isLandscaper && ZNetScene.instance.GetPrefab(target.GetZDO().GetPrefab()) is { } clone)
+                // Valheim copied a piece from the current tool; for adjustable pieces also take their look.
+                if (isAdjustable && SavedPieces.PrefabOf(target.GetZDO()) is { } clone)
                 {
                     ScaleController.ApplyCopied(ScaleRatio(target.transform, clone.transform), LandscaperTint.Read(target.gameObject));
                     ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
@@ -47,7 +48,7 @@ internal static class CopyController
                 return;
             }
 
-            if (Copy(__instance, ___m_buildPieces, target, isLandscaper))
+            if (Copy(__instance, ___m_buildPieces, target, isAdjustable))
             {
                 ___m_placeRotation = (int)Math.Round(target.transform.rotation.eulerAngles.y / ___m_placeRotationDegrees);
                 ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
@@ -66,7 +67,7 @@ internal static class CopyController
         OffsetController.ApplyCopied(Quaternion.Inverse(valheimRotation) * target.rotation);
     }
 
-    private static bool Copy(Player player, PieceTable table, ZNetView target, bool isLandscaper)
+    private static bool Copy(Player player, PieceTable table, ZNetView target, bool isAdjustable)
     {
         var pieces = Plugin.Pieces!;
         if (ToolFor(table) is not { } tool)
@@ -80,7 +81,7 @@ internal static class CopyController
             return false;
         }
 
-        var prefab = ZNetScene.instance.GetPrefab(target.GetZDO().GetPrefab());
+        var prefab = SavedPieces.PrefabOf(target.GetZDO());
         if (prefab == null)
         {
             return false;
@@ -98,6 +99,27 @@ internal static class CopyController
             tool = otherTool;
             switchedTo = otherTool;
             piece = pieces.FindPiece(source, otherTool);
+        }
+
+        // A vanilla build piece, such as a wall copied with the Hoe out: select the vanilla piece
+        // itself, which is adjustable, on its own tool, rather than adding a Landscaper copy of it.
+        if (piece is null && pieces.VanillaToolFor(prefab.name) is { } vanillaTool)
+        {
+            if (vanillaTool == tool)
+            {
+                player.Message(MessageHud.MessageType.Center, $"You can't build {DisplayNameFor(target, source)} yet.");
+                return false;
+            }
+
+            if (!TryEquipTool(player, vanillaTool))
+            {
+                player.Message(MessageHud.MessageType.Center, $"{DisplayNameFor(target, source)} is built with the {vanillaTool}; you need one in your inventory.");
+                return false;
+            }
+
+            tool = vanillaTool;
+            switchedTo = vanillaTool;
+            piece = prefab.GetComponent<Piece>();
         }
 
         if (piece is null)
@@ -131,7 +153,7 @@ internal static class CopyController
             return false;
         }
 
-        ScaleController.ApplyCopied(ScaleRatio(target.transform, piece.transform), isLandscaper ? LandscaperTint.Read(target.gameObject) : null);
+        ScaleController.ApplyCopied(ScaleRatio(target.transform, piece.transform), isAdjustable ? LandscaperTint.Read(target.gameObject) : null);
         player.Message(MessageHud.MessageType.Center,
             added ? $"Copied {piece.m_name}; added to the {tool}'s {CopiedCategory} tab"
             : switchedTo is { } switched ? $"Copied {piece.m_name}; switched to the {switched}"

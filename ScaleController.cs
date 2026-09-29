@@ -103,13 +103,13 @@ internal static class ScaleController
     public static string ModifierNames =>
         PlacementInput.ChordNames(_xModifier.Value, _yModifier.Value);
 
-    /// <summary>Whether the local player is placing a Landscaper piece right now.</summary>
-    public static bool PlacingLandscaperPiece
+    /// <summary>Whether the local player is placing a piece that can be adjusted right now.</summary>
+    public static bool PlacingAdjustablePiece
     {
         get
         {
             var player = Player.m_localPlayer;
-            return player is not null && player.InPlaceMode() && PlacementInput.IsLandscaperPiece(_ghost);
+            return player is not null && player.InPlaceMode() && PlacementInput.IsAdjustable(_ghost);
         }
     }
 
@@ -123,8 +123,8 @@ internal static class ScaleController
             return;
         }
 
-        var placingLandscaperPiece = PlacingLandscaperPiece;
-        BuildKeyHints.SetVisible(placingLandscaperPiece, player is not null && player.InPlaceMode());
+        var placingAdjustablePiece = PlacingAdjustablePiece;
+        BuildKeyHints.SetVisible(placingAdjustablePiece, player is not null && player.InPlaceMode());
 
         // The indestructible mode stays on across pieces, so it can be toggled with any piece selected.
         if (player is not null && player.InPlaceMode() && !PlacementInput.IsTyping())
@@ -132,7 +132,7 @@ internal static class ScaleController
             IndestructibleController.HandleInput(player);
         }
 
-        if (!placingLandscaperPiece || PlacementInput.IsTyping())
+        if (!placingAdjustablePiece || PlacementInput.IsTyping())
         {
             return;
         }
@@ -218,7 +218,7 @@ internal static class ScaleController
             _copiedTint = null;
             OffsetController.ClearCopied();
 
-            if (!PlacementInput.IsLandscaperPiece(_ghost))
+            if (!PlacementInput.IsAdjustable(_ghost))
             {
                 return;
             }
@@ -238,6 +238,15 @@ internal static class ScaleController
             // and adding to it every frame would pile up.
             if (ghost.activeSelf)
             {
+                // Landscaper water pieces (lily pads) rest on the surface: the aim ray finds a pond's
+                // collider 2 m below it, and the sea's surface moves with the waves.
+                if (ghost.TryGetComponent<WaterFloat>(out _) && WaterFloat.SurfaceAt(ghost.transform.position) is { } surface)
+                {
+                    var position = ghost.transform.position;
+                    position.y = surface;
+                    ghost.transform.position = position;
+                }
+
                 ghost.transform.position += OffsetController.WorldOffset;
                 ghost.transform.rotation *= OffsetController.Rotation;
             }
@@ -349,7 +358,7 @@ internal static class ScaleController
     /// </summary>
     public static void LateUpdate()
     {
-        if (!PlacingLandscaperPiece)
+        if (!PlacingAdjustablePiece)
         {
             return;
         }
@@ -402,7 +411,7 @@ internal static class ScaleController
     {
         private static void Postfix(Piece __instance)
         {
-            if (!PlacementInput.IsLandscaperPiece(_ghost) || !PlacementInput.IsLandscaperPiece(__instance.gameObject))
+            if (!PlacementInput.IsAdjustable(_ghost) || !PlacementInput.IsAdjustable(__instance.gameObject))
             {
                 return;
             }
@@ -416,7 +425,7 @@ internal static class ScaleController
             // Set the size from the prefab, the same way the ghost is sized, rather than multiplying the
             // placed object's current size: some mods create the placed object from the already scaled
             // ghost or copy its size, and multiplying again would square the scale.
-            var prefab = ZNetScene.instance.GetPrefab(view.GetZDO().GetPrefab());
+            var prefab = SavedPieces.PrefabOf(view.GetZDO());
             var baseScale = prefab != null ? prefab.transform.localScale : __instance.transform.localScale;
             var scale = Vector3.Scale(baseScale, SizeScaleFor(__instance.gameObject));
             if (__instance.transform.localScale != scale)
@@ -429,6 +438,12 @@ internal static class ScaleController
             if (TintController.Current is { } tint)
             {
                 LandscaperTint.Save(__instance.gameObject, tint);
+            }
+
+            // A water piece keeps its nudged height relative to the moving surface.
+            if (__instance.TryGetComponent<WaterFloat>(out _))
+            {
+                WaterFloat.SaveOffset(__instance.gameObject, OffsetController.WorldOffset.y);
             }
         }
     }

@@ -6,5 +6,4 @@ obj/
 *.cache
 *.dll
 *.pdb
-reflect_types.txt
 Local.props

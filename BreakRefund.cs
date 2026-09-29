@@ -27,11 +27,22 @@ internal static class BreakRefund
 
     private static readonly DropTable NoDrops = new();
 
+    /// <summary>
+    /// Ores and scrap metal never come back as a bonus: a placed ore rock bought with its ore would
+    /// otherwise mine for more ore than it cost, over and over. Pieces that drop these always give
+    /// back exactly their cost instead.
+    /// </summary>
+    private static readonly HashSet<string> NoBonusItems = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CopperOre", "TinOre", "IronScrap", "IronOre", "SilverOre", "GoldOre", "BlackMetalScrap", "FlametalOre",
+        "FlametalOreNew", "CopperScrap", "BronzeScrap", "Obsidian"
+    };
+
     /// <summary>Item names treated as harmless byproducts, which should all exist in the game.</summary>
     public static IEnumerable<string> ReferencedItems() => Byproducts;
 
     /// <summary>Natural drops of each Landscaper prefab, found the first time one is broken.</summary>
-    private static readonly Dictionary<int, HashSet<string>> NaturalDrops = new();
+    private static readonly Dictionary<GameObject, HashSet<string>> NaturalDrops = new();
 
     /// <summary>The Landscaper piece <paramref name="component"/> belongs to, if breaking it should
     /// give back the build cost instead of its natural drops.</summary>
@@ -49,7 +60,13 @@ internal static class BreakRefund
             return null;
         }
 
-        var drops = DropsOf(view.GetZDO().GetPrefab());
+        // The Landscaper piece, not the game object it's saved as.
+        if (SavedPieces.PrefabOf(view.GetZDO()) is not { } prefab)
+        {
+            return null;
+        }
+
+        var drops = DropsOf(prefab);
         if (drops.Count == 0)
         {
             return piece;
@@ -57,6 +74,11 @@ internal static class BreakRefund
 
         foreach (var drop in drops)
         {
+            if (NoBonusItems.Contains(drop))
+            {
+                return piece;
+            }
+
             if (!Byproducts.Contains(drop) && !piece.m_resources.Any(requirement =>
                     requirement.m_resItem != null && string.Equals(requirement.m_resItem.name, drop, StringComparison.OrdinalIgnoreCase)))
             {
@@ -67,22 +89,17 @@ internal static class BreakRefund
         return null;
     }
 
-    private static HashSet<string> DropsOf(int prefabHash)
+    private static HashSet<string> DropsOf(GameObject prefab)
     {
-        if (NaturalDrops.TryGetValue(prefabHash, out var drops))
+        if (NaturalDrops.TryGetValue(prefab, out var drops))
         {
             return drops;
         }
 
         drops = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var prefab = ZNetScene.instance?.GetPrefab(prefabHash);
-        if (prefab != null)
-        {
-            CollectDrops(prefab, drops, new HashSet<GameObject>());
-        }
-
-        NaturalDrops[prefabHash] = drops;
-        Plugin.Log.LogDebug($"{(prefab != null ? prefab.name : prefabHash.ToString())} drops: {(drops.Count == 0 ? "nothing" : string.Join(", ", drops))}");
+        CollectDrops(prefab, drops, new HashSet<GameObject>());
+        NaturalDrops[prefab] = drops;
+        Plugin.Log.LogDebug($"{prefab.name} drops: {(drops.Count == 0 ? "nothing" : string.Join(", ", drops))}");
         return drops;
     }
 

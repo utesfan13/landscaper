@@ -42,6 +42,8 @@
     <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedDir)\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="UnityEngine.PhysicsModule" HintPath="$(ManagedDir)\UnityEngine.PhysicsModule.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(ManagedDir)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="UnityEngine.UIModule" HintPath="$(ManagedDir)\UnityEngine.UIModule.dll" Private="false" />
+    <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(ManagedDir)\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="Unity.TextMeshPro" HintPath="$(ManagedDir)\Unity.TextMeshPro.dll" Private="false" />
     <Reference Include="BepInEx" HintPath="$(BepInExDir)\core\BepInEx.dll" Private="false" />
     <Reference Include="0Harmony" HintPath="$(BepInExDir)\core\0Harmony.dll" Private="false" />
@@ -59,7 +61,8 @@
   <!--
     Builds the Thunderstore / r2modman package: dotnet build -c Release -t:Package
     Writes bin\Landscaper-<version>.zip with manifest.json (from package\manifest.template.json),
-    icon.png (package\icon.png, 256x256), README.md, CHANGELOG.md and plugins\Landscaper.dll.
+    icon.png (package\icon.png, 256x256), README.md (package\README.md, the player-facing page),
+    CHANGELOG.md and plugins\Landscaper.dll.
     The same zip works for Nexus Mods.
   -->
   <Target Name="Package" DependsOnTargets="Build">
@@ -72,7 +75,7 @@
     <RemoveDir Directories="$(PackageStaging)" />
     <MakeDir Directories="$(PackageStaging)\plugins" />
     <WriteLinesToFile File="$(PackageStaging)\manifest.json" Lines="$(ManifestText)" Overwrite="true" />
-    <Copy SourceFiles="$(PackageDir)\icon.png;$(MSBuildProjectDirectory)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" DestinationFolder="$(PackageStaging)" />
+    <Copy SourceFiles="$(PackageDir)\icon.png;$(PackageDir)\README.md;$(MSBuildProjectDirectory)\CHANGELOG.md" DestinationFolder="$(PackageStaging)" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageStaging)\plugins" />
     <ZipDirectory SourceDirectory="$(PackageStaging)" DestinationFile="$(PackageZip)" Overwrite="true" />
     <Message Importance="high" Text="Packaged $(PackageZip)" />

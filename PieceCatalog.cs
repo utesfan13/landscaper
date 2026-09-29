@@ -4,14 +4,29 @@ namespace Landscaper;
 
 /// <summary>
 /// Built-in pieces. Each entry is cloned as "Landscaper_{prefab}_{tool}" (scaled entries add their
-/// display name), and pieces placed in a world are saved under that name, so moving an existing
-/// prefab to a different tool makes previously placed copies of it disappear.
+/// display name), the name placed pieces are known by. Moving a prefab to a different tool is safe
+/// (see DecorativePieceManager.RegisterAliases).
 /// </summary>
 public static class PieceCatalog
 {
-    public static IEnumerable<DecorativePieceDefinition> Entries()
+    public static IEnumerable<DecorativePieceDefinition> Entries() => Definitions(Groups);
+
+    /// <summary>
+    /// Pieces taken out of the menus. They're still registered, so copies already placed keep loading
+    /// as Landscaper pieces and can be removed (with the remove button or landscaper_remove); left to
+    /// the game they'd be objects nothing can remove.
+    /// </summary>
+    public static IEnumerable<DecorativePieceDefinition> Retired() => Definitions(RetiredGroups);
+
+    private static readonly Group[] RetiredGroups =
     {
-        foreach (var group in Groups)
+        // The game keeps its model hidden (it only holds the egg in eagle nests), so it was invisible.
+        new(BuildTool.Hammer, "Dungeon Decor", E("Dragon Egg Cup", "dragoneggcup"))
+    };
+
+    private static IEnumerable<DecorativePieceDefinition> Definitions(IEnumerable<Group> groups)
+    {
+        foreach (var group in groups)
         {
             foreach (var entry in group.Entries)
             {
@@ -130,6 +145,13 @@ public static class PieceCatalog
             E("Loose Stone", "Pickable_Stone"), E("Loose Rock", "Pickable_StoneRock"),
             E("Sulfur Rock", "Pickable_SulfurRock"), E("Flint", "Pickable_Flint"), E("Fallen Branch", "Pickable_Branch")),
 
+        // Fully grown crops, ready to pick, and the seed stage that gives seeds.
+        new(BuildTool.Cultivator, "Crops",
+            E("Carrot", "Pickable_Carrot"), E("Turnip", "Pickable_Turnip"), E("Onion", "Pickable_Onion"),
+            E("Barley", "Pickable_Barley"), E("Flax", "Pickable_Flax"), E("Kale", "Pickable_Kale"),
+            E("Seed Carrot", "Pickable_SeedCarrot"), E("Seed Turnip", "Pickable_SeedTurnip"),
+            E("Seed Onion", "Pickable_SeedOnion"), E("Seed Kale", "Pickable_SeedKale")),
+
         new(BuildTool.Cultivator, "Roots & Branches",
             E("Root 1", "root07"), E("Root 2", "root08"), E("Root 3", "root11"), E("Root 4", "root12"),
             E("Huge Root", "HugeRoot1"), E("Big Branch", "BigBranch"),
@@ -221,80 +243,19 @@ public static class PieceCatalog
             E("Black Marble Post", "blackmarble_post01")),
 
         new(BuildTool.Hammer, "Furniture",
-            E("Armor Stand", "ArmorStand"), E("Chest", "Chest"), E("Bed", "bed"),
-            E("Iron Gate", "iron_grate"), E("Item Stand", "itemstand"), E("Horizontal Item Stand", "itemstandh"),
-            E("Black Banner", "piece_banner01"), E("Blue Banner", "piece_banner02"),
-            E("White and Red Banner", "piece_banner03"), E("Red Banner", "piece_banner04"),
-            E("Green Banner", "piece_banner05"), E("Yellow Banner", "piece_banner08"),
-            E("Purple Banner", "piece_banner09"), E("Orange Banner", "piece_banner10"),
-            E("White Banner", "piece_banner11"), E("Hot Tub", "piece_bathtub"),
-            E("Dragon Bed", "piece_bed02"), E("Bench", "piece_bench01"),
-            E("Stool", "piece_chair"), E("Chair", "piece_chair02"), E("Darkwood Chair", "piece_chair03"),
-            E("Reinforced Chest", "piece_chest"), E("Personal Chest", "piece_chest_private"),
-            E("Wood Chest", "piece_chest_wood"), E("Standing Torch", "piece_groundtorch"),
-            E("Sitting Log", "piece_logbench01"), E("Table", "piece_table"),
-            E("Oak Table", "piece_table_oak"), E("Raven Throne", "piece_throne01"),
-            E("Stone Throne", "piece_throne02"), E("Sconce", "piece_walltorch"),
-            E("Deer Rug", "rug_deer"), E("Lox Rug", "rug_fur"), E("Wolf Rug", "rug_wolf"),
-            E("Sign", "sign"), E("Coin Pile", "treasure_pile"), E("Coin Stack", "treasure_stack"),
-            E("Round Table", "piece_table_round"), E("Runed Table", "piece_table_runed"), E("Small Runed Table", "piece_table_runed_small"),
-            E("Runed Chair", "piece_chair_runed"), E("Black Marble Bench", "piece_blackmarble_bench"), E("Black Marble Table", "piece_blackmarble_table"),
-            E("Black Marble Throne", "piece_blackmarble_throne"), E("Blackwood Bench", "piece_blackwood_bench"), E("Blackwood Bench 2", "piece_blackwood_bench01"),
-            E("Bone Throne", "piece_bone_throne"), E("Moose Throne", "piece_moose_throne")),
+            E("Chest", "Chest"), E("Blackwood Bench", "piece_blackwood_bench")),
 
         new(BuildTool.Hammer, "Building Structures",
-            E("Crystal Wall", "crystal_wall_1x1"), E("Darkwood Arch", "darkwood_arch"),
-            E("Darkwood Beam", "darkwood_beam"), E("Darkwood Gate", "darkwood_gate"),
-            E("Darkwood Pole", "darkwood_pole"), E("Darkwood Roof", "darkwood_roof"),
-            E("Iron Floor", "iron_floor_1x1"), E("Iron Floor 2x2", "iron_floor_2x2"),
-            E("Iron Wall", "iron_wall_1x1"), E("Iron Wall 2x2", "iron_wall_2x2"),
-            E("Stake Wall", "stake_wall"), E("Stone Arch", "stone_arch"),
-            E("Stone Floor 2x2", "stone_floor_2x2"), E("Stone Pillar", "stone_pillar"),
-            E("Stone Stair", "stone_stair"), E("Stone Wall 1x1", "stone_wall_1x1"),
-            E("Stone Wall 2x1", "stone_wall_2x1"), E("Stone Wall 4x2", "stone_wall_4x2"),
-            E("Wood Beam", "wood_beam"), E("Wood Beam 1m", "wood_beam_1"),
-            E("Wood Beam 26", "wood_beam_26"), E("Wood Beam 45", "wood_beam_45"),
-            E("Wood Door", "wood_door"), E("Wood Fence", "wood_fence"),
-            E("Wood Floor", "wood_floor"), E("Wood Floor 1x1", "wood_floor_1x1"),
-            E("Wood Gate", "wood_gate"), E("Wood Pole", "wood_pole"),
-            E("Wood Pole 2m", "wood_pole2"), E("Wood Stair", "wood_stair"),
-            E("Wood Ladder", "wood_stepladder"), E("Wood Wall Half", "wood_wall_half"),
-            E("Wood Wall", "woodwall"), E("Wood Roof", "wood_roof"),
-            E("Wood Roof 45", "wood_roof_45"), E("Wood Window", "wood_window"),
-            E("Wood Iron Beam", "woodiron_beam"), E("Wood Iron Pole", "woodiron_pole")),
+            E("Iron Floor", "iron_floor_1x1")),
 
         new(BuildTool.Hammer, "Roofs",
-            E("Thatch Roof 67", "wood_roof_67"), E("Thatch Roof Ridge", "wood_roof_top"), E("Thatch Roof Ridge 45", "wood_roof_top_45"),
-            E("Thatch Roof Ridge 67", "wood_roof_top_67"), E("Thatch Roof Inner Corner", "wood_roof_icorner"), E("Thatch Roof Inner Corner 45", "wood_roof_icorner_45"),
-            E("Thatch Roof Inner Corner 67", "wood_roof_icorner_67"), E("Thatch Roof Outer Corner", "wood_roof_ocorner"), E("Thatch Roof Outer Corner 45", "wood_roof_ocorner_45"),
-            E("Thatch Roof Outer Corner 67", "wood_roof_ocorner_67"), E("Wood Gable", "wood_wall_roof"), E("Wood Gable 45", "wood_wall_roof_45"),
-            E("Wood Gable 67", "wood_wall_roof_67_a"), E("Wood Gable Upside Down", "wood_wall_roof_upsidedown"), E("Wood Gable 45 Upside Down", "wood_wall_roof_45_upsidedown"),
-            E("Wood Gable 67 Upside Down", "wood_wall_roof_67_upsidedown"), E("Turf Roof", "turf_roof"), E("Turf Roof Ridge", "turf_roof_top"),
-            E("Turf Roof Wall", "turf_roof_wall"), E("Darkwood Roof 45", "darkwood_roof_45"), E("Darkwood Roof 67", "darkwood_roof_67"),
-            E("Darkwood Roof Ridge", "darkwood_roof_top"), E("Darkwood Roof Ridge 45", "darkwood_roof_top_45"), E("Darkwood Roof Ridge 67", "darkwood_roof_top_67"),
-            E("Darkwood Roof Inner Corner", "darkwood_roof_icorner"), E("Darkwood Roof Inner Corner 45", "darkwood_roof_icorner_45"), E("Darkwood Roof Inner Corner 67", "darkwood_roof_icorner_67"),
-            E("Darkwood Roof Outer Corner", "darkwood_roof_ocorner"), E("Darkwood Roof Outer Corner 45", "darkwood_roof_ocorner_45"), E("Darkwood Roof Outer Corner 67", "darkwood_roof_ocorner_67"),
-            E("Grausten Roof", "piece_grausten_roof_45"), E("Grausten Roof Corner", "piece_grausten_roof_45_corner"), E("Grausten Roof Corner 2", "piece_grausten_roof_45_corner2"),
-            E("Grausten Roof Arch", "piece_grausten_roof_45_arch"), E("Grausten Roof Arch Corner", "piece_grausten_roof_45_arch_corner"), E("Grausten Roof Arch Corner 2", "piece_grausten_roof_45_arch_corner2")),
-
-        new(BuildTool.Hammer, "Lights",
-            E("Resin Candle", "Candle_resin"), E("Bog Witch Candle", "Candle_resin_bogwitch"), E("Hooded Lantern", "piece_hoodedlantern"),
-            E("Snow Lantern", "piece_snowlantern"), E("Lava Lantern", "piece_Lavalantern"), E("Dvergr Hanging Lantern", "piece_dvergr_lantern"),
-            E("Dvergr Lantern Pole", "piece_dvergr_lantern_pole"), E("Hanging Brazier", "piece_brazierceiling01"), E("Standing Brazier", "piece_brazierfloor01"),
-            E("Standing Brazier 2", "piece_brazierfloor02"), E("Wooden Torch", "piece_groundtorch_wood"), E("Blue Torch", "piece_groundtorch_blue"),
-            E("Green Torch", "piece_groundtorch_green"), E("Mist Torch", "piece_groundtorch_mist")),
+            E("Wood Gable", "wood_wall_roof"), E("Turf Roof", "turf_roof"), E("Turf Roof Ridge", "turf_roof_top"),
+            E("Turf Roof Wall", "turf_roof_wall")),
 
         new(BuildTool.Hammer, "Decor",
-            E("Bear Rug", "rug_Bjorn"), E("Moose Rug", "rug_moose"), E("Hare Rug", "rug_hare"),
-            E("Seal Rug", "rug_seal"), E("Asksvin Rug", "rug_asksvin"), E("Straw Rug", "rug_straw"),
-            E("Jute Carpet", "jute_carpet"), E("Blue Jute Carpet", "jute_carpet_blue"), E("Banner 6", "piece_banner06"),
-            E("Banner 7", "piece_banner07"), E("Cloth Door Hanging", "piece_cloth_hanging_door"), E("Blue Cloth Door Hanging", "piece_cloth_hanging_door_blue"),
-            E("Blue Cloth Door Hanging 2", "piece_cloth_hanging_door_blue2"), E("Raven Carving", "darkwood_raven"), E("Wolf Carving", "darkwood_wolf"),
-            E("Dragon Head Carving", "wood_dragon1"), E("Asksvin Skeleton", "piece_asksvinskeleton"), E("Bird Nest", "piece_birdnest"),
-            E("Ice Cube", "piece_icecube"), E("Pot 1", "piece_pot1"), E("Pot 2", "piece_pot2"),
-            E("Pot 3", "piece_pot3"), E("Cracked Pot 1", "piece_pot1_cracked"), E("Cracked Pot 2", "piece_pot2_cracked"),
-            E("Cracked Pot 3", "piece_pot3_cracked"), E("Red Pot 1", "piece_pot1_red"), E("Red Pot 2", "piece_pot2_red"),
-            E("Red Pot 3", "piece_pot3_red")),
+            E("Cracked Pot 1", "piece_pot1_cracked"), E("Cracked Pot 2", "piece_pot2_cracked"), E("Cracked Pot 3", "piece_pot3_cracked"),
+            E("Red Pot 1", "piece_pot1_red"), E("Red Pot 2", "piece_pot2_red"), E("Red Pot 3", "piece_pot3_red"),
+            E("Bog Witch Candle", "Candle_resin_bogwitch")),
 
         new(BuildTool.Hammer, "Festive",
             E("Yule Tree", "piece_xmastree"), E("Yule Wreath", "piece_xmascrown"), E("Yule Garland", "piece_xmasgarland"),
@@ -303,14 +264,7 @@ public static class PieceCatalog
             E("Gift 2", "piece_gift2"), E("Gift 3", "piece_gift3")),
 
         new(BuildTool.Hammer, "Stacks & Piles",
-            E("Stacked Wood", "wood_stack"), E("Stacked Fine Wood", "wood_fine_stack"), E("Stacked Core Wood", "wood_core_stack"),
-            E("Stacked Blackwood", "blackwood_stack"), E("Stacked Yggdrasil Wood", "wood_yggdrasil_stack"), E("Stacked Frost Wood", "wood_frost_stack"),
-            E("Bone Pile", "bone_stack"), E("Stone Pile", "stone_pile"), E("Coal Pile", "coal_pile"),
-            E("Flint Pile", "flint_pile"), E("Obsidian Pile", "obsidian_pile"), E("Grausten Pile", "grausten_pile"),
-            E("Skull Pile", "skull_pile"), E("Jotun Stone Pile", "Morkhalla_Stonepile"), E("Copper Bar Stack", "bar_copper_stack"),
-            E("Tin Bar Stack", "bar_tin_stack"), E("Bronze Bar Stack", "bar_bronze_stack"), E("Iron Bar Stack", "bar_iron_stack"),
-            E("Silver Bar Stack", "bar_silver_stack"), E("Black Metal Bar Stack", "bar_blackmetal_stack"), E("Flametal Bar Stack", "bar_flametal_stack"),
-            E("Gold Bar Stack", "bar_gold_stack"), E("Ancient Metal Bar Stack", "bar_ancientmetal_stack")),
+            E("Obsidian Pile", "obsidian_pile"), E("Jotun Stone Pile", "Morkhalla_Stonepile"), E("Ancient Metal Bar Stack", "bar_ancientmetal_stack")),
 
         new(BuildTool.Hammer, "Ruins",
             E("Ruined Stone Wall", "stone_wall_ruin"), E("Ruined Stone Wall 2", "stone_wall_ruin_2"),
@@ -375,7 +329,7 @@ public static class PieceCatalog
             E("Dvergr Town Pole", "dvergrtown_wood_pole"), E("Dvergr Town Stake", "dvergrtown_wood_stake"), E("Dvergr Town Stake Wall", "dvergrtown_wood_stakewall"),
             E("Dvergr Corner Stair", "dvergrtown_stair_corner_wood_left"), E("Dvergr Ashlands Crate", "dvergrprops_crate_ashlands", functionFrom: "piece_chest_wood"), E("Broken Dvergr Demister", "dverger_demister_broken"),
             E("Ruined Dvergr Demister", "dverger_demister_ruins"), E("Hanging Cloth Door", "cloth_hanging_door"), E("Hanging Cloth Double Door", "cloth_hanging_door_double"),
-            E("Hanging Fenris Hide Door", "fenrirhide_hanging_door"), E("Wooden Path", "wooden_path"), E("Dragon Egg Cup", "dragoneggcup"),
+            E("Hanging Fenris Hide Door", "fenrirhide_hanging_door"), E("Wooden Path", "wooden_path"),
             E("Trader Wagon", "trader_wagon_destructable"), E("Item Stand (Prop)", "prop_itemstand"), E("Darkwood Chair (Prop)", "prop_piece_chair03", functionFrom: "piece_chair03")),
 
         new(BuildTool.Hammer, "Dvergr",

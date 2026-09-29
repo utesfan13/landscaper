@@ -82,6 +82,13 @@ internal static class PlacementInput
     // Unity's == also treats destroyed objects as null; the placement ghost is destroyed whenever
     // the selected piece changes.
     public static bool IsLandscaperPiece(GameObject? gameObject) =>
+        gameObject != null && gameObject.TryGetComponent<LandscaperPiece>(out _);
+
+    /// <summary>
+    /// Whether a piece can be resized, tinted, tilted and nudged: Landscaper's own pieces and the
+    /// vanilla build pieces Landscaper makes adjustable.
+    /// </summary>
+    public static bool IsAdjustable(GameObject? gameObject) =>
         gameObject != null && gameObject.TryGetComponent<LandscaperTint>(out _);
 
     /// <summary>A key as shown in the build hints.</summary>

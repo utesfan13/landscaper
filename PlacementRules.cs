@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Landscaper;
 
 /// <summary>
-/// Lets Landscaper pieces be placed where Valheim would normally refuse: clipping into other
-/// pieces, on unsupported spots, in the wrong biome, inside dungeons, off the water, on steep
+/// Lets any piece, vanilla build pieces included, be placed where Valheim would normally refuse:
+/// clipping into other pieces, on unsupported spots, in the wrong biome, inside dungeons, off the water, on steep
 /// ground and so on. Three things still block placing: overlapping a player or creature, another
 /// player's ward, and aiming at nothing at all. Hoe and Cultivator pieces can also be placed on
 /// building pieces, rocks and other objects, not only on the ground.
@@ -66,8 +66,7 @@ internal static class PlacementRules
             }
 
             if (___m_placementStatus is Player.PlacementStatus.Valid or Player.PlacementStatus.NoRayHits or Player.PlacementStatus.PrivateZone ||
-                ___m_placementGhost == null || !___m_placementGhost.activeSelf || !IgnoreRules() ||
-                !PlacementInput.IsLandscaperPiece(___m_placementGhost))
+                ___m_placementGhost == null || !___m_placementGhost.activeSelf || !IgnoreRules())
             {
                 return;
             }
