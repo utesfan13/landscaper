@@ -39,21 +39,16 @@ While placing a piece (Landscaper pieces and vanilla build pieces alike):
 | Keys | Effect |
 |---|---|
 | `[` / `]` | Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth. |
-| `,` / `.` | Previous / next tint preset ("no tint" is one of the stops). Hold Alt for hue, Shift for strength, both for brightness. |
+| `,` / `.` | Previous / next tint preset. Fine tune hue/strength/brightness with alt/shift/alt+shift |
 | Scroll | Rotate, as usual |
-| Alt / Shift / both + scroll | Tilt forward/back, tilt sideways, fine spin |
-| `/` | Switch Alt/Shift + scroll between tilting and moving (up/down, sideways, toward/away) |
+| Alt / Shift / both + scroll | Tilt forward/back, tilt sideways, fine tune rotation when in **rotation** mode OR up/side to side/toward and away in **move** mode. |
+| `/` | Switch between rotation and move mode |
 | End | Reset size, tint, tilt and position |
 | `\` | Indestructible placement on / off |
-| Middle click | Remove a piece |
+| Middle click | Remove a piece, including pond water |
 | Shift + middle click | Copy the object you're aiming at, with its size, tint and rotation |
 
-Keys can be changed in the config. With Pond Water selected,
-`[` / `]` set how much water each placement pours; pour more into the same pond to raise it, and
-middle click the water to remove the pond.
-
-On Windows, Left Alt + Shift can also switch the keyboard language; use Right Alt, or turn that shortcut
-off in Windows' keyboard settings.
+Keys can be changed in the config.
 
 ## Console Commands
 
