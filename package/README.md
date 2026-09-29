@@ -4,6 +4,9 @@ Build with the world itself. Landscaper adds hundreds of Valheim's own trees, ro
 props and decorations as buildable pieces on the Cultivator, Hoe and Hammer, and gives you tools to
 make each one fit: resize, tint, tilt and nudge pieces while you place them.
 
+**This is a beta.** It's played and tested, but expect rough edges; please report anything odd on
+[GitHub](https://github.com/utesfan13/landscaper/issues).
+
 ## Features
 
 - **Hundreds of pieces**: trees, stumps, logs, bushes, flowers, fully grown crops, cattails
@@ -22,8 +25,12 @@ make each one fit: resize, tint, tilt and nudge pieces while you place them.
   **indestructible**.
 - **Fair costs, unlocked like vanilla**: a little wood, stone or the matching material from the
   piece's biome (Yggdrasil wood and black marble for Dvergr pieces, ashwood and grausten for the
-  Ashlands, ...), shown once you've found those materials. Removing a piece refunds it, and breaking one never gives back more valuable
-  resources than it cost.
+  Ashlands, ...). Like vanilla pieces, a piece only shows up in the build menu once you've found its
+  materials, and needs a crafting station nearby to place: the workbench, the stonecutter for large
+  stonework, or the forge for metal (Cultivator plants and trees need none). Removing a piece refunds
+  it, and breaking one never gives back more valuable resources than it cost.
+- **Uninstall-safe**: placed pieces are saved as the game objects they're made from, so removing the
+  mod leaves them in your world instead of deleting them.
 - **Multiplayer ready**: sizes, tints and rotations are saved on each piece, and server settings are
   synced to every player.
 
