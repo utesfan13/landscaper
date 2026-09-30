@@ -1,6 +1,12 @@
 # Changelog
 
 ## 0.18.0
+- Copying a piece also copies how far it was nudged up or down (for pieces placed from now on).
+- Forever saplings and seedlings on the Cultivator: every vanilla tree sapling, crop and mushroom
+  seedling and vine sapling, as a version that never grows. Without the mod they load as the normal,
+  growing version; reinstalled before they've grown, they're forever versions again.
+- Vanilla saplings and seed crops can be resized and tinted, and keep their size and tint when they
+  grow into trees and crops.
 - "No tint" is part of the tint preset cycle: stepping back from a preset returns to the untinted look.
 - Removed the Sunken Crypt Tower Wall, which was invisible when placed. Ones already placed can still
   be removed.

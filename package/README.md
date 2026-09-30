@@ -5,7 +5,7 @@ Landscaper is designed to unleash your creativity in Valheim. The mod adds hundr
 **This is a beta.** It's played and tested, but expect rough edges; please report anything odd on
 [GitHub](https://github.com/utesfan13/landscaper/issues).
 
-![A pond with lily pads, cattails and a campfire](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/pond-scene.jpg)
+![A cabin furnished and decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/cabin-interior.jpg)
 
 ## Features
 
@@ -17,7 +17,7 @@ Landscaper is designed to unleash your creativity in Valheim. The mod adds hundr
 
 ![Crates resized, tinted and tilted](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/crates-resized-tinted.jpg)
 
-![A bookshelf decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/bookshelf.jpg)
+![A pond with lily pads, cattails and a campfire](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/pond-scene.jpg)
 
 ### Some of the new pieces
 

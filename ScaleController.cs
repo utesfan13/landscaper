@@ -440,6 +440,8 @@ internal static class ScaleController
                 LandscaperTint.Save(__instance.gameObject, tint);
             }
 
+            OffsetController.SaveHeight(__instance.gameObject);
+
             // A water piece keeps its nudged height relative to the moving surface.
             if (__instance.TryGetComponent<WaterFloat>(out _))
             {

@@ -101,6 +101,13 @@ public static class PieceCatalog
     private static readonly Group[] Groups =
     {
         new(BuildTool.Cultivator, "Trees",
+            // Vanilla saplings that never grow: Landscaper pieces have no Plant component.
+            E("Forever Beech Sapling", "Beech_Sapling", "A beech sapling that stays a sapling."),
+            E("Forever Birch Sapling", "Birch_Sapling", "A birch sapling that stays a sapling."),
+            E("Forever Oak Sapling", "Oak_Sapling", "An oak sapling that stays a sapling."),
+            E("Forever Fir Sapling", "FirTree_Sapling", "A fir sapling that stays a sapling."),
+            E("Forever Pine Sapling", "PineTree_Sapling", "A pine sapling that stays a sapling."),
+            E("Forever Big Fir Sapling", "FirTree_big_Sapling", "A big fir sapling that stays a sapling."),
             E("Beech Tree", "Beech1", "A beech tree for woodland landscaping."),
             E("Small Beech Tree 1", "Beech_small1"), E("Small Beech Tree 2", "Beech_small2"),
             E("Birch Tree 1", "Birch1_aut", "A birch tree for woodland landscaping."), E("Birch Tree 2", "Birch2_aut"),
@@ -142,6 +149,7 @@ public static class PieceCatalog
             E("Ashlands Fern", "FernAshlands"), E("Ashlands Fiddlehead Fern", "FernFiddleHeadAshlands"),
             E("Ashlands Bush 1", "AshlandsBush1"), E("Ashlands Bush 2", "AshlandsBush2"),
             E("Green Vines", "VineGreen"), E("Ash Vines", "VineAsh"), E("Vines", "vines"),
+            E("Forever Green Vine Sapling", "VineGreen_sapling"), E("Forever Ash Vine Sapling", "VineAsh_sapling"),
             // Built from Valheim's clutter by ClutterPrefabs.
             E("Cattails", ClutterPrefabs.Prefix + "vass", "Reeds for pond and swamp edges."),
             E("Lily Pads", ClutterPrefabs.Prefix + "waterlilies", "Floats on the water surface.", onWater: true),
@@ -150,6 +158,14 @@ public static class PieceCatalog
 
         // Fully grown crops, ready to pick, and the seed stage that gives seeds.
         new(BuildTool.Cultivator, "Crops",
+            // Seedlings that never grow: Landscaper pieces have no Plant component.
+            E("Forever Carrot Seedling", "sapling_carrot"), E("Forever Turnip Seedling", "sapling_turnip"),
+            E("Forever Onion Seedling", "sapling_onion"), E("Forever Barley Seedling", "sapling_barley"),
+            E("Forever Flax Seedling", "sapling_flax"), E("Forever Kale Seedling", "sapling_Kale"),
+            E("Forever Oat Seedling", "sapling_oat"), E("Forever Poteitr Seedling", "sapling_poteitr"),
+            E("Forever Seed Carrot Seedling", "sapling_seedcarrot"), E("Forever Seed Turnip Seedling", "sapling_seedturnip"),
+            E("Forever Seed Onion Seedling", "sapling_seedonion"), E("Forever Seed Kale Seedling", "sapling_seedkale"),
+            E("Forever Jotun Puffs Seedling", "sapling_jotunpuffs"), E("Forever Magecap Seedling", "sapling_magecap"),
             E("Carrot", "Pickable_Carrot"), E("Turnip", "Pickable_Turnip"), E("Onion", "Pickable_Onion"),
             E("Barley", "Pickable_Barley"), E("Flax", "Pickable_Flax"), E("Kale", "Pickable_Kale"),
             E("Seed Carrot", "Pickable_SeedCarrot"), E("Seed Turnip", "Pickable_SeedTurnip"),

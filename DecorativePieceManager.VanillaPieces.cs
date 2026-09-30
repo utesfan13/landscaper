@@ -22,11 +22,12 @@ public sealed partial class DecorativePieceManager
 
     /// <summary>
     /// Vanilla pieces with these components aren't made adjustable: ships and carts are physics
-    /// objects that resizing would break, and planting and the terrain tools aren't objects at all.
+    /// objects that resizing would break, and the terrain tools aren't objects at all. Saplings and
+    /// seed crops are adjustable, and pass their look on when they grow (see PlantGrowth).
     /// </summary>
     private static readonly HashSet<string> NotAdjustableComponents = new(StringComparer.Ordinal)
     {
-        "Ship", "Vagon", "Plant", "TerrainOp", "TerrainModifier"
+        "Ship", "Vagon", "TerrainOp", "TerrainModifier"
     };
 
     /// <summary>The tool whose menu lists this vanilla build piece, or null if none does.</summary>
@@ -103,5 +104,7 @@ public sealed partial class DecorativePieceManager
     private bool DuplicatesVanillaPiece(DecorativePieceDefinition definition) =>
         definition.Scale == Vector3.one && definition.FunctionFrom is null && !definition.OnWater &&
         _vanillaInMenus.TryGetValue(definition.Tool, out var inMenu) &&
-        FindSpawnablePrefab(definition.PrefabName) is { } source && inMenu.Contains(source.name);
+        FindSpawnablePrefab(definition.PrefabName) is { } source && inMenu.Contains(source.name) &&
+        // A Landscaper sapling never grows (see MakeStaticDecoration), so it isn't the same as the vanilla one.
+        source.GetComponent<Plant>() == null;
 }

@@ -42,6 +42,9 @@ internal sealed class LandscaperTint : MonoBehaviour
         piece.GetComponent<LandscaperTint>()?.Apply();
     }
 
+    /// <summary>Whether an object has a tint saved.</summary>
+    public static bool HasTint(ZDO zdo) => zdo.GetVec3(ZdoKeyHash, Vector3.zero) != Vector3.zero;
+
     /// <summary>The tint saved on a placed piece, or null if it has none.</summary>
     public static Color? Read(GameObject piece)
     {
