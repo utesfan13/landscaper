@@ -32,6 +32,12 @@ internal static class OffsetController
     /// <summary>A copied object's tilt, kept for the piece selected by the copy; see ScaleController.ApplyCopied.</summary>
     private static Vector3? _copiedTilt;
 
+    /// <summary>Saved on a placed piece: how far it was nudged up or down, so copies of it can be too.</summary>
+    private static readonly int HeightKey = "LandscaperHeight".GetStableHashCode();
+
+    /// <summary>A copied object's up/down nudge, kept for the piece selected by the copy.</summary>
+    private static float? _copiedHeight;
+
     /// <summary>Whether scrolling with a modifier moves the piece rather than tilting it.</summary>
     private static bool _moveMode;
 
@@ -68,8 +74,32 @@ internal static class OffsetController
         _copiedTilt = _tilt;
     }
 
+    /// <summary>
+    /// Uses the up/down nudge a copied object was placed with (sunk into the ground, raised, ...).
+    /// Sideways and toward/away nudges aren't copied: they were relative to where its placer aimed.
+    /// </summary>
+    public static void ApplyCopiedHeight(ZDO zdo)
+    {
+        var height = zdo.GetFloat(HeightKey, 0f);
+        _offset = new Vector3(0f, height, 0f);
+        _copiedHeight = height;
+    }
+
+    /// <summary>Saves how far a just-placed piece was nudged up or down, if at all.</summary>
+    public static void SaveHeight(GameObject piece)
+    {
+        if (_offset.y != 0f && piece.GetComponent<ZNetView>() is { } view && view.IsValid())
+        {
+            view.GetZDO().Set(HeightKey, _offset.y);
+        }
+    }
+
     /// <summary>Called once the ghost of the copied piece has been set up.</summary>
-    public static void ClearCopied() => _copiedTilt = null;
+    public static void ClearCopied()
+    {
+        _copiedTilt = null;
+        _copiedHeight = null;
+    }
 
     /// <summary>
     /// Resets the offset, and the tilt to the piece's starting tilt (a custom entry's rotation), or
@@ -77,7 +107,7 @@ internal static class OffsetController
     /// </summary>
     public static void ResetForNewPiece(string? pieceName)
     {
-        _offset = Vector3.zero;
+        _offset = _copiedHeight is { } height ? new Vector3(0f, height, 0f) : Vector3.zero;
         var start = pieceName is not null && Plugin.Pieces?.StartingTiltOf(pieceName) is { } tilt ? tilt : Vector3.zero;
         _tilt = _copiedTilt ?? new Vector3(Normalize(start.x), Normalize(start.y), Normalize(start.z));
     }

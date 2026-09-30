@@ -43,6 +43,7 @@ internal static class CopyController
                 {
                     ScaleController.ApplyCopied(ScaleRatio(target.transform, clone.transform), LandscaperTint.Read(target.gameObject));
                     ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
+                    OffsetController.ApplyCopiedHeight(target.GetZDO());
                 }
 
                 return;
@@ -52,6 +53,7 @@ internal static class CopyController
             {
                 ___m_placeRotation = (int)Math.Round(target.transform.rotation.eulerAngles.y / ___m_placeRotationDegrees);
                 ApplyCopiedTilt(target.transform, ___m_placeRotation, ___m_placeRotationDegrees);
+                OffsetController.ApplyCopiedHeight(target.GetZDO());
                 __result = true;
             }
         }

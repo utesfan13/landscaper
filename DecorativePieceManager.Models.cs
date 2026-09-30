@@ -132,6 +132,8 @@ public sealed partial class DecorativePieceManager
     /// <item>StaticPhysics is removed. On trees, rocks and plants it snaps the object to the terrain
     /// 20 seconds after it loads: up if it's sunk into the ground, down if it's floating. That undid
     /// pieces placed partly underground, raised with the nudge keys, or placed on floors and rocks.</item>
+    /// <item>Plant is removed, so a Landscaper sapling or seedling stays as it is instead of growing
+    /// into a tree or crop (the "Forever" saplings).</item>
     /// </list>
     /// </summary>
     private static void MakeStaticDecoration(GameObject clone)
@@ -144,6 +146,7 @@ public sealed partial class DecorativePieceManager
 
         // Components that use the rigidbody go first, or Unity refuses to remove it.
         DestroyAll<StaticPhysics>(clone);
+        DestroyAll<Plant>(clone);
         DestroyAll<Floating>(clone);
         DestroyAll<ZSyncTransform>(clone);
         foreach (var body in clone.GetComponentsInChildren<Rigidbody>(includeInactive: true))

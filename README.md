@@ -2,7 +2,7 @@
 
 Landscaper is designed to unleash your creativity in Valheim. The mod adds hundreds of Valheim's own trees, rocks, plants, ruins, props and decorations as buildable pieces, and gives you tools to make each one fit: resize, tint, tilt and nudge pieces while you place them.
 
-![A pond with lily pads, cattails and a campfire](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/pond-scene.jpg)
+![A cabin furnished and decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/cabin-interior.jpg)
 
 ## Features
 
@@ -14,7 +14,7 @@ Landscaper is designed to unleash your creativity in Valheim. The mod adds hundr
 
 ![Crates resized, tinted and tilted](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/crates-resized-tinted.jpg)
 
-![A bookshelf decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/bookshelf.jpg)
+![A pond with lily pads, cattails and a campfire](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/pond-scene.jpg)
 
 ### Some of the new pieces
 
