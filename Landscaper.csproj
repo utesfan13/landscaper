@@ -81,6 +81,25 @@
     <Message Importance="high" Text="Packaged $(PackageZip)" />
   </Target>
 
+  <!--
+    Builds the Nexus Mods zip: dotnet build -c Release -t:PackageNexus
+    Writes bin\Landscaper-<version>-nexus.zip laid out like the game folder
+    (BepInEx\plugins\Landscaper\Landscaper.dll, plus README.md), so it can be extracted straight into
+    the Valheim folder or installed with Vortex.
+  -->
+  <Target Name="PackageNexus" DependsOnTargets="Build">
+    <Error Condition="'$(ModVersion)' == ''" Text="Couldn't read ModVersion from Plugin.cs." />
+    <PropertyGroup>
+      <NexusStaging>$(BaseIntermediateOutputPath)nexus</NexusStaging>
+      <NexusZip>$(MSBuildProjectDirectory)\bin\Landscaper-$(ModVersion)-nexus.zip</NexusZip>
+    </PropertyGroup>
+    <RemoveDir Directories="$(NexusStaging)" />
+    <MakeDir Directories="$(NexusStaging)\BepInEx\plugins\Landscaper" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildProjectDirectory)\README.md" DestinationFolder="$(NexusStaging)\BepInEx\plugins\Landscaper" />
+    <ZipDirectory SourceDirectory="$(NexusStaging)" DestinationFile="$(NexusZip)" Overwrite="true" />
+    <Message Importance="high" Text="Packaged $(NexusZip)" />
+  </Target>
+
   <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)\plugins\Landscaper" />
     <Message Importance="high" Text="Copied $(TargetFileName) to $(BepInExDir)\plugins\Landscaper" />
