@@ -1,6 +1,6 @@
 # Landscaper
 
-Landscaper is designed to unleash your creativity in Valheim. The mod adds hundreds of Valheim's own trees, rocks, plants, ruins, props and decorations as buildable pieces, and gives you tools to make each one fit: resize, tint, tilt and nudge pieces while you place them.
+I built this mod for my wife and our love of creating cozy spaces in this game. The mod adds hundreds of Valheim's own trees, rocks, plants, ruins, props and decorations as buildable pieces, and gives you tools to make them fit: each piece can be resized, tinted, tilted and nudged while you place them.
 
 ![A cabin furnished and decorated with Landscaper pieces](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/cabin-interior.jpg)
 
@@ -8,13 +8,14 @@ Landscaper is designed to unleash your creativity in Valheim. The mod adds hundr
 
 - **Tons of new pieces**: over 150+ buildable prefabs from objects you see out in the world: rocks, bushes, stone walls, spider webs, and many more. 
 - **Adjust each piece to fit your vibe**: recolor (tint), resize, rotate (on 3 axes), and nudge items to get each piece to fit perfectly. 
+- **Place pieces without restrictions**: 
 - **Place pond water**: Make a pond for your base! Note: Uses tar pit mechanics which can be a bit finicky. Water can be removed with middle click.
 - **Indestructible**: place indestructible pieces; protect your wood from the rain or build a floating castle.
 - **Somewhat survival friendly**: all pieces are given a reasonable cost, and unlocked just like vanilla pieces. May be game breaking in some ways (especially indestructible) so use with caution. 
 
-![Crates resized, tinted and tilted](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/crates-resized-tinted.jpg)
-
 ![A pond with lily pads, cattails and a campfire](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/pond-scene.jpg)
+
+![Crates resized, tinted and tilted](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/crates-resized-tinted.jpg)
 
 ### Some of the new pieces
 
@@ -33,7 +34,7 @@ and [Jotunn](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/), then c
 
 ## Controls
 
-While placing a piece (Landscaper pieces and vanilla build pieces alike):
+While placing a piece:
 
 | Keys | Effect |
 |---|---|
