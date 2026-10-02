@@ -68,9 +68,9 @@ On a public server, consider turning off Placement.IgnoreRules (placing pieces i
 
 [size=5][b]Dedicated Servers[/b][/size]
 
-A dedicated server can run without Landscaper; only the players need it. Without the mod on the server, nothing is synced, so each player's own settings are used: agree on the same Costs, Indestructible and General.DecorativeOnly settings.
+A dedicated server can run without Landscaper; only the players need it. Without the mod on the server, nothing is synced, so each player's own settings are used.
 
-[quote][b][color=#ff6060]Warning: without the mod, the server can't check that players have it.[/color][/b] A player without Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size and colour. [b]While they're the only one near your pieces, their game can make them fall, wear them down or break them (indestructible pieces too), and grow saplings.[/b] Nothing is lost when only players with the mod visit. If you can't be sure every player has it, install the mod on the server too.[/quote]
+[quote][b][color=#ff6060]Warning:[/color][/b] While the mod can be run client-side only, on a server without the mod a player without Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size and colour. [b]While they're the only one near your pieces, their game can make them fall, wear them down or break them (indestructible pieces too), and grow saplings.[/b] Nothing is lost when only players with the mod visit. If you can't be sure every player has it, install the mod on the server too.[/quote]
 
 [size=5][b]Uninstalling[/b][/size]
 
