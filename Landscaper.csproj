@@ -63,7 +63,8 @@
     Writes bin\Landscaper-<version>.zip with manifest.json (from package\manifest.template.json),
     icon.png (package\icon.png, 256x256), README.md (package\README.md, the player-facing page),
     CHANGELOG.md and plugins\Landscaper.dll.
-    The same zip works for Nexus Mods.
+    A copy goes in release\ (replacing the previous version's), which is committed: publishing a GitHub
+    release tagged v<version> uploads it to Thunderstore (.github\workflows\thunderstore.yml).
   -->
   <Target Name="Package" DependsOnTargets="Build">
     <Error Condition="'$(ModVersion)' == ''" Text="Couldn't read ModVersion from Plugin.cs." />
@@ -79,6 +80,12 @@
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageStaging)\plugins" />
     <ZipDirectory SourceDirectory="$(PackageStaging)" DestinationFile="$(PackageZip)" Overwrite="true" />
     <Message Importance="high" Text="Packaged $(PackageZip)" />
+    <ItemGroup>
+      <OldReleaseZips Include="$(MSBuildProjectDirectory)\release\Landscaper-*.zip" />
+    </ItemGroup>
+    <Delete Files="@(OldReleaseZips)" />
+    <Copy SourceFiles="$(PackageZip)" DestinationFolder="$(MSBuildProjectDirectory)\release" />
+    <Message Importance="high" Text="Copied it to release\ for the Thunderstore upload; commit it with this version." />
   </Target>
 
   <!--
