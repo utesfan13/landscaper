@@ -4,8 +4,9 @@
 #   dotnet build -c Release -t:Package
 # which also copies it to release\Landscaper-<version>.zip. Commit that with the version, then publish a
 # GitHub release tagged v<version> (for example v0.19.0); this workflow uploads the zip from the tagged
-# commit. A Landscaper-<version>.zip attached to the release works too. It needs a THUNDERSTORETOKEN
-# repository secret: a service account token from your Thunderstore team's settings.
+# commit, using the settings in thunderstore.toml. A Landscaper-<version>.zip attached to the release
+# works too. It needs a THUNDERSTORETOKEN repository secret: a service account token from your
+# Thunderstore team's settings.
 #
 # To retry an upload, run it from the Actions tab with the release's tag.
 
@@ -29,19 +30,23 @@ jobs:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      # The workflow's own commit, for the current thunderstore.toml (a manual run uses main's), with
+      # tags, to take the zip from the tagged commit.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ env.TAG }}
+          fetch-depth: 0
 
       - name: Find the Thunderstore zip
         run: |
           version="${TAG#v}"
-          zip="release/Landscaper-$version.zip"
-          if [ ! -f "$zip" ]; then
-            echo "No $zip in the tagged commit; looking for one attached to the release."
+          zip="upload/Landscaper-$version.zip"
+          mkdir -p upload
+          if git cat-file -e "refs/tags/$TAG:release/Landscaper-$version.zip" 2>/dev/null; then
+            git cat-file blob "refs/tags/$TAG:release/Landscaper-$version.zip" > "$zip"
+          else
+            echo "No release/Landscaper-$version.zip in the tagged commit; looking for one attached to the release."
             # Landscaper-<version>.zip; the Nexus zip ends in -nexus.zip and doesn't match.
             gh release download "$TAG" --pattern "Landscaper-$version.zip" --dir upload || true
-            zip="upload/Landscaper-$version.zip"
           fi
           if [ ! -f "$zip" ]; then
             echo "::error::No Landscaper-$version.zip found. Build it (dotnet build -c Release -t:Package) and commit release/Landscaper-$version.zip, or attach it to the release, then re-run this workflow."

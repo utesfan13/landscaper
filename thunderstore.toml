@@ -1,10 +1,14 @@
 # Settings for publishing to Thunderstore with tcli (Thunderstore's command-line uploader), used by
 # .github/workflows/thunderstore.yml. The package itself (name, version, dependencies, description)
 # comes from the zip's manifest.json, built by: dotnet build -c Release -t:Package
-# The Thunderstore team is the one the upload token belongs to.
+# The upload token must belong to the team named in namespace.
 
 [config]
 schemaVersion = "0.0.1"
+
+[package]
+namespace = "Landscaper"
+name = "Landscaper"
 
 [publish]
 repository = "https://thunderstore.io"
