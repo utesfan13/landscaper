@@ -73,10 +73,9 @@ be chopped or mined.
 ## Dedicated Servers
 
 A dedicated server can run without Landscaper; only the players need it. Without the mod on the
-server, nothing is synced, so each player's own settings are used: agree on the same `Costs`,
-`Indestructible` and `General.DecorativeOnly` settings.
+server, nothing is synced, so each player's own settings are used.
 
-> **Warning: without the mod, the server can't check that players have it.** A player without
+> **Warning:** While the mod can be run client-side only, on a server without the mod a player without
 > Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size
 > and colour. **While they're the only one near your pieces, their game can make them fall, wear them
 > down or break them (indestructible pieces too), and grow saplings.** Nothing is lost when only
