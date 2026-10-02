@@ -9,13 +9,15 @@ namespace Landscaper;
 
 [BepInPlugin(ModGuid, ModName, ModVersion)]
 [BepInDependency(Jotunn.Main.ModGuid)]
-// Pieces only exist for players who have the mod, so everyone must have it, at the same minor version.
-[NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
+// Pieces only exist for players who have the mod, so every player must have it, at the same minor
+// version. A dedicated server doesn't need it: pieces are saved as the game objects they're made from
+// (see SavedPieces), which a server without the mod keeps. If the server has it, versions must match.
+[NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Minor)]
 public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.18.0";
+    public const string ModVersion = "0.19.0";
 
     internal static ManualLogSource Log = null!;
     /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.0
+- Dedicated servers no longer need the mod: players with Landscaper can join a server without it
+  (every player still needs it, at the same minor version). See "Dedicated servers" in the README.
+- Placed pieces are saved under their game object's name the moment they're created, rather than a
+  moment later, so a server without the mod never sees a name it doesn't know.
+
 ## 0.18.0
 - Copying a piece also copies how far it was nudged up or down (for pieces placed from now on).
 - Forever saplings and seedlings on the Cultivator: every vanilla tree sapling, crop and mushroom
