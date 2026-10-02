@@ -1,0 +1,15 @@
+# Settings for publishing to Thunderstore with tcli (Thunderstore's command-line uploader), used by
+# .github/workflows/thunderstore.yml. The package itself (name, version, dependencies, description)
+# comes from the zip's manifest.json, built by: dotnet build -c Release -t:Package
+# The Thunderstore team is the one the upload token belongs to.
+
+[config]
+schemaVersion = "0.0.1"
+
+[publish]
+repository = "https://thunderstore.io"
+communities = ["valheim"]
+
+# Category slugs: https://thunderstore.io/api/experimental/community/valheim/category/
+[publish.categories]
+valheim = ["mods", "building", "client-side"]

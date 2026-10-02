@@ -1,0 +1,63 @@
+# Uploads a release to Thunderstore.
+#
+# The mod can't be built here (it needs Valheim's game files), so build the zip locally with
+#   dotnet build -c Release -t:Package
+# then publish a GitHub release tagged v<version> (for example v0.19.0) with bin\Landscaper-<version>.zip
+# attached. This workflow uploads that zip. It needs a THUNDERSTORETOKEN repository secret: a
+# service account token from your Thunderstore team's settings.
+#
+# To retry an upload, run it from the Actions tab with the release's tag.
+
+name: Publish to Thunderstore
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to upload (for example v0.19.0)
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the release's Thunderstore zip
+        run: |
+          # Landscaper-<version>.zip; the Nexus zip ends in -nexus.zip and doesn't match.
+          gh release download "$TAG" --pattern 'Landscaper-*[0-9].zip' --dir upload
+          ls upload
+
+      - name: Check the zip's version matches the tag
+        run: |
+          zip=$(ls upload/Landscaper-*.zip)
+          version=$(unzip -p "$zip" manifest.json | python3 -c "import json, sys; print(json.load(sys.stdin)['version_number'])")
+          echo "Zip version $version, tag $TAG"
+          if [ "v$version" != "$TAG" ] && [ "$version" != "$TAG" ]; then
+            echo "::error::The zip is version $version but the release tag is $TAG."
+            exit 1
+          fi
+          echo "ZIP=$zip" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Upload to Thunderstore
+        env:
+          THUNDERSTORETOKEN: ${{ secrets.THUNDERSTORETOKEN }}
+        run: |
+          if [ -z "$THUNDERSTORETOKEN" ]; then
+            echo "::error::Add a THUNDERSTORETOKEN repository secret first."
+            exit 1
+          fi
+          dotnet tool install -g tcli
+          tcli publish --file "$ZIP" --token "$THUNDERSTORETOKEN"
