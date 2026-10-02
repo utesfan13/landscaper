@@ -2,9 +2,10 @@
 #
 # The mod can't be built here (it needs Valheim's game files), so build the zip locally with
 #   dotnet build -c Release -t:Package
-# then publish a GitHub release tagged v<version> (for example v0.19.0) with bin\Landscaper-<version>.zip
-# attached. This workflow uploads that zip. It needs a THUNDERSTORETOKEN repository secret: a
-# service account token from your Thunderstore team's settings.
+# which also copies it to release\Landscaper-<version>.zip. Commit that with the version, then publish a
+# GitHub release tagged v<version> (for example v0.19.0); this workflow uploads the zip from the tagged
+# commit. A Landscaper-<version>.zip attached to the release works too. It needs a THUNDERSTORETOKEN
+# repository secret: a service account token from your Thunderstore team's settings.
 #
 # To retry an upload, run it from the Actions tab with the release's tag.
 
@@ -28,26 +29,37 @@ jobs:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
 
-      - name: Download the release's Thunderstore zip
+      - name: Find the Thunderstore zip
         run: |
-          # Landscaper-<version>.zip; the Nexus zip ends in -nexus.zip and doesn't match.
-          gh release download "$TAG" --pattern 'Landscaper-*[0-9].zip' --dir upload
-          ls upload
+          version="${TAG#v}"
+          zip="release/Landscaper-$version.zip"
+          if [ ! -f "$zip" ]; then
+            echo "No $zip in the tagged commit; looking for one attached to the release."
+            # Landscaper-<version>.zip; the Nexus zip ends in -nexus.zip and doesn't match.
+            gh release download "$TAG" --pattern "Landscaper-$version.zip" --dir upload || true
+            zip="upload/Landscaper-$version.zip"
+          fi
+          if [ ! -f "$zip" ]; then
+            echo "::error::No Landscaper-$version.zip found. Build it (dotnet build -c Release -t:Package) and commit release/Landscaper-$version.zip, or attach it to the release, then re-run this workflow."
+            exit 1
+          fi
+          echo "Using $zip"
+          echo "ZIP=$zip" >> "$GITHUB_ENV"
 
       - name: Check the zip's version matches the tag
         run: |
-          zip=$(ls upload/Landscaper-*.zip)
-          version=$(unzip -p "$zip" manifest.json | python3 -c "import json, sys; print(json.load(sys.stdin)['version_number'])")
+          version=$(unzip -p "$ZIP" manifest.json | python3 -c "import json, sys; print(json.load(sys.stdin)['version_number'])")
           echo "Zip version $version, tag $TAG"
           if [ "v$version" != "$TAG" ] && [ "$version" != "$TAG" ]; then
             echo "::error::The zip is version $version but the release tag is $TAG."
             exit 1
           fi
-          echo "ZIP=$zip" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
