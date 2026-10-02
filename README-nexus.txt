@@ -31,7 +31,7 @@ I built this mod for my wife and our love of creating cozy spaces in this game. 
 
 First, please note that the mod is still in beta, so use at your own risk.
 
-Requires [b]BepInExPack Valheim[/b] and [b]Jotunn[/b] (see Requirements). Install with Vortex, or by hand: extract the zip into your Valheim folder, so that Landscaper.dll ends up in BepInEx/plugins/Landscaper. Every player and the server need the mod, at the same minor version.
+Requires [b]BepInExPack Valheim[/b] and [b]Jotunn[/b] (see Requirements). Install with Vortex, or by hand: extract the zip into your Valheim folder, so that Landscaper.dll ends up in BepInEx/plugins/Landscaper. Every player needs the mod, at the same minor version. A dedicated server doesn't need it (see Dedicated Servers), but if it has it, it needs the same minor version too.
 
 [size=5][b]Controls[/b][/size]
 
@@ -65,6 +65,12 @@ Open the console with F5:
 Settings are in BepInEx/config/utesfan13.landscaper.cfg, each with a description. Costs, indestructible pieces, relaxed placement (Placement.IgnoreRules) and the tool menus are synced from the server, so only the server's config matters for those.
 
 On a public server, consider turning off Placement.IgnoreRules (placing pieces in no-build areas) and Indestructible.Allowed, and turning on General.DecorativeOnly so placed trees and rocks can't be chopped or mined.
+
+[size=5][b]Dedicated Servers[/b][/size]
+
+A dedicated server can run without Landscaper; only the players need it. Without the mod on the server, nothing is synced, so each player's own settings are used: agree on the same Costs, Indestructible and General.DecorativeOnly settings.
+
+[quote][b][color=#ff6060]Warning: without the mod, the server can't check that players have it.[/color][/b] A player without Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size and colour. [b]While they're the only one near your pieces, their game can make them fall, wear them down or break them (indestructible pieces too), and grow saplings.[/b] Nothing is lost when only players with the mod visit. If you can't be sure every player has it, install the mod on the server too.[/quote]
 
 [size=5][b]Uninstalling[/b][/size]
 

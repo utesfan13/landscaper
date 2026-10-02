@@ -68,6 +68,23 @@ internal static class SavedPieces
     }
 
     /// <summary>
+    /// Converts a piece as soon as its object is created, so a newly placed piece is never sent to
+    /// the server under its Landscaper name. A server without Landscaper deletes saved objects whose
+    /// prefab it doesn't know whenever it loads the area they're in.
+    /// </summary>
+    [HarmonyPatch(typeof(ZNetView), "Awake")]
+    private static class SaveWhenCreatedPatch
+    {
+        private static void Postfix(ZNetView __instance)
+        {
+            if (__instance.TryGetComponent<LandscaperPiece>(out _))
+            {
+                SaveUnderGameName(__instance);
+            }
+        }
+    }
+
+    /// <summary>
     /// Loads a tagged object as its Landscaper piece: the same as the game's CreateObject, with the
     /// Landscaper piece in place of the saved prefab. Untagged objects, and tagged ones whose piece
     /// isn't registered any more, load as normal.

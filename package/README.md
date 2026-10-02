@@ -32,7 +32,8 @@ First, please note that the mod is still in beta, so use at your own risk.
 Install with r2modman or Thunderstore Mod Manager, which also installs BepInExPack Valheim and Jotunn.
 By hand: install [BepInExPack Valheim](https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/)
 and [Jotunn](https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/), then copy `Landscaper.dll` into
-`BepInEx/plugins/Landscaper`. Every player and the server need the mod, at the same minor version.
+`BepInEx/plugins/Landscaper`. Every player needs the mod, at the same minor version. A dedicated
+server doesn't need it (see Dedicated Servers), but if it has it, it needs the same minor version too.
 
 ## Controls
 
@@ -68,6 +69,18 @@ the server, so only the server's config matters for those.
 On a public server, consider turning off `Placement.IgnoreRules` (placing pieces in no-build areas)
 and `Indestructible.Allowed`, and turning on `General.DecorativeOnly` so placed trees and rocks can't
 be chopped or mined.
+
+## Dedicated Servers
+
+A dedicated server can run without Landscaper; only the players need it. Without the mod on the
+server, nothing is synced, so each player's own settings are used: agree on the same `Costs`,
+`Indestructible` and `General.DecorativeOnly` settings.
+
+> **Warning: without the mod, the server can't check that players have it.** A player without
+> Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size
+> and colour. **While they're the only one near your pieces, their game can make them fall, wear them
+> down or break them (indestructible pieces too), and grow saplings.** Nothing is lost when only
+> players with the mod visit. If you can't be sure every player has it, install the mod on the server too.
 
 ## Uninstalling
 
