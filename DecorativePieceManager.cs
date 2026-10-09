@@ -381,7 +381,11 @@ public sealed partial class DecorativePieceManager
 
         // Save each placed piece's own size with the world, so pieces resized while placing keep
         // their size. Copies placed before this was enabled have no saved size and keep the default.
-        clone.GetComponent<ZNetView>().m_syncInitialScale = true;
+        var view = clone.GetComponent<ZNetView>();
+        view.m_syncInitialScale = true;
+        // Placed pieces are kept for good, whatever the object they're made from does: the game
+        // doesn't save objects that aren't persistent, and deletes them when their owner leaves.
+        view.m_persistent = true;
         // LodFadeInOut hides the LODGroup in Awake when spawned more than 20m from the camera and
         // restores it 0.1-0.3s later. Placement ghosts spawn at the prefab origin, so a ghost that
         // is recreated before the fade-in runs stays invisible.

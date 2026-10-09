@@ -11,6 +11,7 @@ I built this mod for my wife and our love of creating cozy spaces in this game. 
 - **Place pieces without restrictions**: Place pieces where you normally wouldn't be able to, such as planting seeds without cultivated ground or outside of their normal biomes.
 - **Add pond water**: Make a pond for your base! Note: Uses tar pit mechanics which can be a bit finicky. Water can be removed with middle click.
 - **Indestructible**: place indestructible pieces; protect your wood from the rain or build a floating castle.
+- **Double beds**: the dragon bed sleeps two. A second player claims the other side, and it becomes both players' spawn point.
 - **Somewhat survival friendly**: all pieces are given a reasonable cost, and unlocked just like vanilla pieces. May be game breaking in some ways (especially indestructible) so use with caution. 
 
 ![A pond with lily pads, cattails and a campfire](https://raw.githubusercontent.com/utesfan13/landscaper/main/docs/images/pond-scene.jpg)
@@ -41,7 +42,7 @@ While placing a piece:
 
 | Keys | Effect |
 |---|---|
-| `[` / `]` | Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth. |
+| `[` / `]` | Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth. Also sizes the Hoe's and Cultivator's ground tools. |
 | `,` / `.` | Previous / next tint preset. Fine tune hue/strength/brightness with alt/shift/alt+shift |
 | Scroll | Rotate, as usual |
 | Scroll + <br> Alt / Shift / Alt + Shift | Tilt forward/back, tilt sideways, fine tune rotation when in **rotation** mode <br> **OR** up and down/side to side/toward and away in **move** mode. |
@@ -73,16 +74,21 @@ be chopped or mined.
 ## Dedicated Servers
 
 A dedicated server can run without Landscaper; only the players need it. Without the mod on the
-server, nothing is synced, so each player's own settings are used.
+server, nothing is synced, so each player's own settings are used, and nothing checks that players
+have the same version of Landscaper: keep everyone on the same one.
 
 > **Warning:** While the mod can be run client-side only, on a server without the mod a player without
 > Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size
 > and colour. **While they're the only one near your pieces, their game can make them fall, wear them
-> down or break them (indestructible pieces too), and grow saplings.** Nothing is lost when only
-> players with the mod visit. If you can't be sure every player has it, install the mod on the server too.
+> down or break them (though indestructible pieces don't break, nor do trees and rocks while
+> `General.DecorativeOnly` is on).** Builds resting on resized pieces may also collapse for them,
+> since they see those pieces at normal size; placing such builds as indestructible prevents it.
+> Nothing is lost when only players with the mod visit. If you can't be sure every player has it,
+> install the mod on the server too.
 
 ## Uninstalling
 
 Placed pieces are saved as the game objects they're made from, so a world loaded without Landscaper
 keeps them as ordinary objects (normal size and colour); reinstall and they're Landscaper pieces again.
-Cattails and lily pads are the exception: they're deleted without the mod. Back up your world first.
+Cattails and lily pads are the exception: they're deleted without the mod. Storage props (crates,
+barrels and the like) aren't chests without the mod, so empty them first. Back up your world first.

@@ -1,3 +1,4 @@
+using HarmonyLib;
 using UnityEngine;
 
 namespace Landscaper;
@@ -94,5 +95,29 @@ internal static class FunctionalPieces
         }
 
         return child;
+    }
+
+    private static readonly Action<Container> DropContents = AccessTools.MethodDelegate<Action<Container>>(AccessTools.Method(typeof(Container), "OnDestroyed"));
+
+    /// <summary>
+    /// A vanilla chest drops what's in it when it breaks, but many Landscaper chests are made from
+    /// world objects without building health, and the game removes those (with the hammer, or the
+    /// remove command) by deleting them outright, which loses the contents. Drop them whenever a
+    /// Landscaper chest is deleted; one that already dropped them on breaking is empty by then.
+    /// </summary>
+    [HarmonyPatch(typeof(ZNetScene), nameof(ZNetScene.Destroy))]
+    private static class DropContentsWhenDeletedPatch
+    {
+        private static void Prefix(GameObject go)
+        {
+            if (go == null || !PlacementInput.IsLandscaperPiece(go) || go.GetComponentInChildren<Container>() is not { } container ||
+                go.GetComponent<ZNetView>() is not { } view || !view.IsValid() || !view.IsOwner() ||
+                container.GetInventory() is not { } inventory || inventory.NrOfItems() == 0)
+            {
+                return;
+            }
+
+            DropContents(container);
+        }
     }
 }

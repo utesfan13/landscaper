@@ -58,6 +58,39 @@ internal static class PlantGrowth
     }
 
     /// <summary>
+    /// Relaxed placement lets seeds and saplings be planted anywhere, but the game still marks a plant
+    /// unhealthy off cultivated ground, in the wrong biome, or too hot or cold, and an unhealthy plant
+    /// never grows (some crops are removed instead). While relaxed placement is on, those checks
+    /// pass; the others (sunlight, room to grow) still apply.
+    /// </summary>
+    [HarmonyPatch(typeof(Plant), nameof(Plant.UpdateHealth))]
+    private static class GrowAnywherePatch
+    {
+        private static void Prefix(Plant __instance, out (Heightmap.Biome Biome, bool Cultivated, bool Heat, bool Cold)? __state)
+        {
+            __state = null;
+            if (!PlacementRules.IgnoreRules())
+            {
+                return;
+            }
+
+            __state = (__instance.m_biome, __instance.m_needCultivatedGround, __instance.m_tolerateHeat, __instance.m_tolerateCold);
+            __instance.m_biome = (Heightmap.Biome)(-1);
+            __instance.m_needCultivatedGround = false;
+            __instance.m_tolerateHeat = true;
+            __instance.m_tolerateCold = true;
+        }
+
+        private static void Postfix(Plant __instance, (Heightmap.Biome Biome, bool Cultivated, bool Heat, bool Cold)? __state)
+        {
+            if (__state is { } rules)
+            {
+                (__instance.m_biome, __instance.m_needCultivatedGround, __instance.m_tolerateHeat, __instance.m_tolerateCold) = rules;
+            }
+        }
+    }
+
+    /// <summary>
     /// A grown tree or crop is a vanilla world object without Landscaper's tint component, so give
     /// it one whenever an object with a saved Landscaper tint is loaded. Only tinted objects get it.
     /// </summary>

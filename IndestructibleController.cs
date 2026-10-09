@@ -12,6 +12,9 @@ namespace Landscaper;
 /// a piece has too little support, so they can be placed anywhere without falling apart. Flagged
 /// trees, rocks and saplings can't be chopped, mined or broken. Removing a piece doesn't go through
 /// damage, so the remove button still works.
+/// Flagged pieces are also saved with a health far beyond any damage (see SavedHealth), which a
+/// game without the mod reads too: there they lose health without ever running out, so they still
+/// don't break, from lack of support or anything else.
 /// </summary>
 internal static class IndestructibleController
 {
@@ -67,12 +70,22 @@ internal static class IndestructibleController
         private static void Postfix(Piece __instance)
         {
             var view = __instance.GetComponent<ZNetView>();
-            if (On && view != null && view.IsValid())
+            if (view == null || !view.IsValid())
+            {
+                return;
+            }
+
+            if (On)
             {
                 view.GetZDO().Set(ZdoKeyHash, true);
             }
+
+            SavedHealth.Sync(view);
         }
     }
+
+    /// <summary>Whether the saved object is flagged indestructible.</summary>
+    public static bool IsFlagged(ZDO zdo) => zdo.GetBool(ZdoKeyHash);
 
     public static bool IsIndestructible(Component component)
     {
@@ -93,6 +106,10 @@ internal static class IndestructibleController
             {
                 return true;
             }
+
+            // Damage only runs on the owner, so this also catches pieces that weren't owned here when
+            // they loaded, such as an unsupported floating piece.
+            SavedHealth.Sync(__instance.GetComponent<ZNetView>());
 
             __result = false;
             return false;

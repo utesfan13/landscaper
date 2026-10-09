@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.20.0
+- The size keys also resize the Hoe's and Cultivator's ground tools (level, raise, path, paved road,
+  cultivate, replant), from a quarter to five times their size; resizing the height changes how far
+  Raise ground lifts. A resized brush can't reach into a ward you can't use.
+- The dragon bed (and the Bed prop) sleeps two: a second player can claim the other side, then each
+  sleeps on their own side and it's both players' spawn point. If a ward covers the bed, only players
+  it permits can claim the other side. The owner or the second player frees that side with
+  Shift + E. Both players need Landscaper; without it the bed is the owner's alone.
+- Fixed Landscaper chests (crates, barrels, the wardrobe and other storage props) losing their
+  contents when removed: they now drop what's in them, like a vanilla chest.
+- Landscaper storage props can't be broken while they hold anything, by players without the mod or
+  after uninstalling either (most aren't chests without the mod, so breaking one would lose its
+  contents). They can still be removed with the hammer, which drops the contents.
+- Every Landscaper piece is saved for good, whatever object it's made from (the game deletes objects
+  that aren't, when their owner leaves). Pieces placed earlier are fixed when their owner loads them.
+- Resizing a campfire, hearth or other piece with an area no longer changes the area: warmth, the
+  base area and the like stay their vanilla size. The burn area still follows the flames.
+- Seeds and saplings planted off cultivated ground or outside their biomes (which relaxed placement
+  allows) now grow. Before, the game marked them unhealthy, so they never grew and some crops were
+  removed. They still need sunlight and room to grow.
+- Indestructible pieces also stay unbroken for players without the mod: they're saved with a health
+  far beyond any damage, which the game reads with or without Landscaper. This covers build pieces
+  (so unsupported floating builds no longer collapse), trees, logs, props and rocks. The same goes for
+  Landscaper trees, logs, rocks and props while General.DecorativeOnly is on; turning it off gives
+  them their normal health back. Pieces placed earlier are updated the next time their owner loads
+  them with this version.
+- Forever saplings and seedlings also stay saplings for players without the mod, and after
+  uninstalling (before, they loaded as the normal, growing version). Ones placed earlier are updated
+  the next time their owner loads them.
+
 ## 0.19.0
 - Dedicated servers no longer need the mod: players with Landscaper can join a server without it
   (every player still needs it, at the same minor version). See "Dedicated servers" in the README.
