@@ -166,10 +166,20 @@ public sealed partial class DecorativePieceManager
             return vanilla;
         }
 
+        // An item that comes up more than once (a material that's also an extra cost) is one row.
         var requirements = new List<Piece.Requirement>();
         foreach (var (item, amount) in BuildCosts.CostFor(definition, traits))
         {
-            if (item != null)
+            if (item == null)
+            {
+                continue;
+            }
+
+            if (requirements.FirstOrDefault(requirement => requirement.m_resItem == item) is { } existing)
+            {
+                existing.m_amount += amount;
+            }
+            else
             {
                 requirements.Add(new Piece.Requirement { m_resItem = item, m_amount = amount, m_recover = true });
             }
@@ -381,7 +391,11 @@ public sealed partial class DecorativePieceManager
 
         // Save each placed piece's own size with the world, so pieces resized while placing keep
         // their size. Copies placed before this was enabled have no saved size and keep the default.
-        clone.GetComponent<ZNetView>().m_syncInitialScale = true;
+        var view = clone.GetComponent<ZNetView>();
+        view.m_syncInitialScale = true;
+        // Placed pieces are kept for good, whatever the object they're made from does: the game
+        // doesn't save objects that aren't persistent, and deletes them when their owner leaves.
+        view.m_persistent = true;
         // LodFadeInOut hides the LODGroup in Awake when spawned more than 20m from the camera and
         // restores it 0.1-0.3s later. Placement ghosts spawn at the prefab origin, so a ghost that
         // is recreated before the fade-in runs stays invisible.

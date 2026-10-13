@@ -93,6 +93,9 @@ internal static class ScaleController
 
     private static Vector3 SizeScaleFor(GameObject gameObject) => IsLiquid(gameObject) ? Vector3.one : _scale;
 
+    /// <summary>The size chosen with the size keys, for pieces that use it their own way (see TerrainBrushes).</summary>
+    public static Vector3 CurrentScale => _scale;
+
     /// <summary>Scale-up key as shown in the build hints.</summary>
     public static string UpKeyName => PlacementInput.KeyName(_upKey.Value);
 
@@ -132,7 +135,9 @@ internal static class ScaleController
             IndestructibleController.HandleInput(player);
         }
 
-        if (!placingAdjustablePiece || PlacementInput.IsTyping())
+        // The Hoe's and Cultivator's ground tools only take a size; see TerrainBrushes.
+        var placingBrush = !placingAdjustablePiece && player is not null && player.InPlaceMode() && TerrainBrushes.IsBrush(_ghost);
+        if ((!placingAdjustablePiece && !placingBrush) || PlacementInput.IsTyping())
         {
             return;
         }
@@ -140,23 +145,38 @@ internal static class ScaleController
         if (UnityInput.Current.GetKeyDown(_resetKey.Value))
         {
             _scale = Vector3.one;
+            if (placingBrush)
+            {
+                player!.Message(MessageHud.MessageType.Center, "Size reset");
+                return;
+            }
+
             TintController.Reset();
             OffsetController.ResetForNewPiece(_ghost!.name);
             player!.Message(MessageHud.MessageType.Center, "Scale, tint, position and tilt reset");
             return;
         }
 
-        TintController.HandleInput(player!);
-        OffsetController.HandleInput(player!);
+        if (!placingBrush)
+        {
+            TintController.HandleInput(player!);
+            OffsetController.HandleInput(player!);
+        }
 
         var direction = Repeater.Poll(_downKey.Value, _upKey.Value, _repeatRate.Value);
         if (direction != 0)
         {
             Adjust(direction);
-            player!.Message(MessageHud.MessageType.Center, IsLiquid(_ghost)
-                ? $"Water per placement: {PondWater.CurrentVolume:0.##} cubic m"
+            player!.Message(MessageHud.MessageType.Center, placingBrush ? BrushSizeText()
+                : IsLiquid(_ghost) ? $"Water per placement: {PondWater.CurrentVolume:0.##} cubic m"
                 : $"Scale X {_scale.x:0.##}  Y {_scale.y:0.##}  Z {_scale.z:0.##}");
         }
+    }
+
+    private static string BrushSizeText()
+    {
+        var (width, height) = TerrainBrushes.FactorsFor(_scale);
+        return Mathf.Abs(height - 1f) > 0.001f ? $"Brush size {width:0.##}x  Raise {height:0.##}x" : $"Brush size {width:0.##}x";
     }
 
     /// <summary>
@@ -217,6 +237,14 @@ internal static class ScaleController
             _copiedScale = null;
             _copiedTint = null;
             OffsetController.ClearCopied();
+
+            // A ground tool's ghost shows the brush size; the tool itself is resized when placed
+            // (see TerrainBrushes).
+            if (TerrainBrushes.IsBrush(_ghost))
+            {
+                TerrainBrushes.SizeIndicator(_ghost!, TerrainBrushes.FactorsFor(_scale).Width);
+                return;
+            }
 
             if (!PlacementInput.IsAdjustable(_ghost))
             {

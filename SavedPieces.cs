@@ -11,11 +11,16 @@ namespace Landscaper;
 /// on the object (size, tint, the tag) is kept by the game, so it all comes back on reinstalling.
 /// Pieces made from something that isn't a saved game object (cattails and lily pads, built from
 /// ground clutter) keep their Landscaper name, since the game has nothing to load them as.
+/// Forever saplings are saved as the growing sapling, but with a planting time that keeps it from
+/// growing in a game without Landscaper too.
 /// </summary>
 internal static class SavedPieces
 {
     /// <summary>Saved on the object: the name hash of the Landscaper piece it is.</summary>
     private static readonly int PieceTag = "LandscaperPiece".GetStableHashCode();
+
+    /// <summary>Set on pieces made persistent after they were placed, so the change is sent on.</summary>
+    private static readonly int MadePersistentKey = "LandscaperMadePersistent".GetStableHashCode();
 
     /// <summary>
     /// The prefab an object is: its Landscaper piece if it's tagged, otherwise the prefab it's saved
@@ -47,8 +52,20 @@ internal static class SavedPieces
 
         var zdo = view.GetZDO();
         var piece = PrefabOf(zdo);
-        if (piece == null || !PlacementInput.IsLandscaperPiece(piece) ||
-            pieces.SourcePrefabOf(piece.name) is not { } source || source.StartsWith(ClutterPrefabs.Prefix, StringComparison.Ordinal) ||
+        if (piece == null || !PlacementInput.IsLandscaperPiece(piece))
+        {
+            return;
+        }
+
+        // Pieces placed before every Landscaper piece was made persistent may not be; the game would
+        // delete those when their owner leaves. The extra value makes the change reach the server.
+        if (!zdo.Persistent)
+        {
+            zdo.Persistent = true;
+            zdo.Set(MadePersistentKey, true);
+        }
+
+        if (pieces.SourcePrefabOf(piece.name) is not { } source || source.StartsWith(ClutterPrefabs.Prefix, StringComparison.Ordinal) ||
             scene.GetPrefab(source) is not { } gameObject || PlacementInput.IsLandscaperPiece(gameObject))
         {
             return;
@@ -65,7 +82,19 @@ internal static class SavedPieces
         {
             zdo.SetPrefab(gameHash);
         }
+
+        // A forever sapling or seedling is saved as the growing one, which a game without Landscaper
+        // grows once enough time has passed since it was planted. Saved as planted in the far future,
+        // it counts as just planted for good, so it never grows (and always looks healthy).
+        if (gameObject.GetComponent<Plant>() != null && piece.GetComponent<Plant>() == null &&
+            zdo.GetLong(ZDOVars.s_plantTime, 0L) != NeverGrowPlantTime)
+        {
+            zdo.Set(ZDOVars.s_plantTime, NeverGrowPlantTime);
+        }
     }
+
+    /// <summary>The planting time saved on forever saplings: the year 9000, in ticks.</summary>
+    private static readonly long NeverGrowPlantTime = new DateTime(9000, 1, 1).Ticks;
 
     /// <summary>
     /// Converts a piece as soon as its object is created, so a newly placed piece is never sent to

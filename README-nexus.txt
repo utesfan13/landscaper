@@ -12,6 +12,7 @@ I built this mod for my wife and our love of creating cozy spaces in this game. 
 [*][b]Place pieces without restrictions[/b]: Place pieces where you normally wouldn't be able to, such as planting seeds without cultivated ground or outside of their normal biomes.
 [*][b]Add pond water[/b]: Make a pond for your base! Note: Uses tar pit mechanics which can be a bit finicky. Water can be removed with middle click.
 [*][b]Indestructible[/b]: place indestructible pieces; protect your wood from the rain or build a floating castle.
+[*][b]Double beds[/b]: the dragon bed sleeps two. A second player claims the other side, and it becomes both players' spawn point.
 [*][b]Somewhat survival friendly[/b]: all pieces are given a reasonable cost, and unlocked just like vanilla pieces. May be game breaking in some ways (especially indestructible) so use with caution.
 [/list]
 
@@ -38,7 +39,7 @@ Requires [b]BepInExPack Valheim[/b] and [b]Jotunn[/b] (see Requirements). Instal
 While placing a piece:
 
 [list]
-[*][b][ / ][/b]: Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth.
+[*][b][ / ][/b]: Smaller / bigger. Hold Alt, Shift or both to change only the width, height or depth. Also sizes the Hoe's and Cultivator's ground tools.
 [*][b], / .[/b]: Previous / next tint preset. Fine tune hue/strength/brightness with Alt/Shift/Alt+Shift.
 [*][b]Scroll[/b]: Rotate, as usual.
 [*][b]Alt / Shift / Alt + Shift + Scroll[/b]: Tilt forward/back, tilt sideways, fine tune rotation when in [b]rotation[/b] mode, OR up and down/side to side/toward and away in [b]move[/b] mode.
@@ -68,13 +69,13 @@ On a public server, consider turning off Placement.IgnoreRules (placing pieces i
 
 [size=5][b]Dedicated Servers[/b][/size]
 
-A dedicated server can run without Landscaper; only the players need it. Without the mod on the server, nothing is synced, so each player's own settings are used.
+A dedicated server can run without Landscaper; only the players need it. Without the mod on the server, nothing is synced, so each player's own settings are used, and nothing checks that players have the same version of Landscaper: keep everyone on the same one.
 
-[quote][b][color=#ff6060]Warning:[/color][/b] While the mod can be run client-side only, on a server without the mod a player without Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size and colour. [b]While they're the only one near your pieces, their game can make them fall, wear them down or break them (indestructible pieces too), and grow saplings.[/b] Nothing is lost when only players with the mod visit. If you can't be sure every player has it, install the mod on the server too.[/quote]
+[quote][b][color=#ff6060]Warning:[/color][/b] While the mod can be run client-side only, on a server without the mod a player without Landscaper can join and sees your pieces as the plain game objects they're made from, at normal size and colour. [b]While they're the only one near your pieces, their game can make them fall, wear them down or break them (though indestructible pieces don't break, nor do trees and rocks while General.DecorativeOnly is on).[/b] Builds resting on resized pieces may also collapse for them, since they see those pieces at normal size; placing such builds as indestructible prevents it. Nothing is lost when only players with the mod visit. If you can't be sure every player has it, install the mod on the server too.[/quote]
 
 [size=5][b]Uninstalling[/b][/size]
 
-Placed pieces are saved as the game objects they're made from, so a world loaded without Landscaper keeps them as ordinary objects (normal size and colour); reinstall and they're Landscaper pieces again. Cattails and lily pads are the exception: they're deleted without the mod. Back up your world first.
+Placed pieces are saved as the game objects they're made from, so a world loaded without Landscaper keeps them as ordinary objects (normal size and colour); reinstall and they're Landscaper pieces again. Cattails and lily pads are the exception: they're deleted without the mod. Storage props (crates, barrels and the like) aren't chests without the mod, so empty them first. Back up your world first.
 
 [size=5][b]Links[/b][/size]
 
