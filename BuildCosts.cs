@@ -103,13 +103,13 @@ internal static class BuildCosts
 
     /// <summary>Prefab names the cost rules single out, which should all be in the catalog.</summary>
     public static IEnumerable<string> ReferencedPrefabs() =>
-        FixedCosts.Keys.Concat(MaterialOverrides.Keys).Concat(ExactMaterials.Keys).Concat(ExtraCosts.Keys).Concat(SizedExtraCosts.Keys).Concat(NoResinPrefabs).Concat(MetalPrefabs).Concat(WoodAndIcePrefabs)
+        FixedCosts.Keys.Concat(MaterialOverrides.Keys).Concat(ExactMaterials.Keys).Concat(ExtraCosts.Keys).Concat(NoResinPrefabs).Concat(MetalPrefabs).Concat(WoodAndIcePrefabs)
             .Concat(IcePrefabs).Concat(NotBonePrefabs);
 
     /// <summary>Item names the cost rules charge, which should all exist in the game.</summary>
     public static IEnumerable<string> ReferencedItems() =>
         new[] { Wood, Stone, Iron, Resin, Ice, Bone }.Concat(FixedCosts.Values.SelectMany(costs => costs.Select(cost => cost.Item)))
-            .Concat(ExtraCosts.Values.Select(cost => cost.Item)).Concat(SizedExtraCosts.Values)
+            .Concat(ExtraCosts.Values.Select(cost => cost.Item))
             .Concat(MaterialOverrides.Values).Concat(ExactMaterials.Values).Concat(ForgeMaterials).Concat(StonecutterMaterials)
             .Concat(BiomeMaterials.Values.SelectMany(materials => new[] { materials.Wood, materials.Stone, materials.Bone }));
 
@@ -153,7 +153,8 @@ internal static class BuildCosts
         (Biome.Plains, new[] { "goblin", "fuling", "plains", "heath", "tarlump", "tarpit", "lox" }),
         (Biome.Swamp, new[] { "swamp", "sunken", "guck", "bonemass", "draugr", "leech", "mudpile", "bogwitch", "ancient" }),
         (Biome.Mountain, new[] { "mountain", "snow", "obsidian", "silver", "crystal", "drake", "wolf", "fenrir" }),
-        (Biome.BlackForest, new[] { "pine", "firtree", "forest", "troll", "greydwarf", "copper", "_tin" })
+        // Not fir trees: they drop plain wood (pines drop core wood), so they cost wood like a Meadows piece.
+        (Biome.BlackForest, new[] { "pine", "forest", "troll", "greydwarf", "copper", "_tin" })
     };
 
     /// <summary>Tabs whose pieces all come from one biome, for names that don't say.</summary>
@@ -250,11 +251,6 @@ internal static class BuildCosts
             yield return (ItemNamed(extra.Item), extra.Amount);
         }
 
-        if (SizedExtraCosts.TryGetValue(definition.PrefabName, out var sizedExtra))
-        {
-            yield return (ItemNamed(sizedExtra), AmountFor(traits.Size));
-        }
-
         if (traits.HasLight && !NaturalCategories.Contains(definition.Category) && !NoResinPrefabs.Contains(definition.PrefabName))
         {
             yield return (ItemNamed(Resin), Scaled(1));
@@ -278,13 +274,6 @@ internal static class BuildCosts
         ["prop_itemstand_TrophyGreydwarf"] = ("TrophyGreydwarf", 1),
         ["prop_itemstand_TrophyGreydwarfBrute"] = ("TrophyGreydwarfBrute", 1),
         ["prop_itemstand_TrophySeekerBrute"] = ("TrophySeekerBrute", 1)
-    };
-
-    /// <summary>Items some pieces cost on top of their material, 2 to 8 by size like the material
-    /// itself: lox pelt for the Fuling roofs.</summary>
-    private static readonly Dictionary<string, string> SizedExtraCosts = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["goblin_roof_45d"] = "LoxPelt", ["goblin_roof_45d_corner"] = "LoxPelt", ["goblin_roof_cap"] = "LoxPelt"
     };
 
     private const string Workbench = "piece_workbench";

@@ -8,6 +8,9 @@
   sleeps on their own side and it's both players' spawn point. If a ward covers the bed, only players
   it permits can claim the other side. The owner or the second player frees that side with
   Shift + E. Both players need Landscaper; without it the bed is the owner's alone.
+- Fir trees, small and big firs, fir stumps and old fir logs cost wood instead of core wood, as fir
+  trees drop wood (pines still cost core wood).
+- Fixed the Fuling roofs listing lox pelt twice in their cost. A cost never lists an item twice now.
 - Fixed Landscaper chests (crates, barrels, the wardrobe and other storage props) losing their
   contents when removed: they now drop what's in them, like a vanilla chest.
 - Landscaper storage props can't be broken while they hold anything, by players without the mod or

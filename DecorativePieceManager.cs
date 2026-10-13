@@ -166,10 +166,20 @@ public sealed partial class DecorativePieceManager
             return vanilla;
         }
 
+        // An item that comes up more than once (a material that's also an extra cost) is one row.
         var requirements = new List<Piece.Requirement>();
         foreach (var (item, amount) in BuildCosts.CostFor(definition, traits))
         {
-            if (item != null)
+            if (item == null)
+            {
+                continue;
+            }
+
+            if (requirements.FirstOrDefault(requirement => requirement.m_resItem == item) is { } existing)
+            {
+                existing.m_amount += amount;
+            }
+            else
             {
                 requirements.Add(new Piece.Requirement { m_resItem = item, m_amount = amount, m_recover = true });
             }
