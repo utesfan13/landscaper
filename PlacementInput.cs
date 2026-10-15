@@ -44,24 +44,40 @@ internal static class PlacementInput
     /// <summary>Modifiers seen being pressed while the game had focus and not released since.</summary>
     private static readonly HashSet<KeyCode> PressedModifiers = new();
 
+    /// <summary>How long after the game regains focus modifier presses are ignored; see Update.</summary>
+    private const float FocusGraceSeconds = 0.5f;
+
+    private static bool _hadFocus = true;
+    private static float _focusRegainedAt = float.NegativeInfinity;
+
     /// <summary>
     /// Tracks the modifier keys. Call every frame. If the window loses focus while a key is down, as
     /// with Alt+Tab, Windows never reports its release and Unity keeps treating it as held until it is
     /// pressed again. So a modifier only counts as held once it has been pressed while the game had
-    /// focus, and all of them are forgotten when focus is lost.
+    /// focus, and all of them are forgotten when focus is lost. Coming back with Alt+Tab, Alt is still
+    /// down as the game regains focus, which Unity can report as a press without ever reporting its
+    /// release, so presses in the first moment after regaining focus don't count either.
     /// </summary>
     public static void Update()
     {
         if (!Application.isFocused)
         {
             PressedModifiers.Clear();
+            _hadFocus = false;
             return;
         }
 
+        if (!_hadFocus)
+        {
+            _hadFocus = true;
+            _focusRegainedAt = Time.unscaledTime;
+        }
+
+        var justFocused = Time.unscaledTime - _focusRegainedAt < FocusGraceSeconds;
         var input = UnityInput.Current;
         foreach (var key in Modifiers)
         {
-            if (input.GetKeyDown(key))
+            if (input.GetKeyDown(key) && !justFocused)
             {
                 PressedModifiers.Add(key);
             }

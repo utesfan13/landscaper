@@ -17,7 +17,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.20.0";
+    public const string ModVersion = "0.21.0";
 
     internal static ManualLogSource Log = null!;
     /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>
@@ -55,6 +55,10 @@ public sealed class Plugin : BaseUnityPlugin
             Synced("Allow placing any piece, vanilla build pieces included, where Valheim normally wouldn't (clipping, unsupported, wrong biome, " +
                    "in dungeons, ...), and Hoe and Cultivator pieces on floors and objects as well as the ground. Overlapping a player or creature and other players' wards still block placing."));
         PlacementRules.IgnoreRules = () => ignorePlacementRules.Value;
+        var snapPoints = Config.Bind("Placement", "SnapPoints", true,
+            "Give Landscaper's Hammer pieces snap points at the corners of their shape, so they snap to each other and to building " +
+            "pieces like vanilla pieces do (hold Shift, the game's alternate place key, to place without snapping). Takes effect on restart.");
+        SnapPoints.Enabled = () => snapPoints.Value;
         var cultivator = Config.Bind("Tools", "CultivatorDecorEnabled", true, Synced("List decorative pieces in the Cultivator menu."));
         var hoe = Config.Bind("Tools", "HoeDecorEnabled", true, Synced("List decorative pieces in the Hoe menu."));
         var hammer = Config.Bind("Tools", "HammerDecorEnabled", true, Synced("List decorative pieces in the Hammer menu."));

@@ -20,6 +20,9 @@ public sealed partial class DecorativePieceManager
 
     private readonly Dictionary<string, RegisteredPiece> _registered = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The display pieces' definitions (see ItemDisplays), made once the items are known.</summary>
+    private List<DecorativePieceDefinition> _displays = new();
+
     /// <summary>
     /// The webs. Their models reach tens of meters out to one side of their origin (the vertical web
     /// starts 30 m up), and the Hammer places a piece with the near face of its bounds on the aim
@@ -89,7 +92,9 @@ public sealed partial class DecorativePieceManager
         var registered = PieceCatalog.Entries().Where(definition => !DuplicatesVanillaPiece(definition))
             .Concat(ParseCustomEntries(_customEntries())).Count(Register);
         PieceCatalog.Retired().Count(Register);
-        _log.LogInfo($"Registered {registered} decorative pieces; {adjustable} vanilla build pieces can be adjusted too.");
+        _displays = ItemDisplays.Definitions();
+        var displays = _displays.Count(Register);
+        _log.LogInfo($"Registered {registered} decorative pieces and {displays} item displays; {adjustable} vanilla build pieces can be adjusted too.");
         RegisterAliases();
         UpdateMenus();
         if (_standIns.Count > 0)
@@ -227,7 +232,7 @@ public sealed partial class DecorativePieceManager
         }
 
         var wanted = new HashSet<string>(
-            PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries(), logErrors: false))
+            PieceCatalog.Entries().Concat(ParseCustomEntries(_customEntries(), logErrors: false)).Concat(_displays)
                 .Select(definition => FindSpawnablePrefab(definition.PrefabName) is { } source ? GetCloneName(source.name, definition) : null)
                 .OfType<string>(),
             StringComparer.OrdinalIgnoreCase);
@@ -286,11 +291,12 @@ public sealed partial class DecorativePieceManager
 
     /// <summary>
     /// The piece for a vanilla prefab on a tool, preferring the plain piece over scaled variants, or
-    /// null if the prefab isn't registered for that tool.
+    /// null if the prefab isn't registered for that tool. Item displays don't count: they're all copies
+    /// of the item stand, and each is for its own item.
     /// </summary>
     public Piece? FindPiece(string sourcePrefab, BuildTool tool) =>
         _registered.Values
-            .Where(piece => piece.Tool == tool && piece.Clone != null &&
+            .Where(piece => piece.Tool == tool && piece.Clone != null && piece.Definition.DisplayItem is null &&
                 string.Equals(piece.SourcePrefab, sourcePrefab, StringComparison.OrdinalIgnoreCase))
             .OrderBy(piece => piece.IsVariant)
             .Select(piece => piece.Clone.GetComponent<Piece>())
@@ -299,7 +305,8 @@ public sealed partial class DecorativePieceManager
     /// <summary>A tool that has a piece for this vanilla prefab, if any.</summary>
     public BuildTool? FindToolFor(string sourcePrefab) =>
         _registered.Values
-            .Where(piece => string.Equals(piece.SourcePrefab, sourcePrefab, StringComparison.OrdinalIgnoreCase))
+            .Where(piece => piece.Definition.DisplayItem is null &&
+                string.Equals(piece.SourcePrefab, sourcePrefab, StringComparison.OrdinalIgnoreCase))
             .Select(piece => (BuildTool?)piece.Tool)
             .FirstOrDefault();
 
@@ -410,11 +417,21 @@ public sealed partial class DecorativePieceManager
         {
             FunctionalPieces.Apply(clone, functionFrom);
         }
+
+        Sprite? displayIcon = null;
+        if (definition.DisplayItem is { } displayItem && (displayIcon = ItemDisplays.Prepare(clone, displayItem)) == null)
+        {
+            _log.LogWarning($"'{displayItem}' can't be shown on an item stand; skipped.");
+            return false;
+        }
         RemoveEmptyMeshColliders(clone);
         // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
-        var modelSize = TryGetModelBounds(clone, out var modelBounds)
-            ? Vector3.Scale(modelBounds.size, clone.transform.localScale)
-            : Vector3.one;
+        var hasModelBounds = TryGetModelBounds(clone, out var modelBounds);
+        var modelSize = hasModelBounds ? Vector3.Scale(modelBounds.size, clone.transform.localScale) : Vector3.one;
+        if (hasModelBounds && SnapPoints.Wanted(definition))
+        {
+            SnapPoints.Add(clone, modelBounds);
+        }
         var pickable = clone.GetComponentInChildren<Pickable>(includeInactive: true);
         var vanillaPiece = clone.GetComponent<Piece>();
         var traits = new PieceTraits(
@@ -427,15 +444,20 @@ public sealed partial class DecorativePieceManager
             pickable != null ? pickable.m_amount : 1,
             pickable == null || pickable.m_respawnTimeMinutes > 0f);
         EnsureTargetable(clone, definition.Tool);
-        clone.AddComponent<LandscaperTint>();
+        // A copy of a vanilla piece that's adjustable already has its tint component.
+        if (!clone.TryGetComponent<LandscaperTint>(out _))
+        {
+            clone.AddComponent<LandscaperTint>();
+        }
+
         clone.AddComponent<LandscaperPiece>();
 
         var piece = clone.GetComponent<Piece>() ?? clone.AddComponent<Piece>();
-        var vanillaIcon = piece.m_icon;
+        var vanillaIcon = displayIcon ?? piece.m_icon;
         // Leftover pieces the game ships but doesn't let you build have untranslated names, and often
         // borrow another piece's icon: the turf roofs use the thatch roofs' icons, so they looked like
         // thatch in the menu. Render their own icon instead.
-        if (vanillaIcon != null && !piece.m_name.StartsWith("$", StringComparison.Ordinal))
+        if (displayIcon == null && vanillaIcon != null && !piece.m_name.StartsWith("$", StringComparison.Ordinal))
         {
             vanillaIcon = null;
         }
@@ -502,6 +524,12 @@ public sealed partial class DecorativePieceManager
     /// </summary>
     private static string GetCloneName(string sourceName, DecorativePieceDefinition definition, BuildTool? tool = null)
     {
+        // A display is named after its item: all of them are copies of the same item stand.
+        if (definition.DisplayItem is { } displayItem)
+        {
+            return $"Landscaper_Display_{new string(displayItem.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray())}";
+        }
+
         var prefabName = new string(sourceName.Select(c => c is ' ' or '(' or ')' ? '_' : c).ToArray());
         var cloneName = $"Landscaper_{prefabName}_{tool ?? definition.Tool}";
         if (definition.Scale == Vector3.one)
