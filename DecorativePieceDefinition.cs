@@ -36,6 +36,9 @@ public sealed class DecorativePieceDefinition
     /// <summary>Prefab name of a vanilla piece whose chest, chair or bed function this piece copies.</summary>
     public string? FunctionFrom { get; set; }
 
+    /// <summary>For a display piece (see ItemDisplays): the item it shows on a hidden item stand.</summary>
+    public string? DisplayItem { get; set; }
+
     /// <summary>
     /// Names this piece was saved under before (full "Landscaper_..." names), so pieces placed under an
     /// old name keep loading after a rename. Other tools' names are covered automatically.

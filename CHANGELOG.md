@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.21.0
+- Item displays: food, drinks, trophies, materials and most other items an item stand can hold can be
+  set down on their own, on the Hammer's new Food Displays, Trophy Displays and Item Displays tabs.
+  Gear (weapons, tools, armor, shields) isn't included. Each is saved as a vanilla item stand holding
+  the item, with the stand hidden, so without the mod it's an ordinary item stand with the item on
+  it. A display costs its item and gives it back when removed with the hammer; the item can't be
+  taken off with the use key.
+- Snap points: Landscaper's Hammer pieces (furniture, props, ruins, village pieces and more; not
+  statues or item displays) snap to each other and to building pieces like vanilla pieces do, by the
+  corners of their shape and the middle of their top and bottom. Hold Shift to place without
+  snapping. Can be turned off with Placement.SnapPoints.
+- Fixed Alt (or Shift) sometimes staying "held" for Landscaper's controls after coming back to the
+  game with Alt+Tab, until it was pressed again.
+
 ## 0.20.0
 - The size keys also resize the Hoe's and Cultivator's ground tools (level, raise, path, paved road,
   cultivate, replant), from a quarter to five times their size; resizing the height changes how far

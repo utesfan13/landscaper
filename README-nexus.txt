@@ -12,6 +12,7 @@ I built this mod for my wife and our love of creating cozy spaces in this game. 
 [*][b]Place pieces without restrictions[/b]: Place pieces where you normally wouldn't be able to, such as planting seeds without cultivated ground or outside of their normal biomes.
 [*][b]Add pond water[/b]: Make a pond for your base! Note: Uses tar pit mechanics which can be a bit finicky. Water can be removed with middle click.
 [*][b]Indestructible[/b]: place indestructible pieces; protect your wood from the rain or build a floating castle.
+[*][b]Item displays[/b]: set food, drinks and other items down on tables and shelves without an item stand.
 [*][b]Double beds[/b]: the dragon bed sleeps two. A second player claims the other side, and it becomes both players' spawn point.
 [*][b]Somewhat survival friendly[/b]: all pieces are given a reasonable cost, and unlocked just like vanilla pieces. May be game breaking in some ways (especially indestructible) so use with caution.
 [/list]

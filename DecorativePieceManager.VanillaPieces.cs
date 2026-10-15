@@ -102,7 +102,7 @@ public sealed partial class DecorativePieceManager
     /// roofs and out-of-season festive pieces) are still Landscaper pieces.
     /// </summary>
     private bool DuplicatesVanillaPiece(DecorativePieceDefinition definition) =>
-        definition.Scale == Vector3.one && definition.FunctionFrom is null && !definition.OnWater &&
+        definition.Scale == Vector3.one && definition.FunctionFrom is null && definition.DisplayItem is null && !definition.OnWater &&
         _vanillaInMenus.TryGetValue(definition.Tool, out var inMenu) &&
         FindSpawnablePrefab(definition.PrefabName) is { } source && inMenu.Contains(source.name) &&
         // A Landscaper sapling never grows (see MakeStaticDecoration), so it isn't the same as the vanilla one.
