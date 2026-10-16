@@ -44,7 +44,10 @@ public static class PieceCatalog
                     OnWater = entry.OnWater,
                     ListAfter = entry.ListAfter,
                     FunctionFrom = entry.FunctionFrom,
-                    FormerNames = entry.FormerNames
+                    FormerNames = entry.FormerNames,
+                    ExtraParts = entry.Parts,
+                    Variant = entry.Variant,
+                    LiftGate = entry.LiftGate
                 };
             }
         }
@@ -53,8 +56,11 @@ public static class PieceCatalog
     private sealed class Entry
     {
         public Entry(string name, string prefab, string description, Vector3 scale, bool onWater, string? listAfter, string? functionFrom,
-            string[] formerNames)
+            string[] formerNames, string[] parts, string? variant, bool liftGate)
         {
+            Variant = variant;
+            LiftGate = liftGate;
+            Parts = parts;
             FormerNames = formerNames;
             FunctionFrom = functionFrom;
             OnWater = onWater;
@@ -73,6 +79,9 @@ public static class PieceCatalog
         public string? ListAfter { get; }
         public string? FunctionFrom { get; }
         public string[] FormerNames { get; }
+        public string[] Parts { get; }
+        public string? Variant { get; }
+        public bool LiftGate { get; }
     }
 
     private sealed class Group
@@ -94,9 +103,17 @@ public static class PieceCatalog
     /// changing its prefab, so copies already placed keep loading. Moving a piece to another tool
     /// needs nothing here; see DecorativePieceManager.RegisterAliases.
     /// </param>
+    /// <param name="parts">Prefabs whose models are added to this one at the same spot; see DecorativePieceDefinition.ExtraParts.</param>
     private static Entry E(string name, string prefab, string description = "", Vector3? scale = null, bool onWater = false,
-        string? listAfter = null, string? functionFrom = null, string[]? formerNames = null) =>
-        new(name, prefab, description, scale ?? Vector3.one, onWater, listAfter, functionFrom, formerNames ?? Array.Empty<string>());
+        string? listAfter = null, string? functionFrom = null, string[]? formerNames = null, string[]? parts = null,
+        string? variant = null, bool liftGate = false) =>
+        new(name, prefab, description, scale ?? Vector3.one, onWater, listAfter, functionFrom, formerNames ?? Array.Empty<string>(),
+            parts ?? Array.Empty<string>(), variant, liftGate);
+
+    /// <summary>The parts of a whole Jotun statue other than its legs, optionally the big ones.</summary>
+    private static string[] StatueParts(string suffix = "") =>
+        new[] { "Feet", "Torso", "ArmR", "ArmL", "Sword", "Face", "Horn", "Horn2" }
+            .Select(part => $"Morkhalla_StatuePiece{part}{suffix}").ToArray();
 
     private static readonly Group[] Groups =
     {
@@ -262,7 +279,11 @@ public static class PieceCatalog
             E("Black Marble Post", "blackmarble_post01")),
 
         new(BuildTool.Hammer, "Furniture",
-            E("Chest", "Chest"), E("Blackwood Bench", "piece_blackwood_bench")),
+            E("Chest", "Chest"), E("Blackwood Bench", "piece_blackwood_bench"),
+            // The vanilla Armour Stand comes in two bodies; whichever isn't already in the Hammer menu is
+            // added (see DuplicatesVanillaPiece). Its pose changes with the small block at its base.
+            E("Armour Stand (Male)", "ArmorStand_Male", "A posable armour stand. Use the small block at its base to change its pose."),
+            E("Armour Stand (Female)", "ArmorStand_Female", "A posable armour stand. Use the small block at its base to change its pose.")),
 
         new(BuildTool.Hammer, "Building Structures",
             E("Iron Floor", "iron_floor_1x1")),
@@ -337,10 +358,18 @@ public static class PieceCatalog
             E("Jotun Sword Statue", "Morkhalla_StatueSword"), E("Jotun Hanging Sword", "Morkhalla_StatueSword_hanging"), E("Jotun Rubble Pile", "Morkhalla_rubble_trashpile"),
             E("Big Jotun Statue Arm (Left)", "Morkhalla_StatuePieceArmL_big"), E("Big Jotun Statue Arm (Right)", "Morkhalla_StatuePieceArmR_big"), E("Big Jotun Statue Face", "Morkhalla_StatuePieceFace_big"),
             E("Big Jotun Statue Feet", "Morkhalla_StatuePieceFeet_big"), E("Big Jotun Statue Horn", "Morkhalla_StatuePieceHorn_big"), E("Big Jotun Statue Horn 2", "Morkhalla_StatuePieceHorn2_big"),
-            E("Big Jotun Statue Legs", "Morkhalla_StatuePieceLegs_big"), E("Big Jotun Statue Sword", "Morkhalla_StatuePieceSword_big"), E("Big Jotun Statue Torso", "Morkhalla_StatuePieceTorso_big")),
+            E("Big Jotun Statue Legs", "Morkhalla_StatuePieceLegs_big"), E("Big Jotun Statue Sword", "Morkhalla_StatuePieceSword_big"), E("Big Jotun Statue Torso", "Morkhalla_StatuePieceTorso_big"),
+            E("Jotun Statue", "Morkhalla_StatuePieceLegs", "A whole horned giant statue.", parts: StatueParts()),
+            E("Big Jotun Statue", "Morkhalla_StatuePieceLegs_big", "A whole horned giant statue, giant sized.", parts: StatueParts("_big")),
+            E("Jotun Wooden Chest", "TreasureChest_morkhalla", "A big wooden chest from the Jotun halls."),
+            E("Deep North Chest", "TreasureChest_deepnorth_village"),
+            E("Ancient Jotun Chest", "Morkhalla_ChestAncient", "A massive ancient chest from the Jotun halls."),
+            E("Grausten Chest", "piece_chest_grausten", "A stone chest from the Deep North."),
+            E("Memorial Chest", "TreasureChest_memorial_buried", "The chest from the Deep North memorial grounds.")),
 
         new(BuildTool.Hammer, "Dungeon Decor",
-            E("Stone Chest", "stonechest"), E("Horizontal Web", "horizontal_web"),
+            E("Stone Chest", "stonechest"), E("Infested Mine Door", "dvergrtown_creep_door", "The infested mine door, for decoration."),
+            E("Horizontal Web", "horizontal_web"),
             E("Vertical Web", "vertical_web"), E("Web Tunnel", "tunnel_web"), E("Jotun Web Corner", "morkhalla_web_corner"),
             E("Jotun Web", "morkhalla_web_horisontal"), E("Jotun Web Tunnel", "morkhalla_web_tunnel"), E("Infested Hanging Egg 1", "CreepProp_egg_hanging01"),
             E("Infested Hanging Egg 2", "CreepProp_egg_hanging02"), E("Infested Hanging Growth", "CreepProp_hanging01"), E("Infested Wall Growth", "CreepProp_wall01"),
@@ -418,6 +447,99 @@ public static class PieceCatalog
             E("Frozen Longship 1", "frozenship"), E("Frozen Longship 2", "frozenship02"), E("Frozen Longship 3", "frozenship03"),
             E("Ice-Bound Ship Part 1", "Ice_ship_1"), E("Ice-Bound Ship Part 2", "Ice_ship_2"), E("Ice-Bound Ship Part 3", "Ice_ship_3"),
             E("Ice-Bound Ship Part 4", "Ice_ship_4"), E("Ice-Bound Ship Part 5", "Ice_ship_5"), E("Ice-Bound Ship Part 6", "Ice_ship_6"),
-            E("Ice-Bound Ship Part 7", "Ice_ship_7"))
+            E("Ice-Bound Ship Part 7", "Ice_ship_7")),
+
+        // Found by going through every networked object in the game (0.23.0): what's placeable without
+        // bringing gameplay along. Left out: boss stones (guardian powers), offering altars, turrets,
+        // traps and the ballista, working demisters and shield generators, the Dvergr guardstone (a
+        // ward), Leviathans (dive when hit), seeker eggs (hatch), falling rubble, lava bombs, boss
+        // arena objects, NPCs and portals. Vanilla build pieces among these are skipped automatically.
+        new(BuildTool.Hammer, "Chests",
+            E("Meadows Chest", "TreasureChest_meadows"), E("Meadows Chest 2", "TreasureChest_meadows_01"), E("Meadows Chest 3", "TreasureChest_meadows_02"),
+            E("Black Forest Chest", "TreasureChest_blackforest"), E("Forest Crypt Chest", "TreasureChest_forestcrypt"), E("Burial Chamber Chest", "TreasureChest_fCrypt"),
+            E("Troll Cave Chest", "TreasureChest_trollcave"), E("Swamp Chest", "TreasureChest_swamp"), E("Sunken Crypt Chest", "TreasureChest_sunkencrypt"),
+            E("Mountain Chest", "TreasureChest_mountains"), E("Mountain Cave Chest", "TreasureChest_mountaincave"), E("Heath Chest", "TreasureChest_heath"),
+            E("Plains Stone Chest", "TreasureChest_plains_stone"), E("Dvergr Town Chest", "TreasureChest_dvergrtown"), E("Dvergr Tower Chest", "TreasureChest_dvergrtower"),
+            E("Dvergr Stone Chest", "TreasureChest_dvergr_loose_stone"), E("Ashlands Stone Chest", "TreasureChest_ashland_stone"), E("Charred Fortress Chest", "TreasureChest_charredfortress"),
+            E("Karve Wreck Chest", "shipwreck_karve_chest"), E("Longship Wreck Chest", "shipwreck_vikingship_chest"), E("Crypt Skeleton Chest", "crypt_skeleton_chest"),
+            E("Stone Loot Chest", "loot_chest_stone"), E("Wooden Loot Chest", "loot_chest_wood"), E("Deep North Granary Loot", "loot_deepNorth_Granary"),
+            E("Deep North Timber Hall Loot", "loot_deepNorth_TimberHall")),
+
+        new(BuildTool.Hammer, "Gates & Doors",
+            E("Forest Crypt Door", "dungeon_forestcrypt_door"), E("Sunken Crypt Iron Gate", "dungeon_sunkencrypt_irongate"), E("Rusty Sunken Crypt Gate", "dungeon_sunkencrypt_irongate_rusty"),
+            E("Sunken Crypt Gate", "sunken_crypt_gate"), E("Dvergr Secret Door", "dvergrtown_secretdoor"), E("Jotun Gate Door", "Morkhalla_GateDoor"),
+            E("Jotun Gate Door 2", "Morkhalla_GateDoor02"), E("Jotun Gate Door 3", "Morkhalla_GateDoor03"), E("Ashlands Fortress Gate", "Ashlands_Fortress_Gate"),
+            E("Ashlands Fortress Gate Door", "Ashlands_Fortress_Gate_Door"), E("Mountain Wooden Gate", "MountainKit_wood_gate")),
+
+        new(BuildTool.Hammer, "Ashlands Ruins",
+            E("Ashlands Arch", "Ashlands_Arch1"), E("Ashlands Arch 2", "Ashlands_Arch2"), E("Ashlands Wall Block", "Ashlands_WallBlock_1x2x2"),
+            E("Ashlands Wall Base", "Ashlands_WallBlock_base"), E("Ashlands Upside-Down Ramp", "Ashlands_Ruins_Ramp_Upsidedown"), E("Charred Grave", "GraveStone_CharredTwitcherNest"),
+            E("Broken Charred Grave", "GraveStone_Broken_CharredTwitcherNest"), E("Charred Elite Grave", "GraveStone_Elite_CharredTwitcherNest"), E("Broken Charred Elite Grave", "GraveStone_Elite_Broken_CharredTwitcherNest"),
+            E("Broken Gravestone", "GraveStone_Broken_World"), E("Fader Grave", "GraveStone_CharredFaderLocation")),
+
+        new(BuildTool.Hammer, "Jotun Halls",
+            E("Jotun Fire Pit", "Morkhalla_firepit"), E("Jotun Coal Pile", "Morkhalla_coal_pile_memorial"), E("Jotun Railing Torch (Unlit)", "Morkhalla_giant_railing_torch_unlit")),
+
+        new(BuildTool.Hammer, "Fuling Village",
+            E("Fuling Bed", "goblin_bed"), E("Fuling Totem Pole", "goblin_totempole"), E("Fuling King Totem Holder", "goblinking_totemholder")),
+
+        new(BuildTool.Hammer, "Roofs",
+            E("Old Wood Roof", "OLD_wood_roof"), E("Old Wood Roof Inner Corner", "OLD_wood_roof_icorner"), E("Old Wood Roof Outer Corner", "OLD_wood_roof_ocorner"),
+            E("Old Wood Roof Top", "OLD_wood_roof_top"), E("Old Wood Roof Wall", "OLD_wood_wall_roof")),
+
+        new(BuildTool.Hammer, "Props",
+            E("Ground Torch (Unlit)", "CastleKit_groundtorch_unlit"), E("Iron Ground Torch (Unlit)", "CastleKit_metal_groundtorch_unlit"), E("Bonfire (Prop)", "prop_bonfire"),
+            E("Bog Witch Fire Pit", "BogWitch_Fire_Pit"), E("Haldor's Fire Pit", "fire_pit_haldor"), E("Hildir's Fire Pit", "fire_pit_hildir"),
+            E("Dragon Carving", "wood_dragon1"), E("Siege Wall", "siege_wall_1x1"), E("Hanging Hair Strands", "hanging_hairstrands")),
+
+        new(BuildTool.Hammer, "Curios",
+            E("Dvergr Lantern (Loose)", "Pickable_DvergrLantern"), E("Dvergr Stein", "Pickable_DvergrStein"), E("Dvergr Mine Treasure", "Pickable_DvergrMineTreasure"),
+            E("Dvergr Trinket", "Pickable_DvergerThing"), E("Dragon Egg", "Pickable_DragonEgg"), E("Vulture Egg", "Pickable_VoltureEgg"),
+            E("Broken Sword Piece 1", "Pickable_Swordpiece1"), E("Broken Sword Piece 2", "Pickable_Swordpiece2"), E("Broken Sword Piece 3", "Pickable_Swordpiece3"),
+            E("Crypt Remains 1", "Pickable_ForestCryptRemains01"), E("Crypt Remains 2", "Pickable_ForestCryptRemains02"), E("Crypt Remains 3", "Pickable_ForestCryptRemains03"),
+            E("Crypt Remains 4", "Pickable_ForestCryptRemains04"), E("Buried Mountain Remains", "Pickable_MountainRemains01_buried"), E("Meat Pile", "Pickable_MeatPile"),
+            E("Charred Skull", "Pickable_Charredskull"), E("Pot Shards", "Pickable_Pot_Shard"), E("Hair Strands 1", "Pickable_Hairstrands01"),
+            E("Hair Strands 2", "Pickable_Hairstrands02"), E("Black Core Stand", "Pickable_BlackCoreStand"), E("Molten Core Stand", "Pickable_MoltenCoreStand"),
+            E("Surtling Core Stand", "Pickable_SurtlingCoreStand"), E("Mountain Cave Crystal", "Pickable_MountainCaveCrystal"), E("Snowball", "Pickable_Snowball"),
+            E("Tar Puddle", "Pickable_Tar"), E("Big Tar Puddle", "Pickable_TarBig")),
+
+        new(BuildTool.Hoe, "Ice",
+            E("Ice Blocker", "IceBlocker")),
+
+        // Ground cover: patches of the game's grass and ground plants (see ClutterPrefabs).
+        new(BuildTool.Cultivator, "Ground Cover",
+            E("Meadows Grass", ClutterPrefabs.Prefix + "meadows_grass_patch"), E("Short Meadows Grass", ClutterPrefabs.Prefix + "meadows_grass_short_patch"), E("Forest Ground Cover", ClutterPrefabs.Prefix + "forest_groundcover_patch"),
+            E("Brown Forest Ground Cover", ClutterPrefabs.Prefix + "forest_groundcover_brown_patch"), E("Snowy Forest Ground Cover", ClutterPrefabs.Prefix + "forest_groundcover_snow_patch"), E("Heath Grass", ClutterPrefabs.Prefix + "heathgrass_patch"),
+            E("Heath Flowers", ClutterPrefabs.Prefix + "heathflowers_patch"), E("Swamp Grass", ClutterPrefabs.Prefix + "swamp_grass_patch"), E("Swamp Ferns", ClutterPrefabs.Prefix + "swamp_ormbunke_patch"),
+            E("Ferns", ClutterPrefabs.Prefix + "ormbunke_patch"), E("Shrubs", ClutterPrefabs.Prefix + "shrub_patch"), E("Mistlands Grass", ClutterPrefabs.Prefix + "mistlands_grass_short_patch"),
+            E("Mistlands Rock Plants", ClutterPrefabs.Prefix + "mistlands_rockplant_patch"), E("Ashlands Grass", ClutterPrefabs.Prefix + "ashlands_grass_short_patch"), E("Long Ashlands Grass", ClutterPrefabs.Prefix + "ashlands_grass_long_patch"),
+            E("Small Stones", ClutterPrefabs.Prefix + "small_rock1_patch")),
+
+        // More found in the same pass: pickable resources and Jotun statue eyes, Mistlands altar crystals and a few props.
+        new(BuildTool.Hammer, "Curios",
+            E("Ashstone", "Pickable_Ashstone"), E("Bog Iron Ore", "Pickable_BogIronOre"), E("Tin Ore", "Pickable_Tin"),
+            E("Meteorite", "Pickable_Meteorite"), E("Obsidian", "Pickable_Obsidian"), E("Cave Obsidian", "Pickable_MountainCaveObsidian"),
+            E("Snowy Branch", "Pickable_Branch_Snow"), E("Royal Jelly", "Pickable_RoyalJelly"), E("Jotun Statue Eye 1", "Morkhalla_Eye1"),
+            E("Jotun Statue Eye 2", "Morkhalla_Eye2"), E("Jotun Statue Eye 3", "Morkhalla_Eye3"), E("Jotun Statue Eye 4", "Morkhalla_Eye4"),
+            E("Jotun Gem Eye 1", "Morkhalla_Eye5_gemstone"), E("Jotun Gem Eye 2", "Morkhalla_Eye6_gemstone"), E("Jotun Gem Eye 3", "Morkhalla_Eye7_gemstone")),
+
+        new(BuildTool.Cultivator, "Crops",
+            E("Wild Oats", "Pickable_Oat"), E("Wild Poteitr", "Pickable_Poteitr")),
+
+        new(BuildTool.Hammer, "Dungeon Decor",
+            E("Black Marble Altar Crystal", "blackmarble_altar_crystal"), E("Broken Altar Crystal", "blackmarble_altar_crystal_broken")),
+
+        new(BuildTool.Hammer, "Ashlands Ruins",
+            E("Flametal Rock Stand", "FlametalRockstand")),
+
+        new(BuildTool.Hammer, "Gates & Doors",
+            E("Jotun Drawbridge", "Morkhalla_Drawbridge"),
+            E("Queen's Door", "dungeon_queen_door", "The Seeker Queen's giant door. Opens and closes like any door."),
+            E("Dvergr Sliding Door", "dvergrtown_slidingdoor", "The sliding metal door from the infested mines."),
+            E("Infested Mine Gate", "dvergrtown_creep_door", "The infested mine door, lifting like a portcullis when used.", variant: "Gate", liftGate: true)),
+
+        new(BuildTool.Hoe, "Rocks",
+            E("Hard Rock", "Placeable_HardRock"), E("Stone Block", "Placeable_Stone"), E("Big Boulder 1", "placeable_bigrock_01"),
+            E("Big Boulder 2", "placeable_bigrock_02"))
     };
 }

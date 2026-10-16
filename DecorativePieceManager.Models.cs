@@ -144,6 +144,20 @@ public sealed partial class DecorativePieceManager
             container.m_defaultItems = new DropTable();
         }
 
+        // Dungeon doors are locked with a key, or stay open once opened; as a building piece they open
+        // and close like any door.
+        foreach (var door in clone.GetComponentsInChildren<Door>(includeInactive: true))
+        {
+            door.m_keyItem = null;
+            door.m_consumeKey = false;
+            door.m_canNotBeClosed = false;
+            // Some only have an opening animation; see DoorClosing.
+            if (!door.TryGetComponent<DoorClosing>(out _))
+            {
+                door.gameObject.AddComponent<DoorClosing>();
+            }
+        }
+
         // Components that use the rigidbody go first, or Unity refuses to remove it.
         DestroyAll<StaticPhysics>(clone);
         DestroyAll<Plant>(clone);
@@ -159,6 +173,40 @@ public sealed partial class DecorativePieceManager
             else
             {
                 UnityEngine.Object.DestroyImmediate(body);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Adds the models of other prefabs to a piece, at the same spot (see
+    /// DecorativePieceDefinition.ExtraParts): their visible parts and colliders, without their scripts.
+    /// </summary>
+    private void AddParts(GameObject clone, IReadOnlyList<string> parts)
+    {
+        foreach (var name in parts)
+        {
+            if (FindSpawnablePrefab(name) is not { } part)
+            {
+                _log.LogWarning($"Part '{name}' for '{clone.name}' wasn't found.");
+                continue;
+            }
+
+            foreach (Transform child in part.transform)
+            {
+                if (child.GetComponentInChildren<Renderer>(includeInactive: true) == null)
+                {
+                    continue;
+                }
+
+                var copy = UnityEngine.Object.Instantiate(child.gameObject, clone.transform, worldPositionStays: false);
+                copy.name = $"{name}_{child.name}";
+                copy.transform.localPosition = child.localPosition;
+                copy.transform.localRotation = child.localRotation;
+                copy.transform.localScale = child.localScale;
+                foreach (var behaviour in copy.GetComponentsInChildren<MonoBehaviour>(includeInactive: true))
+                {
+                    UnityEngine.Object.DestroyImmediate(behaviour);
+                }
             }
         }
     }

@@ -91,5 +91,5 @@ have the same version of Landscaper: keep everyone on the same one.
 
 Placed pieces are saved as the game objects they're made from, so a world loaded without Landscaper
 keeps them as ordinary objects (normal size and colour); reinstall and they're Landscaper pieces again.
-Cattails and lily pads are the exception: they're deleted without the mod. Storage props (crates,
+Cattails, lily pads and ground cover patches are the exception: they're deleted without the mod. Storage props (crates,
 barrels and the like) aren't chests without the mod, so empty them first. Back up your world first.

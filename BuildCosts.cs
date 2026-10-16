@@ -7,8 +7,9 @@ namespace Landscaper;
 internal sealed class PieceTraits
 {
     public PieceTraits(float size, ItemDrop? pickableItem, bool hasLight, Piece.Requirement[]? vanillaResources, CraftingStation? vanillaStation,
-        bool isLiquid, int pickableAmount = 1, bool pickableRegrows = true)
+        bool isLiquid, int pickableAmount = 1, bool pickableRegrows = true, float[]? partSizes = null)
     {
+        PartSizes = partSizes ?? Array.Empty<float>();
         PickableAmount = pickableAmount;
         PickableRegrows = pickableRegrows;
         IsLiquid = isLiquid;
@@ -43,6 +44,9 @@ internal sealed class PieceTraits
 
     /// <summary>Whether it gives off light, like torches, lanterns and braziers.</summary>
     public bool HasLight { get; }
+
+    /// <summary>For a piece put together from several prefabs, the size of each; otherwise empty.</summary>
+    public float[] PartSizes { get; }
 }
 
 /// <summary>
@@ -54,7 +58,7 @@ internal sealed class PieceTraits
 /// <item>Pickables that grow back (bushes, mushrooms, thistle, ...) cost 5 of the item they give.
 /// Ones that are used up when picked (crops, loose stones, fallen branches) cost exactly what picking
 /// them gives, so placing and picking one breaks even.</item>
-/// <item>Metal pieces (lanterns, braziers, iron torches, chains, ...) cost 1 iron.</item>
+/// <item>Metal pieces (lanterns, braziers, iron torches, chains, ...) cost 1 to 4 iron by size.</item>
 /// <item>Everything else costs 2 to 8 depending on the size of its model, of wood or stone depending
 /// on what it is, ice for ice and snow, bone fragments for bones, or wood and ice split evenly for
 /// the stump shelters and frozen ships. Wood, stone and bone are the ones from the piece's biome, such
@@ -62,7 +66,8 @@ internal sealed class PieceTraits
 /// <item>Crafted light sources (torches, lanterns, braziers) cost 1 resin on top; pickables and other
 /// natural pieces never do, even if they glow.</item>
 /// </list>
-/// The multiplier applies to all of them, with at least 1 of anything.
+/// A piece put together from several (a whole Jotun statue) costs what its parts would together, and
+/// a ground cover patch costs just 1. The multiplier applies to all of them, with at least 1 of anything.
 /// </summary>
 internal static class BuildCosts
 {
@@ -229,7 +234,7 @@ internal static class BuildCosts
 
         if (IsMetal(definition))
         {
-            yield return (ItemNamed(Iron), Scaled(1));
+            yield return (ItemNamed(Iron), MetalAmountFor(traits.Size));
         }
         else
         {
@@ -239,7 +244,9 @@ internal static class BuildCosts
             var materials = ExactMaterials.TryGetValue(definition.PrefabName, out var exact)
                 ? new[] { exact }
                 : MaterialsFor(definition).Select(material => ForBiome(material, biome)).ToArray();
-            var amount = AmountFor(traits.Size);
+            var amount = IsGroundCover(definition) ? Scaled(1)
+                : traits.PartSizes.Length > 0 ? traits.PartSizes.Sum(AmountFor)
+                : AmountFor(traits.Size);
             foreach (var material in materials)
             {
                 yield return (ItemNamed(material), Mathf.Max(1, Mathf.CeilToInt(amount / (float)materials.Length)));
@@ -325,12 +332,44 @@ internal static class BuildCosts
     public static IEnumerable<string> ReferencedStations() =>
         new[] { Workbench, Forge, Stonecutter, BlackForge };
 
+    /// <summary>
+    /// Whether a piece's cost is Landscaper's own, set or worked out, rather than the cost data the
+    /// object carries: some objects from the world carry another piece's (the ancient Jotun chest has
+    /// the black metal chest's, the Ashlands arches the stone arch's).
+    /// </summary>
+    public static bool HasOwnCost(DecorativePieceDefinition definition) =>
+        FixedCosts.ContainsKey(definition.PrefabName) || NotCopiedCostPrefabs.Contains(definition.PrefabName);
+
+    /// <summary>Objects whose carried cost data is another piece's, costed like any other instead.</summary>
+    private static readonly HashSet<string> NotCopiedCostPrefabs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Ashlands_Arch1", "Ashlands_Arch2", "Ashlands_WallBlock_base", "Ashlands_WallBlock_1x2x2"
+    };
+
     /// <summary>Pieces with a set cost of their own, instead of one worked out from their size.</summary>
     private static readonly Dictionary<string, (string Item, int Amount)[]> FixedCosts = new(StringComparer.OrdinalIgnoreCase)
     {
         ["GuckSack_small"] = new[] { ("Guck", 1) },
         ["GuckSack"] = new[] { ("Guck", 2) },
         ["goblin_strawpile"] = new[] { ("Flax", 2), ("Barley", 2) },
+        // The ancient Jotun chest: carved stone with gold fittings, from the Deep North.
+        ["Morkhalla_ChestAncient"] = new[] { (Stone, 10), ("Gold", 2), ("Frostwood", 4) },
+        // Chests cost 10 of what they're made of, like the vanilla wood chest.
+        ["Chest"] = new[] { (Wood, 10) }, ["stonechest"] = new[] { (Stone, 10) }, ["crypt_skeleton_chest"] = new[] { (Wood, 10) },
+        ["shipwreck_karve_chest"] = new[] { (Wood, 10) }, ["shipwreck_vikingship_chest"] = new[] { (Wood, 10) },
+        ["TreasureChest_deepnorth_village"] = new[] { ("Frostwood", 10) }, ["TreasureChest_morkhalla"] = new[] { ("Frostwood", 10) },
+        ["TreasureChest_memorial_buried"] = new[] { ("Frostwood", 10) }, ["TreasureChest_charredfortress"] = new[] { (Grausten, 10) },
+        // Piles: what they're a pile of.
+        ["Morkhalla_Stonepile"] = new[] { (Grausten, 50) }, ["Morkhalla_coal_pile_memorial"] = new[] { ("Coal", 10) },
+        ["tarlump1"] = new[] { ("Tar", 8) },
+        ["Morkhalla_giant_railing_torch_unlit"] = new[] { (Grausten, 2) },
+        // Picked once for one: the snowy branch, like the fallen branch, and the dragon egg.
+        ["Pickable_Branch_Snow"] = new[] { ("Frostwood", 1) }, ["Pickable_DragonEgg"] = new[] { ("DragonEgg", 1) },
+        ["Pickable_DvergerThing"] = new[] { ("Bronze", 1) },
+        // Whole statues, not the size of a broken half.
+        ["StatueFreya"] = new[] { (Stone, 6) }, ["StatueThor"] = new[] { (Stone, 6) },
+        // Mistlands stonework.
+        ["dungeon_queen_door"] = new[] { ("BlackMarble", 6) }, ["dvergrtown_secretdoor"] = new[] { ("BlackMarble", 4) },
         // Webs: sticky and stringy. A flat cost, since the models are 20 to 60 m and would all cost the most by size.
         ["horizontal_web"] = new[] { (Resin, 2), (Linen, 2) },
         ["vertical_web"] = new[] { (Resin, 2), (Linen, 2) },
@@ -395,7 +434,8 @@ internal static class BuildCosts
         ["dvergrtown_wood_beam"] = Wood, ["dvergrtown_wood_pole"] = Wood, ["dvergrtown_wood_stake"] = Wood,
         ["dvergrtown_wood_stakewall"] = Wood, ["dvergrtown_stair_corner_wood_left"] = Wood,
         ["dvergrprops_crate_ashlands"] = Wood, ["cloth_hanging_door"] = RedJute, ["cloth_hanging_door_double"] = RedJute,
-        ["fenrirhide_hanging_door"] = Wood, ["wooden_path"] = Wood, ["trader_wagon_destructable"] = Wood,
+        ["fenrirhide_hanging_door"] = "WolfPelt", ["fenrirhide_hanging"] = "WolfPelt", ["dvergrtown_creep_door"] = "BlackMarble",
+        ["dvergrprops_banner"] = "JuteBlue", ["dvergrprops_curtain"] = "JuteBlue", ["wooden_path"] = Wood, ["trader_wagon_destructable"] = Wood,
         ["prop_itemstand"] = Wood, ["prop_piece_chair03"] = Wood,
         // Props and Workshop Props
         ["CastleKit_pot03"] = Stone, ["ashland_pot1_green"] = Stone, ["ashland_pot1_red"] = Stone,
@@ -411,13 +451,14 @@ internal static class BuildCosts
     private static readonly Dictionary<string, string> ExactMaterials = new(StringComparer.OrdinalIgnoreCase)
     {
         ["MountainGraveStone01"] = Stone,
-        ["Morkhalla_Trainingdummy1"] = Wood, ["Morkhalla_Trainingdummy2"] = Wood
+        ["Morkhalla_Trainingdummy1"] = Wood, ["Morkhalla_Trainingdummy2"] = Wood,
+        ["ShootStump"] = "YggdrasilWood"
     };
 
     /// <summary>Pieces that give off light but aren't light sources, so they cost no resin.</summary>
     private static readonly HashSet<string> NoResinPrefabs = new(StringComparer.OrdinalIgnoreCase)
     {
-        "prop_piece_MeadCauldron"
+        "prop_piece_MeadCauldron", "CastleKit_groundtorch_unlit", "CastleKit_metal_groundtorch_unlit"
     };
 
     /// <summary>Metal pieces whose names don't give it away.</summary>
@@ -529,6 +570,14 @@ internal static class BuildCosts
 
     /// <summary>How much wood or stone, from the largest dimension of the model in meters.</summary>
     private static int AmountFor(float size) => Scaled(size < 2f ? 2 : size < 6f ? 4 : size < 15f ? 6 : 8);
+
+    /// <summary>How much iron a metal piece costs, from its size: 1 for a lantern, up to 4 for a giant's sword.</summary>
+    private static int MetalAmountFor(float size) => Scaled(size < 2f ? 1 : size < 6f ? 2 : size < 15f ? 3 : 4);
+
+    /// <summary>The Cultivator's patches of grass and ground plants (see ClutterPrefabs).</summary>
+    private static bool IsGroundCover(DecorativePieceDefinition definition) =>
+        definition.PrefabName.StartsWith("LandscaperClutter_", StringComparison.Ordinal) &&
+        definition.PrefabName.EndsWith("_patch", StringComparison.Ordinal);
 
     private static int Scaled(int amount) => Mathf.Max(1, Mathf.RoundToInt(amount * Multiplier()));
 

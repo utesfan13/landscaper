@@ -1,5 +1,68 @@
 # Changelog
 
+## 0.23.0
+- More than 100 more pieces from around the world:
+  - Chests (under Storage): every biome's loot chest, the shipwreck chests, the crypt skeleton chest and
+    more, as working storage with no loot.
+  - Gates and doors (under Doors): the forest crypt door, sunken crypt gates, the Dvergr secret door, the
+    Jotun gate doors, the Ashlands fortress gate and the mountain wooden gate. Keys aren't needed.
+    Gates that have no door of their own open when used: the Jotun gate doors and the infested mine
+    gate lift like a portcullis, the rusty sunken crypt gate swings on its hinge, and the Ashlands
+    fortress gate door opens as a double door from the middle, always with its spikes facing out. A
+    raised gate can be lowered from where it stands closed. The Queen's door and the Dvergr sliding
+    door are here too; the infested mine door in Dungeon Decor is decoration and stays shut.
+  - Ashlands arches, wall blocks and charred graves; the Jotun fire pit, coal pile and unlit railing
+    torch; the Fuling bed, totem pole and king's totem holder; old wooden roofs; unlit ground
+    torches, a bonfire, the Bog Witch's, Haldor's and Hildir's fire pits, and more props.
+  - Curios (new tab): small things normally found lying around, such as Dvergr lanterns and steins,
+    the dragon and vulture eggs, sword pieces, crypt remains, the core stands, pickable ores and
+    stones, royal jelly, and the Jotun statue eyes.
+  - The Mistlands altar crystals, the flametal rock stand, the Jotun drawbridge,
+    wild oats and poteitr, and a few boulders.
+- Ground cover (new Cultivator tab): patches of the game's grass and ground plants, from Meadows
+  grass and heath flowers to Mistlands and Ashlands plants, ferns, shrubs and small stones. Resize and
+  tint them like any piece. Like cattails and lily pads, they're deleted without the mod.
+- Pieces that aren't vanilla build pieces render their own icon: many objects from locations carried
+  another piece's icon.
+- Whole Jotun statues, normal and big, in the Jotun Halls tab: all the statue parts put together.
+- The Jotun statue parts fit together: while placing one, aim at a placed part of a statue the same
+  size (or a whole statue) and it goes exactly where it belongs, at that statue's rotation and size.
+  Hold Shift to place it freely instead.
+- New pieces: Deep North and Jotun chests (the ancient Jotun chest, grausten chest, memorial chest,
+  Jotun wooden chest and Deep North chest; working storage, no loot; the ancient Jotun chest costs
+  stone, gold and frostwood), the Queen's door, the infested mine door and the Dvergr sliding door.
+  Dungeon doors open and close like any door, with no key (doors whose animation only opens, like
+  the Dvergr secret door, play it backwards to close); without the mod they're the dungeon doors
+  again.
+- The other body of the vanilla Armour Stand (male or female, whichever isn't in the Hammer menu)
+  in the Furniture tab. Armour stands change pose with the small block at their base.
+- Cost review:
+  - The ancient Jotun chest costs stone, gold and frostwood as intended, not the black metal chest's
+    cost: a piece's own cost now comes before the cost data some world objects carry from other
+    pieces. The Ashlands arches and wall blocks cost grausten like the rest of the Ashlands ruins.
+  - Every chest costs 10 of what it's made of (frostwood for the Deep North and Jotun chests,
+    grausten for the charred fortress chest).
+  - Piles cost what they're a pile of: 50 grausten for the Jotun stone pile, 10 coal for the coal
+    pile, tar for the tar lump.
+  - A whole Jotun statue costs what its parts would together; the Freya and Thor statues more than
+    a broken half.
+  - Metal pieces cost 1 to 4 iron by size, so a giant's sword costs more than a lantern; unlit
+    torches cost no resin.
+  - Ground cover patches cost 1; the snowy branch 1 frostwood and the dragon egg 1 dragon egg, what
+    picking them gives; the Dvergr trinket 1 bronze.
+  - The Fenris hide hangings cost wolf pelts, the Dvergr banner and curtain blue jute, the Queen's
+    door and the Dvergr secret door black marble, the Yggdrasil stump Yggdrasil wood, and the
+    infested mine gate the same as the infested mine door.
+- `landscaper_costlist` console command: writes every Landscaper piece's cost, crafting station and
+  what the cost is based on to `BepInEx/landscaper_costs.tsv`, for reviewing costs.
+- Landscaper pieces use the build menu's own tags. Landscaper's Decor, Furniture, Roofs, Chests,
+  Gates & Doors, Stacks & Piles, Building Structures, Festive and Misc tabs are now the vanilla Decor,
+  Furniture, Roof, Storage, Doors, Stacks, Building, Seasonal and Misc tags, so there's one of each.
+  Every piece is also tagged by what it is, so a themed piece is listed under its theme and with
+  others of its kind: the Jotun and Dvergr chests under Storage too, gates and doors under Doors,
+  fires, torches and lanterns under Lighting, beds, chairs and tables under Furniture, banners and
+  rugs under Decor. Item displays are decoration, no longer storage like the item stand.
+
 ## 0.21.0
 - Item displays: food, drinks, trophies, materials and most other items an item stand can hold can be
   set down on their own, on the Hammer's new Food Displays, Trophy Displays and Item Displays tabs.

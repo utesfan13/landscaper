@@ -17,7 +17,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string ModGuid = "utesfan13.landscaper";
     public const string ModName = "Landscaper";
-    public const string ModVersion = "0.21.0";
+    public const string ModVersion = "0.23.0";
 
     internal static ManualLogSource Log = null!;
     /// <summary>Reads the General.Enabled setting: off hides the pieces and turns off the controls.</summary>
@@ -74,6 +74,7 @@ public sealed class Plugin : BaseUnityPlugin
         CommandManager.Instance.AddConsoleCommand(new RemoveNearbyCommand());
         CommandManager.Instance.AddConsoleCommand(new CheckCommand());
         CommandManager.Instance.AddConsoleCommand(new CostsCommand(costsEnabled));
+        CommandManager.Instance.AddConsoleCommand(new CostListCommand());
 
         // Pieces are registered even when the mod is turned off: a host deletes saved objects whose
         // prefab is missing, so turning it off only hides the pieces and the controls.

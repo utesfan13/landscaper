@@ -40,6 +40,21 @@ public sealed class DecorativePieceDefinition
     public string? DisplayItem { get; set; }
 
     /// <summary>
+    /// Other prefabs whose models are added to this one, at the same spot: a whole Jotun statue is its
+    /// parts, which the game models in one shared space. Saved as the main prefab.
+    /// </summary>
+    public IReadOnlyList<string> ExtraParts { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// A second piece from the same prefab on the same tool, kept apart by this in its saved name, such
+    /// as the openable copy of a decorative gate.
+    /// </summary>
+    public string? Variant { get; set; }
+
+    /// <summary>Lifts like a portcullis when used (see LiftGates), whatever it's made from.</summary>
+    public bool LiftGate { get; set; }
+
+    /// <summary>
     /// Names this piece was saved under before (full "Landscaper_..." names), so pieces placed under an
     /// old name keep loading after a rename. Other tools' names are covered automatically.
     /// </summary>
