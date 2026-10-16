@@ -58,7 +58,7 @@ public sealed partial class DecorativePieceManager
         public string SourcePrefab { get; }
 
         /// <summary>Whether this is a scaled variant rather than the plain piece for its prefab.</summary>
-        public bool IsVariant => Definition.Scale != Vector3.one;
+        public bool IsVariant => Definition.Scale != Vector3.one || Definition.ExtraParts.Count > 0;
     }
 
     /// <param name="customEntries">Reads the current custom entries; synced from the server.</param>
@@ -326,6 +326,22 @@ public sealed partial class DecorativePieceManager
     public string? SourcePrefabOf(string cloneName) =>
         _registered.TryGetValue(cloneName, out var piece) ? piece.SourcePrefab : null;
 
+    /// <summary>
+    /// For a Jotun statue part or whole statue (see StatueSnapping): whether it's the big size. Null
+    /// for anything else. Takes a piece's name, or a placement ghost's.
+    /// </summary>
+    public bool? StatueSizeOf(string name)
+    {
+        var cloneName = name.EndsWith("(Clone)", StringComparison.Ordinal) ? name.Substring(0, name.Length - "(Clone)".Length) : name;
+        if (!_registered.TryGetValue(cloneName, out var piece) ||
+            !piece.Definition.PrefabName.StartsWith("Morkhalla_StatuePiece", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return piece.Definition.PrefabName.EndsWith("_big", StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>The tilt a piece starts with when selected: a custom entry's rotation, or null.</summary>
     public Vector3? StartingTiltOf(string cloneName) =>
         _registered.TryGetValue(cloneName, out var piece) && piece.Definition.PlacementRotation != Vector3.zero
@@ -408,6 +424,7 @@ public sealed partial class DecorativePieceManager
         // is recreated before the fade-in runs stays invisible.
         DestroyAll<LodFadeInOut>(clone);
         MakeStaticDecoration(clone);
+        AddParts(clone, definition.ExtraParts);
         if (WebPrefabs.Contains(definition.PrefabName))
         {
             RecenterModel(clone);
@@ -430,7 +447,7 @@ public sealed partial class DecorativePieceManager
         var modelSize = hasModelBounds ? Vector3.Scale(modelBounds.size, clone.transform.localScale) : Vector3.one;
         if (hasModelBounds && SnapPoints.Wanted(definition))
         {
-            SnapPoints.Add(clone, modelBounds);
+            SnapPoints.Add(clone, modelBounds, definition);
         }
         var pickable = clone.GetComponentInChildren<Pickable>(includeInactive: true);
         var vanillaPiece = clone.GetComponent<Piece>();
@@ -458,6 +475,15 @@ public sealed partial class DecorativePieceManager
         // borrow another piece's icon: the turf roofs use the thatch roofs' icons, so they looked like
         // thatch in the menu. Render their own icon instead.
         if (displayIcon == null && vanillaIcon != null && !piece.m_name.StartsWith("$", StringComparison.Ordinal))
+        {
+            vanillaIcon = null;
+        }
+
+        // Only a real vanilla build piece's icon is sure to show it: objects from locations often carry
+        // a copy of some other piece (the ancient Jotun chest has the black metal chest's icon), and a
+        // piece put together from several (a whole Jotun statue) would show only its main part. Render
+        // the rest.
+        if (displayIcon == null && (definition.ExtraParts.Count > 0 || !IsVanillaBuildPiece(source.name)))
         {
             vanillaIcon = null;
         }
@@ -510,7 +536,9 @@ public sealed partial class DecorativePieceManager
 
         if (vanillaIcon is null)
         {
-            _pendingIcons.Add((piece, source));
+            // Rendered from the game object it's made from, without Landscaper's changes; a piece put
+            // together from several is rendered from the piece itself, which has all of them.
+            _pendingIcons.Add((piece, definition.ExtraParts.Count > 0 ? clone : source));
         }
 
         return true;
@@ -532,6 +560,12 @@ public sealed partial class DecorativePieceManager
 
         var prefabName = new string(sourceName.Select(c => c is ' ' or '(' or ')' ? '_' : c).ToArray());
         var cloneName = $"Landscaper_{prefabName}_{tool ?? definition.Tool}";
+        if (definition.ExtraParts.Count > 0)
+        {
+            // Not the same piece as the main prefab alone, which may be in the catalog too.
+            cloneName += "_Assembled";
+        }
+
         if (definition.Scale == Vector3.one)
         {
             return cloneName;

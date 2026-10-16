@@ -60,6 +60,10 @@ internal static class ScaleController
     /// different piece, and selecting a piece resets these, so they are also kept until the ghost's
     /// next update and used in place of that reset.
     /// </summary>
+    /// <summary>Sets the size to match a piece being fitted to (see StatueSnapping), keeping the tint.</summary>
+    public static void MatchSize(Vector3 scale) =>
+        _scale = new Vector3(ClampScale(scale.x), ClampScale(scale.y), ClampScale(scale.z));
+
     public static void ApplyCopied(Vector3 scale, Color? tint)
     {
         _scale = new Vector3(ClampScale(scale.x), ClampScale(scale.y), ClampScale(scale.z));

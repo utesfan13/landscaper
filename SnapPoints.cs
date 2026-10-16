@@ -27,7 +27,7 @@ internal static class SnapPoints
         Enabled() && definition.Tool == BuildTool.Hammer && definition.DisplayItem is null && !NoSnapCategories.Contains(definition.Category);
 
     /// <summary>Adds the snap points, unless the piece has its own. Bounds are in the piece's own space.</summary>
-    public static void Add(GameObject clone, Bounds bounds)
+    public static void Add(GameObject clone, Bounds bounds, DecorativePieceDefinition definition)
     {
         var root = clone.transform;
         for (var i = 0; i < root.childCount; i++)
@@ -36,6 +36,12 @@ internal static class SnapPoints
             {
                 return;
             }
+        }
+
+        // Jotun statue parts fit together their own way (see StatueSnapping); snap points would compete.
+        if (definition.PrefabName.StartsWith("Morkhalla_StatuePiece", StringComparison.OrdinalIgnoreCase) && definition.ExtraParts.Count == 0)
+        {
+            return;
         }
 
         var min = bounds.min;

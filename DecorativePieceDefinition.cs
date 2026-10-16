@@ -40,6 +40,12 @@ public sealed class DecorativePieceDefinition
     public string? DisplayItem { get; set; }
 
     /// <summary>
+    /// Other prefabs whose models are added to this one, at the same spot: a whole Jotun statue is its
+    /// parts, which the game models in one shared space. Saved as the main prefab.
+    /// </summary>
+    public IReadOnlyList<string> ExtraParts { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// Names this piece was saved under before (full "Landscaper_..." names), so pieces placed under an
     /// old name keep loading after a rename. Other tools' names are covered automatically.
     /// </summary>

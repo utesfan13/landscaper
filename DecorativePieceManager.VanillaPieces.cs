@@ -101,6 +101,9 @@ public sealed partial class DecorativePieceManager
     /// Scaled variants, furniture made functional, and pieces the menu doesn't list (such as the turf
     /// roofs and out-of-season festive pieces) are still Landscaper pieces.
     /// </summary>
+    /// <summary>Whether a prefab is a piece in a vanilla tool's menu, a real vanilla build piece.</summary>
+    private bool IsVanillaBuildPiece(string prefabName) => _vanillaInMenus.Values.Any(inMenu => inMenu.Contains(prefabName));
+
     private bool DuplicatesVanillaPiece(DecorativePieceDefinition definition) =>
         definition.Scale == Vector3.one && definition.FunctionFrom is null && definition.DisplayItem is null && !definition.OnWater &&
         _vanillaInMenus.TryGetValue(definition.Tool, out var inMenu) &&

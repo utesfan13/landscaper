@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.23.0
+- 94 more pieces from around the world:
+  - Chests (new tab): every biome's loot chest, the shipwreck chests, the crypt skeleton chest and
+    more, as working storage with no loot.
+  - Gates & Doors (new tab): the forest crypt door, sunken crypt gates, the Dvergr secret door, the
+    Jotun gate doors, the Ashlands fortress gate and the mountain wooden gate. Keys aren't needed.
+  - Ashlands arches, wall blocks and charred graves; the Jotun fire pit, coal pile and unlit railing
+    torch; the Fuling bed, totem pole and king's totem holder; old wooden roofs; unlit ground
+    torches, a bonfire, the Bog Witch's, Haldor's and Hildir's fire pits, and more props.
+  - Curios (new tab): small things normally found lying around, such as Dvergr lanterns and steins,
+    the dragon and vulture eggs, sword pieces, crypt remains and the core stands.
+- Pieces that aren't vanilla build pieces render their own icon: many objects from locations carried
+  another piece's icon.
+- Whole Jotun statues, normal and big, in the Jotun Halls tab: all the statue parts put together.
+- The Jotun statue parts fit together: while placing one, aim at a placed part of a statue the same
+  size (or a whole statue) and it goes exactly where it belongs, at that statue's rotation and size.
+  Hold Shift to place it freely instead.
+- New pieces: Deep North and Jotun chests (the ancient Jotun chest, grausten chest, memorial chest,
+  Jotun wooden chest and Deep North chest; working storage, no loot; the ancient Jotun chest costs
+  stone, gold and frostwood), the Queen's door, the infested mine door and the Dvergr sliding door.
+  Dungeon doors open and close like any door, with no key; without the mod they're the dungeon doors
+  again.
+- The other body of the vanilla Armour Stand (male or female, whichever isn't in the Hammer menu)
+  in the Furniture tab. Armour stands change pose with the small block at their base.
+
 ## 0.21.0
 - Item displays: food, drinks, trophies, materials and most other items an item stand can hold can be
   set down on their own, on the Hammer's new Food Displays, Trophy Displays and Item Displays tabs.

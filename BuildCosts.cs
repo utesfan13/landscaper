@@ -331,6 +331,8 @@ internal static class BuildCosts
         ["GuckSack_small"] = new[] { ("Guck", 1) },
         ["GuckSack"] = new[] { ("Guck", 2) },
         ["goblin_strawpile"] = new[] { ("Flax", 2), ("Barley", 2) },
+        // The ancient Jotun chest: carved stone with gold fittings, from the Deep North.
+        ["Morkhalla_ChestAncient"] = new[] { (Stone, 10), ("Gold", 2), ("Frostwood", 4) },
         // Webs: sticky and stringy. A flat cost, since the models are 20 to 60 m and would all cost the most by size.
         ["horizontal_web"] = new[] { (Resin, 2), (Linen, 2) },
         ["vertical_web"] = new[] { (Resin, 2), (Linen, 2) },
