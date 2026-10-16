@@ -74,6 +74,7 @@ public sealed class Plugin : BaseUnityPlugin
         CommandManager.Instance.AddConsoleCommand(new RemoveNearbyCommand());
         CommandManager.Instance.AddConsoleCommand(new CheckCommand());
         CommandManager.Instance.AddConsoleCommand(new CostsCommand(costsEnabled));
+        CommandManager.Instance.AddConsoleCommand(new CostListCommand());
 
         // Pieces are registered even when the mod is turned off: a host deletes saved objects whose
         // prefab is missing, so turning it off only hides the pieces and the controls.

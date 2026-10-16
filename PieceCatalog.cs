@@ -45,7 +45,9 @@ public static class PieceCatalog
                     ListAfter = entry.ListAfter,
                     FunctionFrom = entry.FunctionFrom,
                     FormerNames = entry.FormerNames,
-                    ExtraParts = entry.Parts
+                    ExtraParts = entry.Parts,
+                    Variant = entry.Variant,
+                    LiftGate = entry.LiftGate
                 };
             }
         }
@@ -54,8 +56,10 @@ public static class PieceCatalog
     private sealed class Entry
     {
         public Entry(string name, string prefab, string description, Vector3 scale, bool onWater, string? listAfter, string? functionFrom,
-            string[] formerNames, string[] parts)
+            string[] formerNames, string[] parts, string? variant, bool liftGate)
         {
+            Variant = variant;
+            LiftGate = liftGate;
             Parts = parts;
             FormerNames = formerNames;
             FunctionFrom = functionFrom;
@@ -76,6 +80,8 @@ public static class PieceCatalog
         public string? FunctionFrom { get; }
         public string[] FormerNames { get; }
         public string[] Parts { get; }
+        public string? Variant { get; }
+        public bool LiftGate { get; }
     }
 
     private sealed class Group
@@ -99,9 +105,10 @@ public static class PieceCatalog
     /// </param>
     /// <param name="parts">Prefabs whose models are added to this one at the same spot; see DecorativePieceDefinition.ExtraParts.</param>
     private static Entry E(string name, string prefab, string description = "", Vector3? scale = null, bool onWater = false,
-        string? listAfter = null, string? functionFrom = null, string[]? formerNames = null, string[]? parts = null) =>
+        string? listAfter = null, string? functionFrom = null, string[]? formerNames = null, string[]? parts = null,
+        string? variant = null, bool liftGate = false) =>
         new(name, prefab, description, scale ?? Vector3.one, onWater, listAfter, functionFrom, formerNames ?? Array.Empty<string>(),
-            parts ?? Array.Empty<string>());
+            parts ?? Array.Empty<string>(), variant, liftGate);
 
     /// <summary>The parts of a whole Jotun statue other than its legs, optionally the big ones.</summary>
     private static string[] StatueParts(string suffix = "") =>
@@ -361,8 +368,8 @@ public static class PieceCatalog
             E("Memorial Chest", "TreasureChest_memorial_buried", "The chest from the Deep North memorial grounds.")),
 
         new(BuildTool.Hammer, "Dungeon Decor",
-            E("Stone Chest", "stonechest"), E("Queen's Door", "dungeon_queen_door", "The Seeker Queen's giant door. Opens and closes like any door."),
-            E("Infested Mine Door", "dvergrtown_creep_door"), E("Horizontal Web", "horizontal_web"),
+            E("Stone Chest", "stonechest"), E("Infested Mine Door", "dvergrtown_creep_door", "The infested mine door, for decoration."),
+            E("Horizontal Web", "horizontal_web"),
             E("Vertical Web", "vertical_web"), E("Web Tunnel", "tunnel_web"), E("Jotun Web Corner", "morkhalla_web_corner"),
             E("Jotun Web", "morkhalla_web_horisontal"), E("Jotun Web Tunnel", "morkhalla_web_tunnel"), E("Infested Hanging Egg 1", "CreepProp_egg_hanging01"),
             E("Infested Hanging Egg 2", "CreepProp_egg_hanging02"), E("Infested Hanging Growth", "CreepProp_hanging01"), E("Infested Wall Growth", "CreepProp_wall01"),
@@ -384,8 +391,7 @@ public static class PieceCatalog
             E("Dvergr Stake", "dvergrprops_wood_stake"), E("Dvergr Stake Wall", "dvergrprops_wood_stakewall"),
             E("Dvergr Wall", "dvergrprops_wood_wall"), E("Dvergr Support", "dvergrtown_wood_support"),
             E("Dvergr Town Wall 1", "dvergrtown_wood_wall01"), E("Dvergr Town Wall 2", "dvergrtown_wood_wall02"),
-            E("Dvergr Town Wall 3", "dvergrtown_wood_wall03"), E("Dvergr Crane", "dvergrtown_wood_crane"),
-            E("Dvergr Sliding Door", "dvergrtown_slidingdoor", "The sliding metal door from the infested mines.")),
+            E("Dvergr Town Wall 3", "dvergrtown_wood_wall03"), E("Dvergr Crane", "dvergrtown_wood_crane")),
 
         new(BuildTool.Hammer, "Fuling Village",
             E("Fuling Banner", "goblin_banner"), E("Fuling Fence", "goblin_fence"), E("Fuling Pole", "goblin_pole"),
@@ -498,6 +504,42 @@ public static class PieceCatalog
             E("Tar Puddle", "Pickable_Tar"), E("Big Tar Puddle", "Pickable_TarBig")),
 
         new(BuildTool.Hoe, "Ice",
-            E("Ice Blocker", "IceBlocker"))
+            E("Ice Blocker", "IceBlocker")),
+
+        // Ground cover: patches of the game's grass and ground plants (see ClutterPrefabs).
+        new(BuildTool.Cultivator, "Ground Cover",
+            E("Meadows Grass", ClutterPrefabs.Prefix + "meadows_grass_patch"), E("Short Meadows Grass", ClutterPrefabs.Prefix + "meadows_grass_short_patch"), E("Forest Ground Cover", ClutterPrefabs.Prefix + "forest_groundcover_patch"),
+            E("Brown Forest Ground Cover", ClutterPrefabs.Prefix + "forest_groundcover_brown_patch"), E("Snowy Forest Ground Cover", ClutterPrefabs.Prefix + "forest_groundcover_snow_patch"), E("Heath Grass", ClutterPrefabs.Prefix + "heathgrass_patch"),
+            E("Heath Flowers", ClutterPrefabs.Prefix + "heathflowers_patch"), E("Swamp Grass", ClutterPrefabs.Prefix + "swamp_grass_patch"), E("Swamp Ferns", ClutterPrefabs.Prefix + "swamp_ormbunke_patch"),
+            E("Ferns", ClutterPrefabs.Prefix + "ormbunke_patch"), E("Shrubs", ClutterPrefabs.Prefix + "shrub_patch"), E("Mistlands Grass", ClutterPrefabs.Prefix + "mistlands_grass_short_patch"),
+            E("Mistlands Rock Plants", ClutterPrefabs.Prefix + "mistlands_rockplant_patch"), E("Ashlands Grass", ClutterPrefabs.Prefix + "ashlands_grass_short_patch"), E("Long Ashlands Grass", ClutterPrefabs.Prefix + "ashlands_grass_long_patch"),
+            E("Small Stones", ClutterPrefabs.Prefix + "small_rock1_patch")),
+
+        // More found in the same pass: pickable resources and Jotun statue eyes, Mistlands altar crystals and a few props.
+        new(BuildTool.Hammer, "Curios",
+            E("Ashstone", "Pickable_Ashstone"), E("Bog Iron Ore", "Pickable_BogIronOre"), E("Tin Ore", "Pickable_Tin"),
+            E("Meteorite", "Pickable_Meteorite"), E("Obsidian", "Pickable_Obsidian"), E("Cave Obsidian", "Pickable_MountainCaveObsidian"),
+            E("Snowy Branch", "Pickable_Branch_Snow"), E("Royal Jelly", "Pickable_RoyalJelly"), E("Jotun Statue Eye 1", "Morkhalla_Eye1"),
+            E("Jotun Statue Eye 2", "Morkhalla_Eye2"), E("Jotun Statue Eye 3", "Morkhalla_Eye3"), E("Jotun Statue Eye 4", "Morkhalla_Eye4"),
+            E("Jotun Gem Eye 1", "Morkhalla_Eye5_gemstone"), E("Jotun Gem Eye 2", "Morkhalla_Eye6_gemstone"), E("Jotun Gem Eye 3", "Morkhalla_Eye7_gemstone")),
+
+        new(BuildTool.Cultivator, "Crops",
+            E("Wild Oats", "Pickable_Oat"), E("Wild Poteitr", "Pickable_Poteitr")),
+
+        new(BuildTool.Hammer, "Dungeon Decor",
+            E("Black Marble Altar Crystal", "blackmarble_altar_crystal"), E("Broken Altar Crystal", "blackmarble_altar_crystal_broken")),
+
+        new(BuildTool.Hammer, "Ashlands Ruins",
+            E("Flametal Rock Stand", "FlametalRockstand")),
+
+        new(BuildTool.Hammer, "Gates & Doors",
+            E("Jotun Drawbridge", "Morkhalla_Drawbridge"),
+            E("Queen's Door", "dungeon_queen_door", "The Seeker Queen's giant door. Opens and closes like any door."),
+            E("Dvergr Sliding Door", "dvergrtown_slidingdoor", "The sliding metal door from the infested mines."),
+            E("Infested Mine Gate", "dvergrtown_creep_door", "The infested mine door, lifting like a portcullis when used.", variant: "Gate", liftGate: true)),
+
+        new(BuildTool.Hoe, "Rocks",
+            E("Hard Rock", "Placeable_HardRock"), E("Stone Block", "Placeable_Stone"), E("Big Boulder 1", "placeable_bigrock_01"),
+            E("Big Boulder 2", "placeable_bigrock_02"))
     };
 }

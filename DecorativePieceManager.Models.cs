@@ -151,6 +151,11 @@ public sealed partial class DecorativePieceManager
             door.m_keyItem = null;
             door.m_consumeKey = false;
             door.m_canNotBeClosed = false;
+            // Some only have an opening animation; see DoorClosing.
+            if (!door.TryGetComponent<DoorClosing>(out _))
+            {
+                door.gameObject.AddComponent<DoorClosing>();
+            }
         }
 
         // Components that use the rigidbody go first, or Unity refuses to remove it.

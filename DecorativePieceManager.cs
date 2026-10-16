@@ -52,13 +52,14 @@ public sealed partial class DecorativePieceManager
 
         public GameObject Clone { get; }
         public BuildTool Tool => Definition.Tool;
-        public string Category => Definition.Category;
+        /// <summary>The custom tab it's listed under, or null if that's a vanilla tag (see UsageTags).</summary>
+        public string? Category => UsageTags.TabFor(Definition.Category);
 
         /// <summary>The vanilla prefab this piece was cloned from.</summary>
         public string SourcePrefab { get; }
 
         /// <summary>Whether this is a scaled variant rather than the plain piece for its prefab.</summary>
-        public bool IsVariant => Definition.Scale != Vector3.one || Definition.ExtraParts.Count > 0;
+        public bool IsVariant => Definition.Scale != Vector3.one || Definition.ExtraParts.Count > 0 || Definition.Variant is not null;
     }
 
     /// <param name="customEntries">Reads the current custom entries; synced from the server.</param>
@@ -113,6 +114,35 @@ public sealed partial class DecorativePieceManager
     }
 
     /// <summary>
+    /// Every registered piece's cost, one line each (tool, tab, name, prefab, cost, station, and what
+    /// the cost is based on), for reviewing costs: see CostListCommand.
+    /// </summary>
+    public IEnumerable<string> CostReport()
+    {
+        yield return "Tool	Tab	Name	Prefab	Cost	Station	Basis";
+        foreach (var piece in _registered.Values.OrderBy(piece => piece.Tool).ThenBy(piece => piece.Definition.Category).ThenBy(piece => piece.Definition.DisplayName))
+        {
+            var component = piece.Clone != null ? piece.Clone.GetComponent<Piece>() : null;
+            if (component == null)
+            {
+                continue;
+            }
+
+            var definition = piece.Definition;
+            var cost = string.Join(", ", (component.m_resources ?? Array.Empty<Piece.Requirement>())
+                .Where(requirement => requirement.m_resItem != null)
+                .Select(requirement => $"{requirement.m_amount} {requirement.m_resItem.name}"));
+            var basis = definition.Requirements.Count > 0 ? "custom entry"
+                : BuildCosts.HasOwnCost(definition) ? "set cost"
+                : piece.Traits.VanillaResources is null ? "automatic"
+                : IsVanillaBuildPiece(piece.SourcePrefab) ? "vanilla piece"
+                : "copied from the object's piece data";
+            yield return string.Join("	", piece.Tool, definition.Category, definition.DisplayName, piece.SourcePrefab, cost,
+                component.m_craftingStation != null ? component.m_craftingStation.name : "", basis);
+        }
+    }
+
+    /// <summary>
     /// Recomputes every piece's cost from the current settings: custom entries with their own
     /// requirements keep them, everything else gets the automatic cost from <see cref="BuildCosts"/>
     /// (or none when costs are off).
@@ -143,7 +173,7 @@ public sealed partial class DecorativePieceManager
         }
 
         // Pieces with the vanilla cost keep the vanilla station, whichever it is (or none).
-        if (traits.VanillaResources is not null)
+        if (traits.VanillaResources is not null && !BuildCosts.HasOwnCost(definition))
         {
             return traits.VanillaStation;
         }
@@ -165,8 +195,10 @@ public sealed partial class DecorativePieceManager
             return Array.Empty<Piece.Requirement>();
         }
 
-        // Pieces that are vanilla build pieces cost the same as the vanilla piece.
-        if (traits.VanillaResources is { } vanilla)
+        // Pieces that are vanilla build pieces cost the same as the vanilla piece, unless given a cost
+        // of their own: some objects from the world carry a copy of another piece's (the ancient
+        // Jotun chest has the black metal chest's).
+        if (traits.VanillaResources is { } vanilla && !BuildCosts.HasOwnCost(definition))
         {
             return vanilla;
         }
@@ -445,6 +477,11 @@ public sealed partial class DecorativePieceManager
         // Measured before EnsureTargetable adds its box, and including a scaled variant's scale.
         var hasModelBounds = TryGetModelBounds(clone, out var modelBounds);
         var modelSize = hasModelBounds ? Vector3.Scale(modelBounds.size, clone.transform.localScale) : Vector3.one;
+        if (hasModelBounds && (definition.LiftGate || LiftGates.Opens(definition.PrefabName)))
+        {
+            LiftGates.Prepare(clone, definition.PrefabName, modelBounds, definition.LiftGate);
+        }
+
         if (hasModelBounds && SnapPoints.Wanted(definition))
         {
             SnapPoints.Add(clone, modelBounds, definition);
@@ -459,7 +496,8 @@ public sealed partial class DecorativePieceManager
             vanillaPiece != null ? vanillaPiece.m_craftingStation : null,
             clone.GetComponent<LiquidVolume>() != null,
             pickable != null ? pickable.m_amount : 1,
-            pickable == null || pickable.m_respawnTimeMinutes > 0f);
+            pickable == null || pickable.m_respawnTimeMinutes > 0f,
+            PartSizes(definition));
         EnsureTargetable(clone, definition.Tool);
         // A copy of a vanilla piece that's adjustable already has its tint component.
         if (!clone.TryGetComponent<LandscaperTint>(out _))
@@ -520,7 +558,8 @@ public sealed partial class DecorativePieceManager
             return false;
         }
 
-        if (!PieceManager.Instance.AddPiece(new CustomPiece(clone, tableName, fixReference: false) { Category = definition.Category }))
+        UsageTags.Apply(clone, definition);
+        if (!PieceManager.Instance.AddPiece(new CustomPiece(clone, tableName, fixReference: false) { Category = UsageTags.TabFor(definition.Category) }))
         {
             KeepPlacedPieces(cloneName, "it couldn't be added to the menu");
             return false;
@@ -566,6 +605,11 @@ public sealed partial class DecorativePieceManager
             cloneName += "_Assembled";
         }
 
+        if (definition.Variant is { } variant)
+        {
+            cloneName += "_" + variant;
+        }
+
         if (definition.Scale == Vector3.one)
         {
             return cloneName;
@@ -579,6 +623,19 @@ public sealed partial class DecorativePieceManager
     /// Looks up a prefab registered with ZNetScene. Only those have a ZNetView, so pieces built
     /// from them are saved with the world.
     /// </summary>
+    /// <summary>
+    /// For a piece put together from several prefabs (a whole Jotun statue), the size of each, so it
+    /// costs what its parts would together; empty for a single prefab.
+    /// </summary>
+    private static float[] PartSizes(DecorativePieceDefinition definition) =>
+        definition.ExtraParts.Count == 0
+            ? Array.Empty<float>()
+            : new[] { definition.PrefabName }.Concat(definition.ExtraParts)
+                .Select(FindSpawnablePrefab).OfType<GameObject>()
+                .Select(part => TryGetModelBounds(part, out var bounds) ? Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z) : 0f)
+                .Where(size => size > 0f)
+                .ToArray();
+
     private static GameObject? FindSpawnablePrefab(string prefabName)
     {
         var scene = ZNetScene.instance;
