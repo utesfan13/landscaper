@@ -8,7 +8,8 @@ namespace Landscaper;
 /// Console command that checks the catalog against the game, to run after a Valheim update. Pieces
 /// whose prefab is gone can't be placed, and their placed copies only survive as invisible stand-ins,
 /// so these are worth fixing (usually by updating the prefab name in PieceCatalog.cs, with the old
-/// saved name in formerNames). It also checks the names the furniture functions and cost rules use.
+/// saved name in formerNames). It also checks the names the furniture functions and cost rules use,
+/// and that no piece costs an item that can't be obtained in normal play (see Obtainable).
 /// </summary>
 public sealed class CheckCommand : ConsoleCommand
 {
@@ -44,7 +45,7 @@ public sealed class CheckCommand : ConsoleCommand
             problems.Add($"Cost rule for a prefab that isn't in the catalog: {prefab}");
         }
 
-        foreach (var item in BuildCosts.ReferencedItems().Concat(BreakRefund.ReferencedItems()).Distinct()
+        foreach (var item in BuildCosts.ReferencedItems().Concat(BreakRefund.ReferencedItems()).Concat(ItemDisplays.ReferencedItems()).Distinct()
                      .Where(item => PrefabManager.Instance.GetPrefab(item)?.GetComponent<ItemDrop>() == null))
         {
             problems.Add($"Missing item used by the cost rules: {item}");
@@ -54,6 +55,14 @@ public sealed class CheckCommand : ConsoleCommand
                      .Where(station => PrefabManager.Instance.GetPrefab(station)?.GetComponent<CraftingStation>() == null))
         {
             problems.Add($"Missing crafting station used by the cost rules: {station}");
+        }
+
+        // Every piece should be buildable from items a player can get: none costs a leftover item
+        // the game never gives out.
+        var obtainable = Obtainable.Items();
+        foreach (var group in pieces.CostItems().Where(cost => !obtainable.Contains(cost.Item)).GroupBy(cost => cost.Item))
+        {
+            problems.Add($"Costs an item that can't be obtained in normal play: {group.Key} ({string.Join(", ", group.Select(cost => cost.Piece).Distinct())})");
         }
 
         foreach (var name in pieces.StandIns)

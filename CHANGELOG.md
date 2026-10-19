@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.24.0
+- Trader Camps (new Hammer tab): the camps of the three traders, piece by piece. They're part of
+  the camps themselves rather than objects of their own, so like ground cover they're deleted from
+  a world loaded without the mod.
+  - The Bog Witch's hut, cauldron, table, ladder, stump seats, talismans, hanging thistles, amulet,
+    leech and barrel; her table set with its herbs, mushrooms and bones, mushroom-covered barrels and
+    stump, bone piles, garlic, piri piri, lovage and a small skull; Greydwarf George, who sits by
+    her hut; and Kvastur, her broom, sweeping, for Yggdrasil wood.
+  - Haldor's tent, chest, lamp, rune stones, bear rug and wares: barrels of fish, fruit, sweets and
+    spears, crates, baskets, a keg, shields, a table of swords and helmets, and his carrot planter.
+  - Hildir's tents, wagon, chests, clothes racks, fabric rolls and tables, hat stands, map table,
+    carpet, lantern, barrel, flower garland, turnip planter and lox, and her divans: use one to sit
+    on it, again to lie down on it, and again to get up.
+  - An empty trough, and the three traders themselves, animated, for show (they don't trade).
+- White copies of fabric pieces, to tint any colour, each listed as "(White)" next to the original:
+  the Jotun banners and rugs, the Fuling banner, the hanging cloths and cloth doors, the charred
+  banners, the Dvergr banner and curtain, Hildir's carpet, fabric rolls, clothes racks, fabric
+  tables and divans, and the vanilla blue jute curtain, drapes and round carpet (in Furniture).
+- White grausten roofs, in the Roofs tab: all six grausten roof pieces in a pale stone, to tint any
+  colour, for what the vanilla pieces cost.
+- Full feasts, in the Workshop Props tab: all nine, from the Whole Roasted Meadow Boar and the Swamp
+  Dweller's Delight to the Northern Morning Fare, shown full and for show only (they can't be
+  eaten; without the mod they're the feast). They cost the feast's ingredients, like the vanilla
+  feast. The feast props there, which look eaten, are now named "(Eaten)".
+- Gear displays (new Hammer tab): weapons, tools, armour and shields an item stand can show, set
+  down on their own. Each costs the main material of its recipe, the metal if it has one (a bronze
+  sword costs bronze), as much as crafting it takes; gear that's bought costs its price in coins.
+- Item displays go on walls too: aimed at a surface 45° or steeper, a display is placed on the
+  game's upright item stand, facing out (the rotate keys turn it), the way a trophy or a sword
+  hangs; on anything flatter it's set down as before. Without the mod it's an ordinary upright item
+  stand.
+- Kvastur (Still), in Trophy Displays: the broom standing still, for Yggdrasil wood instead of its
+  trophy.
+- Queen's Door (No Smoke), in Gates & Doors: the Queen's door without the green gas it lets out
+  while open.
+- Every piece can be built in normal play: the red pots cost green pot shards and the ancient metal
+  bar stack flametal, and displays of items the game never gives out cost the item they copy (the
+  female draugr trophy, void ectoplasm and anglerfish, named apart from the originals) or what
+  they're made of (the midsummer crown, and the Ashlands gourmet bowl's display, now named Vineberry
+  Bunch for what it shows). `landscaper_check` reports any piece that costs an item that can't be
+  obtained.
+- Pieces placed on Landscaper pieces that only have a detailed collision shape (the Bog Witch's
+  table and stumps, the Jotun statues, training dummies) sit on their real surface instead of
+  floating above it.
+
 ## 0.23.0
 - More than 100 more pieces from around the world:
   - Chests (under Storage): every biome's loot chest, the shipwreck chests, the crypt skeleton chest and

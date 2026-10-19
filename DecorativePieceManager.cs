@@ -88,6 +88,7 @@ public sealed partial class DecorativePieceManager
     {
         HasRegistered = true;
         ClutterPrefabs.Build(_log);
+        LocationProps.Build(_log);
         var adjustable = MakeVanillaPiecesAdjustable();
         // Retired pieces are registered but never listed: UpdateMenus only lists catalog and custom entries.
         var registered = PieceCatalog.Entries().Where(definition => !DuplicatesVanillaPiece(definition))
@@ -95,6 +96,8 @@ public sealed partial class DecorativePieceManager
         PieceCatalog.Retired().Count(Register);
         _displays = ItemDisplays.Definitions();
         var displays = _displays.Count(Register);
+        // Never listed (UpdateMenus only lists _displays): swapped in for walls by WallDisplays.
+        ItemDisplays.WallDefinitions(_displays).Count(Register);
         _log.LogInfo($"Registered {registered} decorative pieces and {displays} item displays; {adjustable} vanilla build pieces can be adjusted too.");
         RegisterAliases();
         UpdateMenus();
@@ -142,6 +145,15 @@ public sealed partial class DecorativePieceManager
         }
     }
 
+    /// <summary>Each registered piece's name with each item its current cost asks for.</summary>
+    public IEnumerable<(string Piece, string Item)> CostItems() =>
+        _registered.Values
+            .Select(piece => (piece.Definition.DisplayName, Component: piece.Clone != null ? piece.Clone.GetComponent<Piece>() : null))
+            .Where(piece => piece.Component != null)
+            .SelectMany(piece => (piece.Component!.m_resources ?? Array.Empty<Piece.Requirement>())
+                .Where(requirement => requirement.m_resItem != null)
+                .Select(requirement => (piece.DisplayName, requirement.m_resItem.name)));
+
     /// <summary>
     /// Recomputes every piece's cost from the current settings: custom entries with their own
     /// requirements keep them, everything else gets the automatic cost from <see cref="BuildCosts"/>
@@ -182,6 +194,9 @@ public sealed partial class DecorativePieceManager
             resources.Where(requirement => requirement.m_resItem != null).Select(requirement => requirement.m_resItem.name));
         return name is null ? null : PrefabManager.Instance.GetPrefab(name)?.GetComponent<CraftingStation>();
     }
+
+    /// <summary>A registered piece's prefab by its name, or null.</summary>
+    public GameObject? Clone(string cloneName) => _registered.TryGetValue(cloneName, out var piece) ? piece.Clone : null;
 
     private Piece.Requirement[] CostFor(DecorativePieceDefinition definition, PieceTraits traits)
     {
@@ -462,9 +477,23 @@ public sealed partial class DecorativePieceManager
             RecenterModel(clone);
         }
         PondWater.Prepare(clone);
+        if (definition.Variant == PieceCatalog.NoSmokeVariant)
+        {
+            RemoveOpenSmoke(clone);
+        }
+        if (definition.WhiteFabric)
+        {
+            FabricWhitening.Apply(clone, FabricWhitening.ModeFor(definition.PrefabName));
+        }
         if (definition.FunctionFrom is { } functionFrom)
         {
             FunctionalPieces.Apply(clone, functionFrom);
+
+            // A divan keeps the chair's comfort but has its own seat.
+            if (clone.GetComponent<DivanSeat>() != null)
+            {
+                DestroyAll<Chair>(clone);
+            }
         }
 
         Sprite? displayIcon = null;
@@ -521,7 +550,7 @@ public sealed partial class DecorativePieceManager
         // a copy of some other piece (the ancient Jotun chest has the black metal chest's icon), and a
         // piece put together from several (a whole Jotun statue) would show only its main part. Render
         // the rest.
-        if (displayIcon == null && (definition.ExtraParts.Count > 0 || !IsVanillaBuildPiece(source.name)))
+        if (displayIcon == null && (definition.ExtraParts.Count > 0 || definition.WhiteFabric || !IsVanillaBuildPiece(source.name)))
         {
             vanillaIcon = null;
         }
@@ -576,8 +605,8 @@ public sealed partial class DecorativePieceManager
         if (vanillaIcon is null)
         {
             // Rendered from the game object it's made from, without Landscaper's changes; a piece put
-            // together from several is rendered from the piece itself, which has all of them.
-            _pendingIcons.Add((piece, definition.ExtraParts.Count > 0 ? clone : source));
+            // together from several, or made white, is rendered from the piece itself.
+            _pendingIcons.Add((piece, definition.ExtraParts.Count > 0 || definition.WhiteFabric ? clone : source));
         }
 
         return true;
@@ -591,10 +620,12 @@ public sealed partial class DecorativePieceManager
     /// </summary>
     private static string GetCloneName(string sourceName, DecorativePieceDefinition definition, BuildTool? tool = null)
     {
-        // A display is named after its item: all of them are copies of the same item stand.
+        // A display is named after its item: all of them are copies of the same item stand (the
+        // flat one, or for walls the upright one).
         if (definition.DisplayItem is { } displayItem)
         {
-            return $"Landscaper_Display_{new string(displayItem.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray())}";
+            var prefix = definition.Variant == ItemDisplays.WallVariant ? WallDisplays.WallPrefix : WallDisplays.FlatPrefix;
+            return prefix + new string(displayItem.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray());
         }
 
         var prefabName = new string(sourceName.Select(c => c is ' ' or '(' or ')' ? '_' : c).ToArray());
