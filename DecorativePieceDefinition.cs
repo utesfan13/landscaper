@@ -51,6 +51,9 @@ public sealed class DecorativePieceDefinition
     /// </summary>
     public string? Variant { get; set; }
 
+    /// <summary>The "White" variant: its red fabric made white, so a tint can make it any colour (see FabricWhitening).</summary>
+    public bool WhiteFabric => Variant == PieceCatalog.WhiteVariant;
+
     /// <summary>Lifts like a portcullis when used (see LiftGates), whatever it's made from.</summary>
     public bool LiftGate { get; set; }
 

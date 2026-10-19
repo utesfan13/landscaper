@@ -24,7 +24,9 @@ public sealed partial class DecorativePieceManager
     /// Cultivator and Hoe pieces are positioned differently, and a box around a large cliff would
     /// block placing plants on the terrain under it, so this only applies to the Hammer.</item>
     /// </list>
-    /// The box is solid rather than a trigger so the ghost positioning can use it.
+    /// The box is solid rather than a trigger so the ghost positioning can use it. When it's only
+    /// needed for that (the piece can already be removed), it's on the ghost alone, so pieces placed
+    /// on the placed piece land on its real surface.
     /// </summary>
     private static void EnsureTargetable(GameObject clone, BuildTool tool)
     {
@@ -48,7 +50,30 @@ public sealed partial class DecorativePieceManager
         }
 
         var target = new GameObject(TargetBoxName) { layer = LayerMask.NameToLayer("piece_nonsolid") };
-        target.transform.SetParent(root, worldPositionStays: false);
+        if (removable)
+        {
+            // Only the ghost needs it. On the placed piece a box around the whole model would catch
+            // the aim above its real surface (a table's, a stump's), so what's placed on it floats.
+            // Valheim shows "_GhostOnly" only on placement ghosts.
+            var ghostOnly = root.Find("_GhostOnly");
+            if (ghostOnly == null)
+            {
+                ghostOnly = new GameObject("_GhostOnly").transform;
+                ghostOnly.gameObject.SetActive(false);
+                ghostOnly.SetParent(root, worldPositionStays: false);
+            }
+
+            target.transform.SetParent(ghostOnly, worldPositionStays: false);
+
+            // Valheim moves a ghost's parts to the "ghost" layer, which its aim ignores, before it shows
+            // "_GhostOnly", so this box would be missed: the aim would hit the ghost's own box and pull
+            // it towards the camera, over and over.
+            target.layer = LayerMask.NameToLayer("ghost");
+        }
+        else
+        {
+            target.transform.SetParent(root, worldPositionStays: false);
+        }
         var box = target.AddComponent<BoxCollider>();
         box.center = combined.center;
         // Keep flat pieces such as rugs hittable.
@@ -136,8 +161,49 @@ public sealed partial class DecorativePieceManager
     /// into a tree or crop (the "Forever" saplings).</item>
     /// </list>
     /// </summary>
+    /// <summary>
+    /// Stops doors filling the room with smoke while open (the Queen's door's green gas): what they
+    /// show when open is left off when it's only a particle effect.
+    /// </summary>
+    private static void RemoveOpenSmoke(GameObject clone)
+    {
+        foreach (var door in clone.GetComponentsInChildren<Door>(includeInactive: true))
+        {
+            if (door.m_openEnable != null && door.m_openEnable.GetComponentInChildren<ParticleSystem>(includeInactive: true) != null &&
+                door.m_openEnable.GetComponentsInChildren<Component>(includeInactive: true)
+                    .All(component => component is Transform or ParticleSystem or ParticleSystemRenderer))
+            {
+                door.m_openEnable = null;
+            }
+        }
+    }
+
     private static void MakeStaticDecoration(GameObject clone)
     {
+        // A feast is shown full and can't be eaten: it's decoration. Without the mod it's the feast.
+        foreach (var feast in clone.GetComponentsInChildren<Feast>(includeInactive: true))
+        {
+            foreach (var level in feast.m_feastParts)
+            {
+                if (level.m_onAboveEquals != null)
+                {
+                    level.m_onAboveEquals.SetActive(1f >= level.m_threshold);
+                }
+
+                if (level.m_onBelow != null)
+                {
+                    level.m_onBelow.SetActive(false);
+                }
+            }
+
+            UnityEngine.Object.DestroyImmediate(feast);
+        }
+
+        if (clone.GetComponent<Piece>() != null && clone.TryGetComponent<ItemDrop>(out var food))
+        {
+            UnityEngine.Object.DestroyImmediate(food);
+        }
+
         foreach (var container in clone.GetComponentsInChildren<Container>(includeInactive: true))
         {
             container.m_autoDestroyEmpty = false;
@@ -151,6 +217,7 @@ public sealed partial class DecorativePieceManager
             door.m_keyItem = null;
             door.m_consumeKey = false;
             door.m_canNotBeClosed = false;
+
             // Some only have an opening animation; see DoorClosing.
             if (!door.TryGetComponent<DoorClosing>(out _))
             {

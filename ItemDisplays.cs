@@ -8,9 +8,10 @@ namespace Landscaper;
 /// Display pieces: food, drinks, trophies and other items set down on their own, on a table or a shelf. Each
 /// is a vanilla horizontal item stand holding the item, with the stand itself hidden, so it's saved
 /// as exactly that: without Landscaper it's an ordinary item stand with the item on it. Every item
-/// a vanilla item stand shows (it has an "attach" model to draw) gets one, except gear, on the
-/// Hammer's display tabs: food and drink, trophies, and other items.
-/// A display costs the item it shows and gives it back when removed, as the piece's refund (the
+/// a vanilla item stand shows (it has an "attach" model to draw) gets one, on the Hammer's display
+/// tabs: food and drink, trophies, gear, and other items.
+/// A display costs the item it shows (or something else, see OtherCosts), except gear, which costs
+/// what it's made of (see GearCost), and gives that back when removed, as the piece's refund (the
 /// stand's own drop is turned off, so the item comes back once, and never with costs off). The item
 /// can't be taken off with the use key; remove the display with the hammer instead.
 /// </summary>
@@ -20,7 +21,34 @@ internal static class ItemDisplays
     public const string FoodCategory = "Food Displays";
     public const string TrophyCategory = "Trophy Displays";
     public const string ItemCategory = "Item Displays";
+    public const string GearCategory = "Gear Displays";
+
+    /// <summary>Metals, for a gear display's cost: the metal a piece of gear is made of, if any.</summary>
+    private static readonly HashSet<string> Metals = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Copper", "Tin", "Bronze", "Iron", "Silver", "BlackMetal", "FlametalNew", "Flametal"
+    };
     public const string StandPrefab = "itemstandh";
+
+    /// <summary>
+    /// Displays that cost something other than their item, with a name of their own if needed: items
+    /// the game never gives out (leftover copies, event-only items), so every display can be built in
+    /// normal play (landscaper_check reports any that can't), and items that are hard to come by.
+    /// </summary>
+    private static readonly Dictionary<string, (string? Name, (string Item, int Amount)[] Cost)> OtherCosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // The Bog Witch's broom, standing still (the animated one is in Props); not her broom's trophy.
+        ["TrophyKvastur"] = ("Kvastur (Still)", new[] { ("YggdrasilWood", 4) }),
+        ["TrophyDraugrFem"] = ("Draugr Trophy (Female)", new[] { ("TrophyDraugr", 1) }),
+        ["Voidplasm"] = ("Ectoplasm (Void)", new[] { ("Ectoplasm", 1) }),
+        ["FishAnglerRaw"] = ("Raw Fish (Anglerfish)", new[] { ("FishRaw", 1) }),
+        ["HelmetMidsummerCrown"] = (null, new[] { ("Dandelion", 5) }),
+        // Shown on a stand as just its grapes.
+        ["FeastAshlands"] = ("Vineberry Bunch", new[] { ("Vineberry", 3) })
+    };
+
+    /// <summary>The items OtherCosts asks for, which should all exist in the game.</summary>
+    public static IEnumerable<string> ReferencedItems() => OtherCosts.Values.SelectMany(value => value.Cost.Select(cost => cost.Item));
 
     /// <summary>On a display piece: the item it shows.</summary>
     public sealed class Marker : MonoBehaviour
@@ -39,6 +67,10 @@ internal static class ItemDisplays
             return definitions;
         }
 
+        // The recipes are set on ObjectDB in the scene, whether or not it's awake yet.
+        var objectDB = ObjectDB.instance != null ? ObjectDB.instance : Resources.FindObjectsOfTypeAll<ObjectDB>().FirstOrDefault();
+        var traders = ZNetScene.instance.m_prefabs.Where(prefab => prefab != null).Select(prefab => prefab.GetComponent<Trader>())
+            .Where(trader => trader != null).ToList();
         foreach (var prefab in ZNetScene.instance.m_prefabs)
         {
             // Only the game's own items, so every player with the same game version gets the same set.
@@ -48,10 +80,18 @@ internal static class ItemDisplays
                 continue;
             }
 
-            // Not gear (anything with durability or upgrade levels): placing takes one by name from the
-            // inventory, which could be an upgraded one, and the refund would be a new one.
+            // Gear (anything with durability or upgrade levels) costs what it's made of instead of the
+            // item: placing takes one by name from the inventory, which could be an upgraded one, and
+            // the refund would be a new one. Hair and beards aren't items to show.
             var shared = item.m_itemData.m_shared;
-            if (shared.m_useDurability || shared.m_maxQuality > 1 || shared.m_itemType == ItemDrop.ItemData.ItemType.Customization)
+            if (shared.m_itemType == ItemDrop.ItemData.ItemType.Customization)
+            {
+                continue;
+            }
+
+            var isGear = shared.m_useDurability || shared.m_maxQuality > 1;
+            var gearCost = isGear ? GearCost(prefab.name, objectDB, traders) : null;
+            if (isGear && gearCost == null)
             {
                 continue;
             }
@@ -69,6 +109,8 @@ internal static class ItemDisplays
                 continue;
             }
 
+            OtherCosts.TryGetValue(prefab.name, out var otherCost);
+            name = otherCost.Name ?? name;
             var definition = new DecorativePieceDefinition
             {
                 PrefabName = StandPrefab,
@@ -76,19 +118,73 @@ internal static class ItemDisplays
                 DisplayName = name,
                 Description = $"{name}, set down for display.",
                 Tool = BuildTool.Hammer,
-                Category = shared.m_itemType switch
+                Category = isGear ? GearCategory : shared.m_itemType switch
                 {
                     ItemDrop.ItemData.ItemType.Consumable => FoodCategory,
                     ItemDrop.ItemData.ItemType.Trophy => TrophyCategory,
                     _ => ItemCategory
                 }
             };
-            definition.Requirements.Add(new PieceRequirement { ItemName = prefab.name, Amount = 1 });
+            foreach (var (costItem, amount) in gearCost ?? otherCost.Cost ?? new[] { (prefab.name, 1) })
+            {
+                definition.Requirements.Add(new PieceRequirement { ItemName = costItem, Amount = amount });
+            }
             definitions.Add(definition);
         }
 
         return definitions.OrderBy(definition => definition.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
+
+    /// <summary>
+    /// What a gear display costs: the main material of the gear's own recipe, the metal if it has one
+    /// (else its largest ingredient), as much as crafting it takes; for gear that's bought instead,
+    /// its price in coins. Null for gear that's neither (it isn't listed).
+    /// </summary>
+    private static (string Item, int Amount)[]? GearCost(string itemName, ObjectDB? objectDB, List<Trader> traders)
+    {
+        var recipe = objectDB?.m_recipes.FirstOrDefault(recipe => recipe != null && recipe.m_enabled && recipe.m_item != null &&
+                                                                  recipe.m_item.name == itemName);
+        var resources = recipe?.m_resources?.Where(resource => resource.m_resItem != null && resource.m_amount > 0).ToList();
+        if (resources is { Count: > 0 })
+        {
+            var main = resources.Where(resource => Metals.Contains(resource.m_resItem.name)).OrderByDescending(resource => resource.m_amount)
+                .FirstOrDefault() ?? resources.OrderByDescending(resource => resource.m_amount).First();
+            return new[] { (main.m_resItem.name, main.m_amount) };
+        }
+
+        var sold = traders.SelectMany(trader => trader.m_items)
+            .FirstOrDefault(tradeItem => tradeItem.m_prefab != null && tradeItem.m_prefab.name == itemName);
+        return sold != null ? new[] { ("Coins", Mathf.Max(1, sold.m_price)) } : null;
+    }
+
+    /// <summary>The variant of a display on the game's upright item stand, for walls (see WallDisplays).</summary>
+    public const string WallVariant = "Wall";
+    public const string WallStandPrefab = "itemstand";
+
+    /// <summary>
+    /// The wall version of each display: the same item, name and cost on the upright item stand. It's
+    /// kept out of the menus; WallDisplays swaps it in while a display is aimed at a wall.
+    /// </summary>
+    public static List<DecorativePieceDefinition> WallDefinitions(IEnumerable<DecorativePieceDefinition> displays) =>
+        displays.Select(display =>
+        {
+            var wall = new DecorativePieceDefinition
+            {
+                PrefabName = WallStandPrefab,
+                DisplayItem = display.DisplayItem,
+                DisplayName = display.DisplayName,
+                Description = display.Description,
+                Tool = display.Tool,
+                Category = display.Category,
+                Variant = WallVariant
+            };
+            foreach (var requirement in display.Requirements)
+            {
+                wall.Requirements.Add(new PieceRequirement { ItemName = requirement.ItemName, Amount = requirement.Amount });
+            }
+
+            return wall;
+        }).ToList();
 
     /// <summary>
     /// Whether an item stand shows something for the item: it has a stand model ("attach") that's

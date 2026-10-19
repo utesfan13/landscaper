@@ -90,7 +90,7 @@ internal static class BuildCosts
 
     private static readonly HashSet<string> WoodCategories = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Trees", "Stumps & Logs", "Plants", "Roots & Branches", "Furniture", "Props", "Workshop Props",
+        "Trees", "Stumps & Logs", "Plants", "Roots & Branches", "Furniture", "Props", "Workshop Props", "Trader Camps",
         "Dvergr", "Fuling Village", "Shipwrecks"
     };
 
@@ -368,6 +368,58 @@ internal static class BuildCosts
         ["Pickable_DvergerThing"] = new[] { ("Bronze", 1) },
         // Whole statues, not the size of a broken half.
         ["StatueFreya"] = new[] { (Stone, 6) }, ["StatueThor"] = new[] { (Stone, 6) },
+        // The Bog Witch's camp: the hut is a whole building; the rest goes by size (Swamp wood).
+        ["LandscaperLocation_BogWitch_Hut"] = new[] { ("ElderBark", 30), ("Wood", 20) },
+        ["LandscaperLocation_BogWitch_Thistles"] = new[] { ("Thistle", 5) }, ["LandscaperLocation_BogWitch_Leech"] = new[] { ("Bloodbag", 2) },
+        ["LandscaperLocation_BogWitch_TableSet"] = new[] { ("ElderBark", 4), ("Thistle", 2), (Bone, 2) },
+        ["LandscaperLocation_BogWitch_MushroomBarrels"] = new[] { ("ElderBark", 8), ("MushroomYellow", 4) },
+        ["LandscaperLocation_BogWitch_MushroomStump"] = new[] { ("ElderBark", 4), ("MushroomYellow", 2) },
+        ["LandscaperLocation_BogWitch_BonePiles"] = new[] { (Bone, 6) },
+        ["LandscaperLocation_Menu_greydwarf_george"] = new[] { ("TrophyGreydwarf", 1), ("Resin", 5), ("GreydwarfEye", 2) },
+        ["LandscaperLocation_Kvastur"] = new[] { ("YggdrasilWood", 4) },
+        // The traders themselves, for coins; their camps, for what they're made of.
+        ["LandscaperLocation_BogWitch_Figure"] = new[] { ("Coins", 100) }, ["LandscaperLocation_Haldor_Figure"] = new[] { ("Coins", 100) },
+        ["LandscaperLocation_Hildir_Figure"] = new[] { ("Coins", 100) }, ["LandscaperLocation_HildirsLox"] = new[] { ("TrophyLox", 1), ("LoxPelt", 2) },
+        ["LandscaperLocation_TraderTent"] = new[] { (Wood, 10), ("LeatherScraps", 10) },
+        ["LandscaperLocation_hildir_tent"] = new[] { (Wood, 10), (RedJute, 6) }, ["LandscaperLocation_hildir_tent2"] = new[] { (Wood, 8), (RedJute, 4) },
+        ["LandscaperLocation_hildir_wagon"] = new[] { (Wood, 30), ("Bronze", 2) },
+        ["LandscaperLocation_TraderChest_static"] = new[] { (Wood, 10) },
+        ["LandscaperLocation_hildir_chest1"] = new[] { ("FineWood", 10), ("Bronze", 2) }, ["LandscaperLocation_hildir_chest2"] = new[] { ("FineWood", 10), ("Silver", 2) },
+        ["LandscaperLocation_hildir_chest3"] = new[] { ("FineWood", 10), ("Bronze", 2) },
+        ["LandscaperLocation_TraderLamp"] = new[] { (Iron, 1), (Resin, 1) }, ["LandscaperLocation_rug_Bjorn"] = new[] { ("BjornHide", 4) },
+        ["LandscaperLocation_cpR_tablesmall01"] = new[] { (Wood, 4), ("Bronze", 2) },
+        ["LandscaperLocation_hildir_flowergirland"] = new[] { (Wood, 2), ("Dandelion", 4) },
+        ["LandscaperLocation_CarrotPlanter"] = new[] { (Wood, 6), ("Carrot", 5) }, ["LandscaperLocation_TurnipPlanter"] = new[] { (Wood, 6), ("Turnip", 5) },
+        ["LandscaperLocation_Trough"] = new[] { (Wood, 6) },
+        ["LandscaperLocation_hildir_carpet"] = new[] { (RedJute, 4) }, ["LandscaperLocation_hildir_fabricsroll1"] = new[] { (RedJute, 2) },
+        ["LandscaperLocation_hildir_fabricsroll2"] = new[] { (Linen, 2) },
+        ["LandscaperLocation_hildir_table1"] = new[] { (Wood, 4), (RedJute, 2) }, ["LandscaperLocation_hildir_table2"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_clothesrack1"] = new[] { (Wood, 4), (RedJute, 2) }, ["LandscaperLocation_hildir_clothesrack2"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_clothesrack3"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_hatstand"] = new[] { (Wood, 1), ("LeatherScraps", 2) }, ["LandscaperLocation_hildir_hatstand1"] = new[] { (Wood, 1), ("LeatherScraps", 2) },
+        ["LandscaperLocation_hildir_hatstand2"] = new[] { (Wood, 1), ("LeatherScraps", 2) },
+        // The white copies cost what the originals do.
+        ["LandscaperLocation_hildir_carpet_white"] = new[] { (RedJute, 4) },
+        ["LandscaperLocation_hildir_fabricsroll1_white"] = new[] { (RedJute, 2) },
+        ["LandscaperLocation_hildir_fabricsroll2_white"] = new[] { (Linen, 2) },
+        ["LandscaperLocation_hildir_clothesrack1_white"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_clothesrack2_white"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_clothesrack3_white"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_table1_white"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_table2_white"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_divan"] = new[] { (Wood, 4), (RedJute, 2) }, ["LandscaperLocation_hildir_divan1"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_hildir_divan_white"] = new[] { (Wood, 4), (RedJute, 2) }, ["LandscaperLocation_hildir_divan1_white"] = new[] { (Wood, 4), (RedJute, 2) },
+        ["LandscaperLocation_bzerkermushroom"] = new[] { ("MushroomYellow", 1) }, ["LandscaperLocation_garlic"] = new[] { ("Thistle", 1) },
+        ["LandscaperLocation_piripiri"] = new[] { ("Thistle", 1) }, ["LandscaperLocation_lovage"] = new[] { ("Thistle", 1) },
+        ["LandscaperLocation_fi_vil_combs_props_bone_skull"] = new[] { (Bone, 1) },
+        ["LandscaperLocation_fi_vil_combs_props_bonepile_01a"] = new[] { (Bone, 2) }, ["LandscaperLocation_fi_vil_combs_props_bonepile_01b"] = new[] { (Bone, 2) },
+        ["LandscaperLocation_fi_vil_combs_props_bonepile_01e"] = new[] { (Bone, 2) }, ["LandscaperLocation_fi_vil_combs_props_bonepile_02b"] = new[] { (Bone, 2) },
+        ["LandscaperLocation_fi_vil_combs_props_bonepile_04b"] = new[] { (Bone, 2) }, ["LandscaperLocation_fi_vil_combs_props_bonepile_04d"] = new[] { (Bone, 2) },
+        // Copied costs of items the game never gives out: red pot shards and the old flametal.
+        ["piece_pot1_red"] = new[] { ("Pot_Shard_Green", 4), ("CharcoalResin", 1) },
+        ["piece_pot2_red"] = new[] { ("Pot_Shard_Green", 5), ("CharcoalResin", 1) },
+        ["piece_pot3_red"] = new[] { ("Pot_Shard_Green", 3), ("CharcoalResin", 1) },
+        ["bar_ancientmetal_stack"] = new[] { ("FlametalNew", 30) },
         // Mistlands stonework.
         ["dungeon_queen_door"] = new[] { ("BlackMarble", 6) }, ["dvergrtown_secretdoor"] = new[] { ("BlackMarble", 4) },
         // Webs: sticky and stringy. A flat cost, since the models are 20 to 60 m and would all cost the most by size.
@@ -434,6 +486,8 @@ internal static class BuildCosts
         ["dvergrtown_wood_beam"] = Wood, ["dvergrtown_wood_pole"] = Wood, ["dvergrtown_wood_stake"] = Wood,
         ["dvergrtown_wood_stakewall"] = Wood, ["dvergrtown_stair_corner_wood_left"] = Wood,
         ["dvergrprops_crate_ashlands"] = Wood, ["cloth_hanging_door"] = RedJute, ["cloth_hanging_door_double"] = RedJute,
+        ["LandscaperLocation_BogWitch_Talisman1"] = Bone, ["LandscaperLocation_BogWitch_Talisman2"] = Bone, ["LandscaperLocation_BogWitch_Talisman3"] = Bone,
+        ["LandscaperLocation_TraderRune"] = Stone,
         ["fenrirhide_hanging_door"] = "WolfPelt", ["fenrirhide_hanging"] = "WolfPelt", ["dvergrtown_creep_door"] = "BlackMarble",
         ["dvergrprops_banner"] = "JuteBlue", ["dvergrprops_curtain"] = "JuteBlue", ["wooden_path"] = Wood, ["trader_wagon_destructable"] = Wood,
         ["prop_itemstand"] = Wood, ["prop_piece_chair03"] = Wood,
@@ -464,7 +518,7 @@ internal static class BuildCosts
     /// <summary>Metal pieces whose names don't give it away.</summary>
     private static readonly HashSet<string> MetalPrefabs = new(StringComparer.OrdinalIgnoreCase)
     {
-        "prop_piece_cauldron", "prop_piece_MeadCauldron"
+        "prop_piece_cauldron", "prop_piece_MeadCauldron", "LandscaperLocation_BogWitch_Cauldron"
     };
 
     /// <summary>

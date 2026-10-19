@@ -76,7 +76,7 @@ A dedicated server can run without Landscaper; only the players need it. Without
 
 [size=5][b]Uninstalling[/b][/size]
 
-Placed pieces are saved as the game objects they're made from, so a world loaded without Landscaper keeps them as ordinary objects (normal size and colour); reinstall and they're Landscaper pieces again. Cattails, lily pads and ground cover patches are the exception: they're deleted without the mod. Storage props (crates, barrels and the like) aren't chests without the mod, so empty them first. Back up your world first.
+Placed pieces are saved as the game objects they're made from, so a world loaded without Landscaper keeps them as ordinary objects (normal size and colour); reinstall and they're Landscaper pieces again. Cattails, lily pads, ground cover patches and the Trader Camps pieces are the exception: they're deleted without the mod. Storage props (crates, barrels and the like) aren't chests without the mod, so empty them first. Back up your world first.
 
 [size=5][b]Links[/b][/size]
 
